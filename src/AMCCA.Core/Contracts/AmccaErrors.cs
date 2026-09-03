@@ -46,6 +46,7 @@ public static class AmccaErrors
     public const string Cst002 = "AMCCA-CST-002"; // Budget exceeded on configured window (reservation refused)
 
     // Policy Domain
+    public const string Pol001 = "AMCCA-POL-001"; // Policy evaluation rejected or failed
     public const string Pol003 = "AMCCA-POL-003"; // Operation refused: global or per-platform kill switch is active
     public const string Pol004 = "AMCCA-POL-004"; // Human approval required before entering protected state
 }

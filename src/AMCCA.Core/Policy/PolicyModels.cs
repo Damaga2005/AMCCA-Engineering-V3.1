@@ -6,6 +6,20 @@ public record PolicyDecisionResult(
     string? ReasonCode = null,
     string? Reason = null);
 
+public record PolicyEvaluationContext(
+    string ProductionId,
+    string Action,
+    string AutonomyMode = "ASSISTED",
+    string? Platform = null,
+    string[]? SecurityFlags = null,
+    string[]? SafetyFlags = null,
+    string[]? RightsFlags = null,
+    string[]? ComplianceFlags = null,
+    bool BudgetExceeded = false,
+    bool HasApprovedHumanGate = false,
+    bool ProviderDisabled = false,
+    decimal RequestedCost = 0m);
+
 public class BudgetRecord
 {
     public string Id { get; set; } = string.Empty;
