@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 838
-**Total bytes:** 298087023
+**Files:** 839
+**Total bytes:** 298096235
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -822,6 +822,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
+| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `43bc1246e0ccce4f59da70b4a0486471a7239b3dc37b7bc37e42c3404045666f` | 9212 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `ad294304f44fca7026cc043cbf275f06e428b056f7854b771771349a3de27401` | 4620 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `4b70e718bddc284f79334ca9250c8c4a95dc6ea62e19c31323d6f2c95ffe72f5` | 8991 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
