@@ -60,6 +60,8 @@ public class ApprovalManager
         await connection.ExecuteAsync(sql, new { Id = approvalId, DecidedBy = decidedBy, Now = now });
     }
 
+    private static readonly SemaphoreSlim WriteLock = new(1, 1);
+
     public async Task ExecuteWithApprovalAsync(
         string productionId,
         string action,
@@ -69,9 +71,12 @@ public class ApprovalManager
         Func<Task> protectedAction,
         CancellationToken ct = default)
     {
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
-        using var tx = connection.BeginTransaction();
+        await WriteLock.WaitAsync(ct);
+        try
+        {
+            var now = DateTimeOffset.UtcNow.ToString("O");
+            using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+            using var tx = connection.BeginTransaction();
 
         // Query active, non-expired approved requests matching production and action
         const string querySql = @"
@@ -148,6 +153,11 @@ public class ApprovalManager
         {
             tx.Rollback(); // Reverts consumption so approval remains available for retry
             throw;
+        }
+        }
+        finally
+        {
+            WriteLock.Release();
         }
     }
 

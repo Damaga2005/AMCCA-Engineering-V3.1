@@ -20,8 +20,8 @@
 | **DEF-009** | HIGH | `SPEC/44_PUBLISHING.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
 | **DEF-010** | HIGH | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
 | **DEF-011** | CRITICAL | `SPEC/20_COST_ENGINE.md`, `DECISIONS.md (D-023)` | `src/AMCCA.Core/Policy/*`, `src/AMCCA.Core/Monetization/*` | CLOSED |
-| **DEF-012** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-11)` | `src/AMCCA.Core/Media/MediaRenderer.cs` | OPEN |
-| **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | OPEN |
+| **DEF-012** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-11)` | `src/AMCCA.Core/Media/MediaRenderer.cs` | CLOSED |
+| **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | CLOSED |
 | **DEF-014** | CRITICAL | `SPEC/28_RESEARCH_SOURCE_SECURITY.md`, `SPEC/72 (S-06, S-08)` | `src/AMCCA.Core/Security/SsrfValidator.cs` | OPEN |
 | **DEF-015** | CRITICAL | `SPEC/03_DATABASE.md`, `DECISIONS.md (D-001)` | `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql` | OPEN |
 | **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
@@ -163,12 +163,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Media/MediaRenderer.cs`
 - **Comportamiento actual:** `StartsWith(root)` textual puede ser eludido con prefijos similares de hermanos (ej: `C:\data` vs `C:\database\evil`), case-insensitivity o separadores mixtos.
 - **Por qué falla:** No asegura confinamiento estricto bajo el límite del directorio canónico.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` (tests específicos de escape a directorios hermanos con prefijos compartidos, traversal .. y normalización de separadores mixtos)
+- **Fix:** Creado `PathConfinement.cs` que fuerza que la ruta canónica sea idéntica al directorio raíz o empiece estrictamente por `root + DirectorySeparatorChar`, bloqueando prefijos hermanos y caracteres nulos. Aplicado en `MediaRenderer.ValidatePathConfinement` y `SafeArchiveExtractor`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Reintentos y manipulaciones de rutas fuera del límite del directorio canónico lanzan `AMCCA-SEC-001`.
+- **Estado:** CLOSED
 
 ### DEF-013 — Archive Extraction Limits (Bombs)
 - **Severidad:** HIGH
@@ -176,12 +176,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Security/SafeArchiveExtractor.cs`
 - **Comportamiento actual:** Valida path traversal pero no aplica límites sobre cantidad máxima de entradas, bytes totales descomprimidos o tamaño máximo individual.
 - **Por qué falla:** Permite ataques de denegación de servicio por bombas de descompresión (zip bombs).
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` (validación de zip-slip, extracción segura de zip válido, corte por exceso de entradas y corte por límite de bytes descomprimidos)
+- **Fix:** Implementado `SafeArchiveExtractor.ExtractZipSafely` con opciones configurables `SafeArchiveOptions` (máximo de entradas, ratio de compresión por entrada, límite de bytes por archivo y límite de bytes acumulados en stream, abortando y limpiando archivos parciales con `AMCCA-SEC-004`).
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 352/352 tests pasando; tanto zip bombs como zip-slip son rechazados de forma segura con `AMCCA-SEC-004`.
+- **Estado:** CLOSED
 
 ### DEF-014 — SSRF + DNS Rebinding Protection
 - **Severidad:** CRITICAL

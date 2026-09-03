@@ -88,13 +88,6 @@ public class MediaRenderer
 
     public void ValidatePathConfinement(string candidatePath)
     {
-        var fullPath = Path.GetFullPath(candidatePath);
-        if (!fullPath.StartsWith(_dataRoot, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new AmccaException(
-                AmccaErrors.Sec001,
-                ErrorCategory.Security,
-                $"Path '{fullPath}' escapes data_root boundary '{_dataRoot}' (SPEC/33).");
-        }
+        AMCCA.Core.Security.PathConfinement.EnsureConfined(candidatePath, _dataRoot, AmccaErrors.Sec001);
     }
 }
