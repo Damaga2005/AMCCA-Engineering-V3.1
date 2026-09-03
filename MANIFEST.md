@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 167
-**Total bytes:** 843034
+**Total bytes:** 848827
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -167,12 +167,12 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
 | `TOOLS/test_generation.py` | `3c49483f8df4796c76c6ac507513ef49508a7734b5e7a246b1f3b53991c72a45` | 1395 |
 | `TOOLS/test_money_precision.py` | `902fa1490e7bea2881774a9c0be863686e5f1595e39acab2575c2a9541669d91` | 1289 |
-| `TOOLS/test_mutations.py` | `38bca5bc489336b317823edae557dcb006927a9fa0a616f35fb16d8b6e1f268a` | 31412 |
+| `TOOLS/test_mutations.py` | `c9ac666b27306cdb96594c2081618024805319ad6e8ec4ffe31563fde1c6af47` | 33662 |
 | `TOOLS/test_no_contract_duplication.py` | `1b0c10d42b296ea84d19d4f4089b1bd13e40f33f784cc50e6cd685dfee7883d4` | 3090 |
 | `TOOLS/test_no_duplicated_version_constants.py` | `82af520ef60a0a0f41c2d80a164f83879febd93356d513de8f54fb10a4e13632` | 3933 |
 | `TOOLS/test_platform_evidence.py` | `6f4964998994dbd9015c40a74db509ed3b2684e9867414bac4fcff7bd1284280` | 2135 |
 | `TOOLS/test_publication_evidence.py` | `ea409d11503b197efbc0862aa0dfcb878971a43bd19d3eb19bf2e6e40d85eecb` | 2827 |
-| `TOOLS/test_repository_hygiene.py` | `f705a56dc9b4f34da8f43bbc753e652f8ccd1d60762b3cf581f07ed11f78098e` | 7489 |
+| `TOOLS/test_repository_hygiene.py` | `3ffd13c0761d84a39218c257e9d823a97b9672df33392d9dd0c906df5572d423` | 11032 |
 | `TOOLS/test_requirements_lockfile_fresh.py` | `46668d64e50f78458ef2fb0ead8612777759e186557c6573e3dc8c7569997a9f` | 6069 |
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |

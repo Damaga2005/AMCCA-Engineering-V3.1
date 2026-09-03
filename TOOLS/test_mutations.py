@@ -592,6 +592,58 @@ def mutation_14_reference_to_nonexistent_decision_id():
     return ok
 
 
+# ===================================================================
+# Mutation 15: oversensitive SCM metadata filter in walk_files() ->
+# if walk_files() erroneously skips files by prefix (e.g. fn.startswith(".git"))
+# instead of exact ".git", real files like .gitignore are dropped, which must
+# make manifest.matches_tree and hygiene.all_tracked_files_in_manifest go red.
+# ===================================================================
+
+def mutation_15_walk_files_oversensitive_filter():
+    import validate_package as vp
+
+    # Baseline: real walk_files() matches the manifest
+    saved_results = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_manifest()
+    baseline = {r["check"]: r for r in vp.RESULTS}
+    baseline_ok = baseline.get("manifest.matches_tree", {}).get("ok", False)
+    vp.RESULTS = saved_results
+    ok = record("mutation15.baseline_manifest_matches_tree", baseline_ok)
+
+    # Mutate walk_files to simulate an oversensitive filter that skips anything starting with ".git"
+    real_walk = vp.walk_files
+
+    def mutated_walk():
+        for rel in real_walk():
+            # If the filter incorrectly drops anything starting with .git (like .gitignore)
+            if os.path.basename(rel).startswith(".git"):
+                continue
+            yield rel
+
+    try:
+        vp.walk_files = mutated_walk
+        vp.RESULTS = []
+        vp.check_manifest()
+        mutated = {r["check"]: r for r in vp.RESULTS}
+        mutated_ok = mutated.get("manifest.matches_tree", {}).get("ok", False)
+        ok = record("mutation15.manifest_matches_tree_goes_red_when_real_file_omitted",
+                    baseline_ok and not mutated_ok,
+                    mutated.get("manifest.matches_tree", {}).get("detail", "")) and ok
+    finally:
+        vp.walk_files = real_walk
+        vp.RESULTS = saved_results
+
+    # Prove reversion: real package walk_files is restored and green
+    vp.RESULTS = []
+    vp.check_manifest()
+    reverted = {r["check"]: r for r in vp.RESULTS}
+    reverted_ok = reverted.get("manifest.matches_tree", {}).get("ok", False)
+    vp.RESULTS = saved_results
+    ok = record("mutation15.real_package_unaffected_by_mutation", reverted_ok) and ok
+    return ok
+
+
 def read_decisions_declared_and_check():
     import re
     dec_path = os.path.join(ROOT, "DECISIONS.md")
@@ -616,6 +668,7 @@ def run():
         mutation_12_money_field_typed_as_number,
         mutation_13_nonnegative_money_accepts_negative,
         mutation_14_reference_to_nonexistent_decision_id,
+        mutation_15_walk_files_oversensitive_filter,
     ]
     results = []
     for m in mutations:
