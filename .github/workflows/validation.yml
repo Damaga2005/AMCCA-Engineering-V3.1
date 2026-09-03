@@ -75,3 +75,18 @@ jobs:
             throw "Expected 3.1.0 but got $versionOutput"
           }
           Write-Host "AMCCA.exe binary verified successfully: $versionOutput"
+
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix --version 4.0.5
+
+      - name: Build WiX Installer (AMCCA-Setup.msi and AMCCA-Setup.exe)
+        shell: pwsh
+        run: |
+          & powershell -ExecutionPolicy Bypass -File installer/build_installer.ps1
+          if (-not (Test-Path dist/installer/AMCCA-Setup.msi)) {
+            throw "dist/installer/AMCCA-Setup.msi not found"
+          }
+          if (-not (Test-Path dist/installer/AMCCA-Setup.exe)) {
+            throw "dist/installer/AMCCA-Setup.exe not found"
+          }
+          Write-Host "WiX Installer verified successfully."

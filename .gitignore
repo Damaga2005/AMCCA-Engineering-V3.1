@@ -10,3 +10,6 @@ venv/
 bin/
 obj/
 *.user
+dist/
+artifacts/
+installer/Components.wxs
