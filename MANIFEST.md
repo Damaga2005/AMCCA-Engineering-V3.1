@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 257
-**Total bytes:** 1218809
+**Files:** 259
+**Total bytes:** 1229194
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,7 +17,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `3b03b708cad965d3919ef1094ca91e84431b52b622714a3a7dcd3c043b2ca221` | 22271 |
+| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `4dd57b2ab76e418af3242b5e69ee893e4ffbd41024753a872c35eafacd98cd76` | 22899 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
@@ -190,10 +190,11 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `6418753e0c57b408c16d181ee9235adfda02135dfc70d6abf9b491b1eb1caea6` | 7267 |
 | `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `5b6a0ce06567b05f118a17948b26f15ac11094790e9aa225a76861c8731aaa4e` | 3317 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
+| `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
 | `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
-| `src/AMCCA.Core/Database/MigrationService.cs` | `9a84d7cc900557271c9c7bb4d3ab36778d75f709f9a2e80b0c1a99733279a5a5` | 18670 |
+| `src/AMCCA.Core/Database/MigrationService.cs` | `78b9e2fea9816c52efdbbf1380f0c5360238337bdb47e8b30f2d810737b11ba7` | 18872 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `ebf35f5629cd6b1f0c11b51ab496731b6b970fe34151e37f5e84ee212f642c0b` | 12090 |
@@ -207,11 +208,11 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Media/MediaModels.cs` | `2575520baf93a372ddce788e068635966d440ec524d87a5fcc391e55a875c07e` | 2149 |
 | `src/AMCCA.Core/Media/MediaRenderer.cs` | `465cf8bcd395a747a39b7c38c17a3401ff46fd4624b5175180da77498382b58c` | 3323 |
 | `src/AMCCA.Core/Monetization/MonetizationModels.cs` | `a2b38400d47de09ed9cd018f7553208bba3e8f98ffbd65c7a7b30e9ed989528e` | 1478 |
-| `src/AMCCA.Core/Monetization/RevenueService.cs` | `92eca4c6684a295ea7a7c48d11caab516c5638cab33666063bbd7c7666e603a5` | 4891 |
+| `src/AMCCA.Core/Monetization/RevenueService.cs` | `d3640f37fb11a6131859a7367d4daa79d964160d54e3045a26e3325e6fa06686` | 5397 |
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `2cd38f31143823693c50f04cdbc94c647948f97767ad2e7695f4276f5aaa3f90` | 3914 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
 | `src/AMCCA.Core/Policy/ApprovalManager.cs` | `7775ba076eab484934ff343896c990970bc248408e6cdd0aa4a5506309426457` | 7292 |
-| `src/AMCCA.Core/Policy/BudgetManager.cs` | `554e98a90ac6a6a625aac57703a143edced2e8ed8978932bc54b576903be88b2` | 2707 |
+| `src/AMCCA.Core/Policy/BudgetManager.cs` | `ca67eb2620ccce7b8ccf596449eb935c8aab407b93d8cf96b9ba1937f7a853d5` | 4013 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `1418b75387add8fcd7f00013edc0891f730d411daf287dcddac71fefc042d1aa` | 5684 |
 | `src/AMCCA.Core/Policy/PolicyModels.cs` | `f10206e6479d7cb8a7657c076a1f05ff5fc281d7fd3725ab7498f0c77b34a1da` | 1692 |
 | `src/AMCCA.Core/Preflight/PreflightReport.cs` | `444a11ee9eeeefeefb6212ab3b70433c6b081488842d4d7cdff31da4bbf29482` | 468 |
@@ -255,6 +256,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `a071b39cbb7a7661b92011bdf6b1af3165afe5702d764b488148477b5a9a31ff` | 11425 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
 | `tests/AMCCA.Core.Tests/MonetizationAndRevenueContractTests.cs` | `46ac2578c1297e510a03b6145e73a35141728b778db91d60f1cfb86c0b65f45d` | 6379 |
+| `tests/AMCCA.Core.Tests/MoneyPrecisionAndDecimalContractTests.cs` | `91d300e4d1fb14d6b6b08287ba7ee0909da38b1fb1b17014c04f39b95f290dce` | 5792 |
 | `tests/AMCCA.Core.Tests/OperatorControlAndAuditContractTests.cs` | `440a2b2db0849af752cf092265e00578fa4e80d2824a3180491a5abc8d6a3891` | 6048 |
 | `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` | `258b9a3832da651fa86f22772d6365ca1598b270629947001c74673cc95d0e4a` | 5447 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `621f5372f0ecb38a6afaf20affef75a4b92864e133a2671815ba6900977b33c2` | 6727 |

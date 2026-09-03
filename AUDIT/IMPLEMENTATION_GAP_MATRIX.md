@@ -19,7 +19,7 @@
 | **DEF-008** | CRITICAL | `SPEC/13_DOMAIN_STATE_MACHINE.md`, `AGENTS.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
 | **DEF-009** | HIGH | `SPEC/44_PUBLISHING.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
 | **DEF-010** | HIGH | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
-| **DEF-011** | CRITICAL | `SPEC/20_COST_ENGINE.md`, `DECISIONS.md (D-023)` | `src/AMCCA.Core/Policy/*`, `src/AMCCA.Core/Monetization/*` | OPEN |
+| **DEF-011** | CRITICAL | `SPEC/20_COST_ENGINE.md`, `DECISIONS.md (D-023)` | `src/AMCCA.Core/Policy/*`, `src/AMCCA.Core/Monetization/*` | CLOSED |
 | **DEF-012** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-11)` | `src/AMCCA.Core/Media/MediaRenderer.cs` | OPEN |
 | **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | OPEN |
 | **DEF-014** | CRITICAL | `SPEC/28_RESEARCH_SOURCE_SECURITY.md`, `SPEC/72 (S-06, S-08)` | `src/AMCCA.Core/Security/SsrfValidator.cs` | OPEN |
@@ -150,12 +150,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Policy/BudgetManager.cs`, `src/AMCCA.Core/Monetization/RevenueService.cs`
 - **Comportamiento actual:** Existen conversiones `(double)amount` y campos SQLite tratados como `REAL`.
 - **Por qué falla:** El dinero NUNCA debe convertirse a coma flotante binaria (`double`/`float`). Debe representarse como `decimal` en memoria y cadena decimal canónica de 6 decimales en BD/JSON.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/MoneyPrecisionAndDecimalContractTests.cs` (7 tests exhaustivos de precisión, formato 6 decimales, rechazo de notación científica/NaN/Infinity, cálculo exacto de beneficios y auditoría por reflexión sin float/double)
+- **Fix:** Eliminados todos los casts `(double)` de `RevenueService.cs` y `BudgetManager.cs`. Creado `Money.cs` con formateo y parseo exacto de 6 decimales según `D-023`. En migraciones de base de datos se tiparon las columnas monetarias como `TEXT NOT NULL` con constraints `CHECK`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 345/345 tests pasando; demostrado que 0.1m + 0.2m = 0.3m exacto y ningún modelo monetario contiene tipos de punto flotante.
+- **Estado:** CLOSED
 
 ### DEF-012 — Path Confinement Beyond StartsWith
 - **Severidad:** HIGH

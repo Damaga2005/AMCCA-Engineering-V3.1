@@ -166,9 +166,9 @@ public class MigrationService
                     id TEXT PRIMARY KEY,
                     window TEXT NOT NULL,
                     scope_id TEXT NOT NULL,
-                    limit_amount REAL NOT NULL,
-                    reserved REAL NOT NULL DEFAULT 0.0,
-                    spent REAL NOT NULL DEFAULT 0.0,
+                    limit_amount TEXT NOT NULL CHECK(limit_amount NOT LIKE '-%'),
+                    reserved TEXT NOT NULL DEFAULT '0.000000',
+                    spent TEXT NOT NULL DEFAULT '0.000000',
                     currency TEXT NOT NULL DEFAULT 'EUR',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
@@ -256,14 +256,15 @@ public class MigrationService
                     program_id TEXT NULL,
                     state TEXT NOT NULL CHECK(state IN ('PENDING','CONFIRMED','DISPUTED','REVERSED')),
                     provenance TEXT NOT NULL CHECK(provenance IN ('OFFICIAL_API','STATEMENT_IMPORT','MANUAL_CONFIRMED')),
-                    gross_amount REAL NOT NULL,
-                    fee_amount REAL NOT NULL DEFAULT 0.0,
-                    net_amount REAL NOT NULL,
+                    gross_amount TEXT NOT NULL,
+                    fee_amount TEXT NOT NULL DEFAULT '0.000000',
+                    net_amount TEXT NOT NULL,
                     currency TEXT NOT NULL,
                     statement_ref TEXT NULL,
                     occurred_at TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    CHECK(provenance <> 'ESTIMATED')
+                    CHECK(provenance <> 'ESTIMATED'),
+                    CHECK(state = 'REVERSED' OR net_amount NOT LIKE '-%')
                 );
 
                 CREATE TABLE IF NOT EXISTS cost_events (
@@ -271,11 +272,12 @@ public class MigrationService
                     production_id TEXT NOT NULL,
                     job_id TEXT NULL,
                     kind TEXT NOT NULL CHECK(kind IN ('RESERVATION','SETTLEMENT','REFUND','ADJUSTMENT')),
-                    amount REAL NOT NULL,
+                    amount TEXT NOT NULL,
                     currency TEXT NOT NULL,
                     provider TEXT NOT NULL,
                     occurred_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')
                 );
             ",
             @"

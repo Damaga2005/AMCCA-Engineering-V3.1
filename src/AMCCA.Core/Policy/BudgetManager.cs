@@ -28,14 +28,14 @@ public class BudgetManager
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             INSERT INTO budgets (id, window, scope_id, limit_amount, reserved, spent, currency, created_at, updated_at)
-            VALUES (@Id, @Window, @ScopeId, @LimitAmount, 0.0, 0.0, @Currency, @Now, @Now);
+            VALUES (@Id, @Window, @ScopeId, @LimitAmount, '0.000000', '0.000000', @Currency, @Now, @Now);
         ";
         await connection.ExecuteAsync(sql, new
         {
             Id = id,
             Window = window,
             ScopeId = scopeId,
-            LimitAmount = (double)limitAmount,
+            LimitAmount = Money.Format(limitAmount),
             Currency = currency,
             Now = now
         });
@@ -49,23 +49,58 @@ public class BudgetManager
     {
         var now = DateTimeOffset.UtcNow.ToString("O");
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        using var tx = connection.BeginTransaction();
 
-        // SPEC/20 (TX-3): "One statement. The limit check is in the WHERE clause, so two concurrent workers cannot both pass it"
-        const string sql = @"
-            UPDATE budgets
-            SET reserved = reserved + @Amount,
-                updated_at = @Now
-            WHERE id = @BudgetId
-              AND (reserved + spent + @Amount) <= limit_amount;
+        const string selectSql = @"
+            SELECT id, window, scope_id AS ScopeId, limit_amount AS LimitAmount, reserved AS Reserved, spent AS Spent, currency AS Currency
+            FROM budgets
+            WHERE id = @BudgetId;
         ";
-        var rows = await connection.ExecuteAsync(sql, new
+        var b = await connection.QuerySingleOrDefaultAsync<dynamic>(selectSql, new { BudgetId = budgetId }, transaction: tx);
+        if (b == null)
         {
-            Amount = (double)amount,
+            tx.Rollback();
+            return false;
+        }
+
+        string limStr = b.LimitAmount.ToString();
+        string resStr = b.Reserved.ToString();
+        string spStr = b.Spent.ToString();
+
+        decimal limit = Money.TryParse(limStr, out var lVal) ? lVal : decimal.Parse(limStr, System.Globalization.CultureInfo.InvariantCulture);
+        decimal reserved = Money.TryParse(resStr, out var rVal) ? rVal : decimal.Parse(resStr, System.Globalization.CultureInfo.InvariantCulture);
+        decimal spent = Money.TryParse(spStr, out var sVal) ? sVal : decimal.Parse(spStr, System.Globalization.CultureInfo.InvariantCulture);
+
+        if (reserved + spent + amount > limit)
+        {
+            tx.Rollback();
+            return false;
+        }
+
+        var newReserved = reserved + amount;
+
+        const string updateSql = @"
+            UPDATE budgets
+            SET reserved = @NewReserved,
+                updated_at = @Now
+            WHERE id = @BudgetId AND reserved = @OldReserved;
+        ";
+        var rows = await connection.ExecuteAsync(updateSql, new
+        {
+            NewReserved = Money.Format(newReserved),
+            OldReserved = resStr,
             Now = now,
             BudgetId = budgetId
-        });
+        }, transaction: tx);
 
-        return rows > 0;
+        if (rows > 0)
+        {
+            tx.Commit();
+            return true;
+        }
+
+        tx.Rollback();
+        return false;
     }
 
     public async Task ReserveBudgetOrThrowAsync(

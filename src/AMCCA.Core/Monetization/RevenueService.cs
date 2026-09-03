@@ -76,9 +76,9 @@ public class RevenueService
             rev.ProgramId,
             rev.State,
             rev.Provenance,
-            GrossAmount = (double)rev.GrossAmount,
-            FeeAmount = (double)rev.FeeAmount,
-            NetAmount = (double)rev.NetAmount,
+            GrossAmount = Money.Format(rev.GrossAmount),
+            FeeAmount = Money.Format(rev.FeeAmount),
+            NetAmount = Money.Format(rev.NetAmount),
             rev.Currency,
             rev.StatementRef,
             rev.OccurredAt,
@@ -112,7 +112,7 @@ public class RevenueService
             ProductionId = productionId,
             JobId = jobId,
             Kind = kind,
-            Amount = (double)amount,
+            Amount = Money.Format(amount),
             Currency = currency,
             Provider = provider,
             Now = now
@@ -123,18 +123,28 @@ public class RevenueService
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
 
-        // SPEC/20, D-030: "profit = sum(revenue_events where state = CONFIRMED) - sum(cost_events where kind = SETTLEMENT)"
-        const string sql = @"
-            SELECT
-                (SELECT COALESCE(SUM(net_amount), 0.0) FROM revenue_events WHERE production_id = @Id AND state = 'CONFIRMED') AS ConfirmedRevenue,
-                (SELECT COALESCE(SUM(amount), 0.0) FROM cost_events WHERE production_id = @Id AND kind = 'SETTLEMENT') AS SettledCost;
-        ";
-        var result = await connection.QuerySingleAsync<dynamic>(sql, new { Id = productionId });
+        // SPEC/20, D-023, D-030: exact decimal aggregation, double/float forbidden
+        const string revSql = "SELECT net_amount FROM revenue_events WHERE production_id = @Id AND state = 'CONFIRMED';";
+        var revenues = (await connection.QueryAsync<string>(revSql, new { Id = productionId })).ToList();
 
-        decimal confirmed = (decimal)(double)result.ConfirmedRevenue;
-        decimal settled = (decimal)(double)result.SettledCost;
+        const string costSql = "SELECT amount FROM cost_events WHERE production_id = @Id AND kind = 'SETTLEMENT';";
+        var costs = (await connection.QueryAsync<string>(costSql, new { Id = productionId })).ToList();
+
+        decimal confirmed = 0m;
+        foreach (var r in revenues)
+        {
+            if (Money.TryParse(r, out var val)) confirmed += val;
+            else if (decimal.TryParse(r, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var fallback)) confirmed += fallback;
+        }
+
+        decimal settled = 0m;
+        foreach (var c in costs)
+        {
+            if (Money.TryParse(c, out var val)) settled += val;
+            else if (decimal.TryParse(c, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var fallback)) settled += fallback;
+        }
+
         decimal netProfit = confirmed - settled;
-
         return new ProfitSummary(confirmed, settled, netProfit, "EUR");
     }
 }
