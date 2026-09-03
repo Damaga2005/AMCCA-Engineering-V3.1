@@ -31,6 +31,11 @@ public static class AmccaErrors
     public const string Ai003 = "AMCCA-AI-003";   // Agent output failed schema validation
     public const string Ai004 = "AMCCA-AI-004";   // Agent attempted to call a tool outside its allowed_tools set (blocked and audited)
     public const string Ai005 = "AMCCA-AI-005";   // Agent run exceeded timeout or max_cost ceiling
+
+    // Research Domain
+    public const string Res001 = "AMCCA-RES-001"; // Source count below policy minimum or missing backing claim
+    public const string Res002 = "AMCCA-RES-002"; // Unsubstantiated material claim
+    public const string Res003 = "AMCCA-RES-003"; // Source domain not allowed by policy or failed SSRF check
 }
 
 public enum ErrorCategory
