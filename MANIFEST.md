@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 839
-**Total bytes:** 298096235
+**Files:** 843
+**Total bytes:** 298118739
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -22,6 +22,10 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
 | `AUDIT/SECOND_AUDIT_STUB_REPORT.md` | `af5d1f60d7f3ad2dce7efec12de89868d7fecdc5eed1fe94e6cefe30380ceca3` | 4569 |
 | `AUDIT/SECOND_AUDIT_TRACEABILITY.md` | `96071b475e7706f029e1ef34a1aed72ee8902eb9be6f1c2765ff6be3c52f1e95` | 7661 |
+| `AUDIT/THIRD_AUDIT_CLOSURE_MATRIX.md` | `296ed493385d1614f7c8adaa4478ed22a918b49006ad206fdba8449ed3ddd188` | 5005 |
+| `AUDIT/THIRD_AUDIT_PHASE_MATRIX.md` | `6c8696f5c358ac6ef0cf687da5a0162a259e2c3b6d16a224087002c0f1611ceb` | 5573 |
+| `AUDIT/THIRD_AUDIT_REPORT.md` | `e0196fc03ace8d0e68237d994b9a392355a76970228ae4b95c4cffc3dadfa216` | 7633 |
+| `AUDIT/THIRD_AUDIT_STUB_REPORT.md` | `cc00b2dfa31ec21290eb590e3e39c4349d18e70b51ff34b2bc66c3e2e8fa0071` | 4293 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
