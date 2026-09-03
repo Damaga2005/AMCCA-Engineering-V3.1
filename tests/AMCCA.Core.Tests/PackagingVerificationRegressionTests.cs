@@ -25,7 +25,7 @@ public class PackagingVerificationRegressionTests
         outputType.Should().Be("Exe", "AMCCA.App must have OutputType=Exe to produce AMCCA.exe (SPEC/76)");
 
         var targetFramework = appXml.Root?.Element("PropertyGroup")?.Element("TargetFramework")?.Value;
-        targetFramework.Should().Be("net8.0", "TargetFramework must be net8.0 LTS (SPEC/76, D-002)");
+        targetFramework.Should().Match(tf => tf == "net8.0" || tf == "net8.0-windows", "TargetFramework must be net8.0 LTS (SPEC/76, D-002)");
 
         var assemblyName = appXml.Root?.Element("PropertyGroup")?.Element("AssemblyName")?.Value;
         assemblyName.Should().Be("AMCCA", "AssemblyName must produce AMCCA.exe binary (SPEC/76)");
