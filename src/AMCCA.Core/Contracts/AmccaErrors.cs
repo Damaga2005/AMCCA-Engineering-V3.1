@@ -41,6 +41,13 @@ public static class AmccaErrors
     public const string Qa001 = "AMCCA-QA-001";   // QA check failed on critical dimension
     public const string Qa002 = "AMCCA-QA-002";   // Verdict set from AI-assisted check alone (prohibited)
     public const string Qa003 = "AMCCA-QA-003";   // Threshold profile unknown or invalid
+
+    // Cost / Budget Domain
+    public const string Cst002 = "AMCCA-CST-002"; // Budget exceeded on configured window (reservation refused)
+
+    // Policy Domain
+    public const string Pol003 = "AMCCA-POL-003"; // Operation refused: global or per-platform kill switch is active
+    public const string Pol004 = "AMCCA-POL-004"; // Human approval required before entering protected state
 }
 
 public enum ErrorCategory
