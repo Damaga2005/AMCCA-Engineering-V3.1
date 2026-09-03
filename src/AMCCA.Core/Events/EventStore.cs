@@ -12,14 +12,14 @@ public record EventRecord(
     string EventType,
     string AggregateType,
     string AggregateId,
-    int AggregateVersion,
+    long AggregateVersion,
     string CorrelationId,
     string? CausationId,
     string? TransitionId,
     string PayloadJson,
     string SchemaVersion,
     string OccurredAt,
-    int Seq);
+    long Seq);
 
 public interface IEventStore
 {

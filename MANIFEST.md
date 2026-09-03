@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 191
-**Total bytes:** 916492
+**Files:** 196
+**Total bytes:** 943511
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -182,23 +182,28 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/AMCCA.Core.csproj` | `24fb2b2561844ec0a8c2554b6a0381c7615fec573252702597b6c45f819d13b7` | 612 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `6418753e0c57b408c16d181ee9235adfda02135dfc70d6abf9b491b1eb1caea6` | 7267 |
-| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `ee9c48b6eb3cd6ba22d9c74464ec634d1930384cd20b655e93b9c44dae1cb247` | 1354 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `cab1f30418eadd211895bcfaab75a0c881ba4b5d2ad222e3b4273d3b0d639a1f` | 1679 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
 | `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
 | `src/AMCCA.Core/Database/MigrationService.cs` | `79c9d4f080e6fdbec71285a540010e1422fa94c8a15037495e15163d3cac4730` | 11348 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
+| `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
+| `src/AMCCA.Core/Domain/ProductionService.cs` | `a95a52c38ce4758f826a9df7b7609413af53db393511b1b4dd3f3c85ac7a9493` | 11157 |
 | `src/AMCCA.Core/Events/AuditStore.cs` | `9a39b9f8deebd5404b3d1bdef900866b040d828e70580cf1e8cd376874399601` | 3482 |
-| `src/AMCCA.Core/Events/EventStore.cs` | `822a043ed448f248dd1dc0daa4f6330a1b18576108331603b51e8fab073d2493` | 2882 |
+| `src/AMCCA.Core/Events/EventStore.cs` | `0003439f50cbfaa58902681298faa38ff5d1302263e32469fb8c45322ddcf1b8` | 2884 |
 | `src/AMCCA.Core/Preflight/PreflightReport.cs` | `444a11ee9eeeefeefb6212ab3b70433c6b081488842d4d7cdff31da4bbf29482` | 468 |
 | `src/AMCCA.Core/Preflight/PreflightService.cs` | `f36bdcef1e37a0fd97e1b838c667f2a1f73ab7d180c8c0eb0bf8f2b12c1ace5a` | 1750 |
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `ce7cd5197af36b90979079e9e6365b62dad5815281ba8b7fa43c49d73ab50608` | 939 |
 | `src/AMCCA.Core/Security/SecretReference.cs` | `b6e95821d1d0249d4208aa16a77d4a33a24ff8cb58ffa228f0c52cf8ed3ffd85` | 1883 |
 | `src/AMCCA.Core/Security/WindowsDpapiSecretStore.cs` | `324976b1c7fd502c744fa0978f71c221396d316be45a54d5cac9e1ba33012c76` | 2436 |
+| `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | `6275da76b1afe18a1d5dc1f3a64d77e9fe5602fd56f942b1ecfea857ae8a6257` | 4994 |
+| `src/AMCCA.Core/StateMachine/TransitionDefinition.cs` | `5c8823a1fe73a71aac1ae76d4c332886a86c4d928184a5ecad3a4783908fb064` | 647 |
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `35c19031d7530bc74a1aabb783de04014ba2b9f2e257f0fabeec118be9cefb59` | 852 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
 | `tests/AMCCA.Core.Tests/SecretStoreContractTests.cs` | `ea0b82db06e14f5724af2748bcd0a7bcf825d473150903645a2226b3c3f9a0e9` | 1919 |
+| `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `ed64f655e912c0d2c6c6937e3d4457e30ecb7acbe81ba4187a78a8ce6d912fb5` | 8518 |

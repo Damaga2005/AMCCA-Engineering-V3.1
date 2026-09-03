@@ -19,6 +19,11 @@ public static class AmccaErrors
 
     // Storage Domain
     public const string Sto001 = "AMCCA-STO-001"; // Free storage below minimum threshold
+
+    // State Machine Domain
+    public const string Stm001 = "AMCCA-STM-001"; // Transition not listed in canonical matrix
+    public const string Stm002 = "AMCCA-STM-002"; // Illegal resume from BLOCKED (must match blocked_from)
+    public const string Stm003 = "AMCCA-STM-003"; // Transition from terminal state attempted
 }
 
 public enum ErrorCategory
