@@ -55,6 +55,11 @@ public static class AmccaErrors
     public const string Job001 = "AMCCA-JOB-001"; // Lease expired mid-execution; fence token stale, work abandoned
     public const string Job002 = "AMCCA-JOB-002"; // Lease heartbeat refused: expired lease or duplicate key
     public const string Job003 = "AMCCA-JOB-003"; // Fail/Complete refused: stale fence token or dead-lettered
+
+    // Platform Domain
+    public const string Plt001 = "AMCCA-PLT-001"; // Platform rejected the request
+    public const string Plt002 = "AMCCA-PLT-002"; // Credential invalid or expired; re-authenticate
+    public const string Plt003 = "AMCCA-PLT-003"; // Platform rate limit
 }
 
 public enum ErrorCategory

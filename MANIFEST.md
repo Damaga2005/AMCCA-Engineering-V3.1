@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 285
-**Total bytes:** 1486433
+**Files:** 294
+**Total bytes:** 1544501
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -192,7 +192,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Agents/AgentRuntime.cs` | `dcebe3146b464ac4158035ed5bce86eec3dc8a0e68c6b1f0b0c14713e0321fbb` | 5168 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `6418753e0c57b408c16d181ee9235adfda02135dfc70d6abf9b491b1eb1caea6` | 7267 |
-| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `04c1a92270a78217b8403198d87628a29853656062c36b1dd8db028f0429ffd9` | 3748 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `798f4fd5221ad37b8a90d288d317a1d9db8f0b67a10bf4f059f936a7cd240738` | 4028 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
@@ -234,9 +234,14 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Providers/ModelRegistry.cs` | `354e0550d7d3675c9e277cabc68fc55dda7b3ea3e626e27424ebb346bb030c72` | 4780 |
 | `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `835568a5c8f54deea17f4a50205d2989bf16351e37aebe861c5cf0937bc3084b` | 8771 |
 | `src/AMCCA.Core/Providers/ProviderModels.cs` | `3ebd94cccfe882138a77792bca5b69d152b4dd5fc71c6eb144b812cb18d8e505` | 2124 |
-| `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `e0d260cb0672b2fdb3bc1eb826dbc26b53030e90921ae535df799de70072af5a` | 277 |
+| `src/AMCCA.Core/Publishing/BasePlatformAdapter.cs` | `a0cc1e0d0eafb3d4a1c3bd9fec3356d63afd7c09e332d5ebcbc791b153f2c7f0` | 3732 |
+| `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `a3f3589624e3e79d061e71321376cf323c7684b5cb4f05c1dbbfa285c518bfc5` | 1530 |
+| `src/AMCCA.Core/Publishing/InstagramPlatformAdapter.cs` | `b33531b94f5b9b53c7c8bda4a46b7db7672b84a85cf17f4154fbafaedf78f410` | 6732 |
 | `src/AMCCA.Core/Publishing/PlatformHub.cs` | `ffbee01928f785648c781bc8a9de9ef66b44f12658e204a19cbcac0764d89d37` | 5726 |
-| `src/AMCCA.Core/Publishing/PublishingModels.cs` | `e3dd8cb29ce165e50ed2d54ac355a265fddc6ea4449d0602135ab02ecdeb6aaf` | 971 |
+| `src/AMCCA.Core/Publishing/PublishingModels.cs` | `5957391f7219fdf15085efb60bb465cdb1b589d407f4736c0ec30e582e05c3ae` | 1537 |
+| `src/AMCCA.Core/Publishing/TikTokPlatformAdapter.cs` | `4bf0f2202f97355500cf719e846d2dc5cea850f433b5d66431a5b9385d789f45` | 6605 |
+| `src/AMCCA.Core/Publishing/TwitterPlatformAdapter.cs` | `8efb2c8a11a01295454a2ca06a89dd489139c77ed51376e4484f058b610eb902` | 5251 |
+| `src/AMCCA.Core/Publishing/YouTubePlatformAdapter.cs` | `3c51e17b36f083531dc1922013b2a502ecd52350f53045c92b8f2a7da2792103` | 6408 |
 | `src/AMCCA.Core/QA/ArtifactDag.cs` | `3c02d9c265f7ca53837f53f8a63b350ac4702e171305e5ab183b27b4ca395020` | 8025 |
 | `src/AMCCA.Core/QA/QaModels.cs` | `f5210afa9329f5a237558e451f73aca7d5cf4b9380bab9d948e8b023cc53041c` | 958 |
 | `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `4921945956ad5419f57cb662736275ce4b91817d6a8999f46012bcd7c3a0e82a` | 1777 |
@@ -247,6 +252,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Scripts/ScriptValidator.cs` | `70b43aa51c9f333677887009307cd27147a45a0023e0537e3a701af7be000552` | 2062 |
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `ce7cd5197af36b90979079e9e6365b62dad5815281ba8b7fa43c49d73ab50608` | 939 |
+| `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `ffaa63fc71cb65ad51250b1bfcaa27a6c905c2f025329f6489a1f7d4d5cc900b` | 3968 |
+| `src/AMCCA.Core/Security/OAuthManager.cs` | `9b3feb94894b065268da0f8c9ce26275fd1c05ebcc3634c4a63dbe09e150941c` | 9144 |
+| `src/AMCCA.Core/Security/OAuthModels.cs` | `f6bf3984f62d28ca1788aa0c7b30fb1031f87f256ef76260f7db7e64427bc0d1` | 539 |
 | `src/AMCCA.Core/Security/PathConfinement.cs` | `b94ba951eb665c92c0d1a920ceba535ba7e603daa242699be4c9b6bde3687539` | 1465 |
 | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | `f8ae352a2a3c0892668400dc5d0671acb0a554e82bc7457ed2ed2df3c6aa9329` | 5185 |
 | `src/AMCCA.Core/Security/SecretReference.cs` | `b6e95821d1d0249d4208aa16a77d4a33a24ff8cb58ffa228f0c52cf8ed3ffd85` | 1883 |
@@ -283,6 +291,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` | `258b9a3832da651fa86f22772d6365ca1598b270629947001c74673cc95d0e4a` | 5447 |
 | `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` | `e4ecd4076f0f97c719b89366d50c6a70b42c633026f60dece7cbebb12bf0c1a3` | 1923 |
 | `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` | `14397a80221e364fd787ecbc4d4665c025bd2aa810ff2cac278ed46997c24f19` | 5999 |
+| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `20d03bf7fab1e63b3d7f0835d8450fef8d4ff84acd36cb91479fc20d99c34b21` | 13590 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `c2f3444fa79c502b43497b015de1bd3050a155e1204bf3fae981795cb6d8a028` | 5020 |
 | `tests/AMCCA.Core.Tests/PolicyEngineFailClosedRegressionTests.cs` | `e46a810e6abd6fa3b7299603917aa44467499991484c2a8a7b1f72e736a14e74` | 4236 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |

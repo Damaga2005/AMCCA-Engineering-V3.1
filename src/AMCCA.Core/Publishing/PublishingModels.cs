@@ -23,3 +23,33 @@ public record PublicationEvidenceResult(
     string ExternalUrl,
     string EvidenceSource,
     string RetrievedAt);
+
+public record UploadRequest(
+    string AccountId,
+    string Title,
+    string Description,
+    string VideoPath,
+    string IdempotencyKey,
+    bool IsSynthetic = false
+);
+
+public record UploadResult(
+    bool Success,
+    string? ExternalId,
+    string? ExternalUrl,
+    string? ErrorCode,
+    TimeSpan? RetryAfter = null
+);
+
+public record PublicationStatusResult(
+    string State,
+    string? ExternalUrl,
+    string? ErrorCode
+);
+
+public record RecentPublicationItem(
+    string ExternalId,
+    string Title,
+    string PublishedAt,
+    string ExternalUrl
+);
