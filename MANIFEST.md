@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 238
-**Total bytes:** 1092704
+**Files:** 241
+**Total bytes:** 1105452
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -202,6 +202,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Jobs/RecoveryService.cs` | `efbf6c9ac240f6f4141b54509edec42d4238d9cfcbc9414c285a719819632c5a` | 3598 |
 | `src/AMCCA.Core/Media/MediaModels.cs` | `2575520baf93a372ddce788e068635966d440ec524d87a5fcc391e55a875c07e` | 2149 |
 | `src/AMCCA.Core/Media/MediaRenderer.cs` | `465cf8bcd395a747a39b7c38c17a3401ff46fd4624b5175180da77498382b58c` | 3323 |
+| `src/AMCCA.Core/Monetization/MonetizationModels.cs` | `a2b38400d47de09ed9cd018f7553208bba3e8f98ffbd65c7a7b30e9ed989528e` | 1478 |
+| `src/AMCCA.Core/Monetization/RevenueService.cs` | `92eca4c6684a295ea7a7c48d11caab516c5638cab33666063bbd7c7666e603a5` | 4891 |
 | `src/AMCCA.Core/Policy/ApprovalManager.cs` | `30ca8974c71627105edf7bc47668b3e2ce8e5a74d55135c412ad466d425af630` | 4009 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `554e98a90ac6a6a625aac57703a143edced2e8ed8978932bc54b576903be88b2` | 2707 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `feeef0c621ab4a6497c448ccfb6990c24a5ec92c640205d62a03c436cf23357b` | 1952 |
@@ -240,6 +242,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `a071b39cbb7a7661b92011bdf6b1af3165afe5702d764b488148477b5a9a31ff` | 11425 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
+| `tests/AMCCA.Core.Tests/MonetizationAndRevenueContractTests.cs` | `46ac2578c1297e510a03b6145e73a35141728b778db91d60f1cfb86c0b65f45d` | 6379 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `621f5372f0ecb38a6afaf20affef75a4b92864e133a2671815ba6900977b33c2` | 6727 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
 | `tests/AMCCA.Core.Tests/ProviderGatewayAndModelRegistryContractTests.cs` | `37e2c175023ff30c7b9cd39be8a5be1a66f759b84e1d47a1d4425f01cc2e243c` | 6957 |
