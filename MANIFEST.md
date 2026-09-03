@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 261
-**Total bytes:** 1241414
+**Files:** 262
+**Total bytes:** 1251312
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,7 +17,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `1c71d1980d6f7de08794359aa85d9d63f4d95bfe2e9310b872f37c0573c0d47f` | 24060 |
+| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `7fc913f9fd16a59ad21816855b1ddef71a22c72a534ad9f3b5b72f8dedf7c220` | 24762 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
@@ -241,7 +241,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | `f8ae352a2a3c0892668400dc5d0671acb0a554e82bc7457ed2ed2df3c6aa9329` | 5185 |
 | `src/AMCCA.Core/Security/SecretReference.cs` | `b6e95821d1d0249d4208aa16a77d4a33a24ff8cb58ffa228f0c52cf8ed3ffd85` | 1883 |
 | `src/AMCCA.Core/Security/SqlSurfaceAuditor.cs` | `1a43e2399fcfd7d8c3bd380503e68967f07fbdb677877b211b72e33a253b8b57` | 1227 |
-| `src/AMCCA.Core/Security/SsrfValidator.cs` | `ec14017e11314b03996103b0e9c0baca61af3344b29a30b736254af5e5527bfb` | 3019 |
+| `src/AMCCA.Core/Security/SsrfValidator.cs` | `ba519bc135a705007755d1f6173bbdcbf86bccd410f8223499194465681a67cf` | 8492 |
 | `src/AMCCA.Core/Security/WindowsDpapiSecretStore.cs` | `324976b1c7fd502c744fa0978f71c221396d316be45a54d5cac9e1ba33012c76` | 2436 |
 | `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | `6275da76b1afe18a1d5dc1f3a64d77e9fe5602fd56f942b1ecfea857ae8a6257` | 4994 |
 | `src/AMCCA.Core/StateMachine/TransitionDefinition.cs` | `5c8823a1fe73a71aac1ae76d4c332886a86c4d928184a5ecad3a4783908fb064` | 647 |
@@ -270,5 +270,6 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ResearchAndClaimValidationContractTests.cs` | `efd472e6d4651ccb703fc921c0685233de2f5847e635079a012517099fe4b9fb` | 9840 |
 | `tests/AMCCA.Core.Tests/SecretStoreContractTests.cs` | `ea0b82db06e14f5724af2748bcd0a7bcf825d473150903645a2226b3c3f9a0e9` | 1919 |
 | `tests/AMCCA.Core.Tests/SecurityHardeningSpec72ContractTests.cs` | `80356f4e82057cbdd9a1bd81550deff3a0eb17207733700b90a691aa93a339b4` | 4044 |
+| `tests/AMCCA.Core.Tests/SsrfAndDnsRebindingRegressionTests.cs` | `3bbb7a02a62897747d93bf75bc9918a4c7dfdcfd29dcccff40a628e580d43d00` | 3723 |
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `ed64f655e912c0d2c6c6937e3d4457e30ecb7acbe81ba4187a78a8ce6d912fb5` | 8518 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |

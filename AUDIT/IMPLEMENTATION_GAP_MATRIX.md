@@ -22,7 +22,7 @@
 | **DEF-011** | CRITICAL | `SPEC/20_COST_ENGINE.md`, `DECISIONS.md (D-023)` | `src/AMCCA.Core/Policy/*`, `src/AMCCA.Core/Monetization/*` | CLOSED |
 | **DEF-012** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-11)` | `src/AMCCA.Core/Media/MediaRenderer.cs` | CLOSED |
 | **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | CLOSED |
-| **DEF-014** | CRITICAL | `SPEC/28_RESEARCH_SOURCE_SECURITY.md`, `SPEC/72 (S-06, S-08)` | `src/AMCCA.Core/Security/SsrfValidator.cs` | OPEN |
+| **DEF-014** | CRITICAL | `SPEC/28_RESEARCH_SOURCE_SECURITY.md`, `SPEC/72 (S-06, S-08)` | `src/AMCCA.Core/Security/SsrfValidator.cs` | CLOSED |
 | **DEF-015** | CRITICAL | `SPEC/03_DATABASE.md`, `DECISIONS.md (D-001)` | `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql` | OPEN |
 | **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
 | **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
@@ -189,12 +189,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Security/SsrfValidator.cs`
 - **Comportamiento actual:** Valida IP resolviendo una vez, pero no fija la conexión al socket con la IP validada, dejando una ventana TOCTOU ante DNS rebinding.
 - **Por qué falla:** Un atacante puede responder con IP pública en la validación y privada en la conexión.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/SsrfAndDnsRebindingRegressionTests.cs` (7 tests cubriendo loopbacks IPv4/IPv6, metadatos de cloud, rangos privados RFC 1918, IPv4-mapped IPv6, schemes no permitidos y ConnectCallback bloqueando socket directo)
+- **Fix:** Ampliado `SsrfValidator.cs` con validación estricta de scheme (`http`/`https` únicamente), filtrado exhaustivo de metadatos de nube, loopback, IPv6 link-local/site-local/ULA, mapeo automático de IPv4-mapped IPv6 y creación de `CreateSafeSocketsHttpHandler()` cuyo `ConnectCallback` resuelve y acopla el socket directamente a la IP validada, imposibilitando DNS rebinding.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 371/371 tests pasando; verificada la mitigación completa a nivel de socket de ataques SSRF y DNS rebinding.
+- **Estado:** CLOSED
 
 ### DEF-015 — Events Append-Only Database Enforcement
 - **Severidad:** CRITICAL
