@@ -23,6 +23,8 @@ public class JobClaim
     public string LeaseUntil { get; set; } = string.Empty;
 }
 
+public class JobLease : JobClaim { }
+
 public class IntentRecord
 {
     public string Id { get; set; } = string.Empty;

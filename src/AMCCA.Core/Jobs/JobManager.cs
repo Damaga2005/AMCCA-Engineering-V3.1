@@ -134,6 +134,66 @@ public class JobManager
         };
     }
 
+    public async Task<JobLease?> AcquireLeaseAsync(
+        string jobId,
+        string workerId,
+        TimeSpan leaseDuration,
+        CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        using var tx = connection.BeginTransaction();
+
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration).ToString("O");
+
+        const string claimSql = @"
+            UPDATE jobs
+            SET state = 'LEASED',
+                attempt = attempt + 1,
+                updated_at = @Now
+            WHERE id = @Id AND (state = 'QUEUED' OR id IN (SELECT job_id FROM leases WHERE lease_until <= @Now));
+        ";
+        var rows = await connection.ExecuteAsync(claimSql, new { Now = now, Id = jobId }, transaction: tx);
+        if (rows == 0)
+        {
+            tx.Rollback();
+            return null;
+        }
+
+        const string currentFenceSql = "SELECT fence_token FROM leases WHERE job_id = @Id;";
+        var currentToken = await connection.QuerySingleOrDefaultAsync<long?>(currentFenceSql, new { Id = jobId }, transaction: tx);
+        long nextFenceToken = (currentToken ?? 0) + 1;
+
+        const string leaseSql = @"
+            INSERT INTO leases (job_id, owner_id, acquired_at, lease_until, heartbeat_at, fence_token)
+            VALUES (@JobId, @OwnerId, @Now, @LeaseUntil, @Now, @FenceToken)
+            ON CONFLICT(job_id) DO UPDATE SET
+                owner_id = @OwnerId,
+                acquired_at = @Now,
+                lease_until = @LeaseUntil,
+                heartbeat_at = @Now,
+                fence_token = @FenceToken;
+        ";
+        await connection.ExecuteAsync(leaseSql, new
+        {
+            JobId = jobId,
+            OwnerId = workerId,
+            Now = now,
+            LeaseUntil = leaseUntil,
+            FenceToken = nextFenceToken
+        }, transaction: tx);
+
+        tx.Commit();
+
+        return new JobLease
+        {
+            JobId = jobId,
+            OwnerId = workerId,
+            FenceToken = nextFenceToken,
+            LeaseUntil = leaseUntil
+        };
+    }
+
     public async Task<bool> HeartbeatLeaseAsync(
         string jobId,
         string workerId,

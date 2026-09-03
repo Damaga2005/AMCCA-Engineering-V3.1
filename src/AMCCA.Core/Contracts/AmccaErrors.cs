@@ -43,7 +43,8 @@ public static class AmccaErrors
     public const string Qa003 = "AMCCA-QA-003";   // Threshold profile unknown or invalid
 
     // Cost / Budget Domain
-    public const string Cst002 = "AMCCA-CST-002"; // Budget exceeded on configured window (reservation refused)
+    public const string Bud002 = "AMCCA-BUD-002"; // Budget reservation refused; insufficient remaining budget
+    public const string Cst002 = Bud002; // Alias for backward compatibility
 
     // Policy Domain
     public const string Pol001 = "AMCCA-POL-001"; // Policy evaluation rejected or failed

@@ -54,6 +54,8 @@ public class PolicyEngine
         _globalKillSwitch = active;
     }
 
+    public bool IsGlobalKillSwitchActive() => _globalKillSwitch;
+
     public void SetPlatformKillSwitch(string platform, bool active)
     {
         _platformKillSwitches[platform] = active;

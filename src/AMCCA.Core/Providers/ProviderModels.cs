@@ -1,3 +1,5 @@
+using AMCCA.Core.Database;
+
 namespace AMCCA.Core.Providers;
 
 public record ProviderProbeResult(
@@ -32,4 +34,39 @@ public class ModelRegistryEntry
     public long FallbackOrder { get; set; } = 100;
     public string CreatedAt { get; set; } = string.Empty;
     public string UpdatedAt { get; set; } = string.Empty;
+}
+
+public class ProviderHealthStore
+{
+    private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly System.Collections.Generic.Dictionary<string, int> _consecutiveFailures = new();
+
+    public ProviderHealthStore(DatabaseConnectionFactory connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
+    public Task RecordCallAsync(string provider, bool isSuccess, bool isTimeout)
+    {
+        lock (_consecutiveFailures)
+        {
+            if (isSuccess)
+            {
+                _consecutiveFailures[provider] = 0;
+            }
+            else
+            {
+                _consecutiveFailures[provider] = _consecutiveFailures.GetValueOrDefault(provider) + 1;
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> IsProviderHealthyAsync(string provider)
+    {
+        lock (_consecutiveFailures)
+        {
+            return Task.FromResult(_consecutiveFailures.GetValueOrDefault(provider) < 3);
+        }
+    }
 }
