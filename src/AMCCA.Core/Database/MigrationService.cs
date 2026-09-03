@@ -231,25 +231,26 @@ public class MigrationService
 
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT PRIMARY KEY,
-                    production_id TEXT NOT NULL,
-                    job_type TEXT NOT NULL,
+                    production_id TEXT NULL,
+                    type TEXT NOT NULL,
                     state TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    priority INTEGER NOT NULL DEFAULT 0,
-                    attempts INTEGER NOT NULL DEFAULT 0,
+                    priority INTEGER NOT NULL DEFAULT 3,
+                    idempotency_key TEXT NULL,
+                    attempt INTEGER NOT NULL DEFAULT 0,
                     max_attempts INTEGER NOT NULL DEFAULT 3,
-                    fence_token INTEGER NOT NULL DEFAULT 0,
+                    correlation_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS leases (
-                    id TEXT PRIMARY KEY,
-                    job_id TEXT NOT NULL,
-                    owner TEXT NOT NULL,
-                    fence_token INTEGER NOT NULL,
-                    expires_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL
+                    job_id TEXT PRIMARY KEY,
+                    owner_id TEXT NOT NULL,
+                    acquired_at TEXT NOT NULL,
+                    lease_until TEXT NOT NULL,
+                    heartbeat_at TEXT NOT NULL,
+                    fence_token INTEGER NOT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS platform_accounts (

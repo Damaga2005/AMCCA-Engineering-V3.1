@@ -24,8 +24,8 @@
 | **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | CLOSED |
 | **DEF-014** | CRITICAL | `SPEC/28_RESEARCH_SOURCE_SECURITY.md`, `SPEC/72 (S-06, S-08)` | `src/AMCCA.Core/Security/SsrfValidator.cs` | CLOSED |
 | **DEF-015** | CRITICAL | `SPEC/03_DATABASE.md`, `DECISIONS.md (D-001)` | `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql` | CLOSED |
-| **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
-| **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
+| **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
+| **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
 | **DEF-018** | CRITICAL | `SPEC/03_DATABASE.md` | `src/AMCCA.Core/Database/Migrations/*`, tests | OPEN |
 | **DEF-019** | HIGH | `.github/workflows/ci.yml` | `.github/workflows/ci.yml` | OPEN |
 | **DEF-020** | HIGH | `BUILD_ORDER.md` | Repo root, commits | OPEN |
@@ -215,12 +215,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Jobs/JobService.cs`
 - **Comportamiento actual:** `CompleteJobAsync` valida `fence_token`, pero `FailJobAsync` no comprueba que el worker siga teniendo la lease vigente y el fence token autorizado.
 - **Por qué falla:** Un worker con lease expirada podría marcar como fallido un job reasignado a otro worker activo.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` (verificación de rechazo con `AMCCA-JOB-003` cuando un worker zombie intenta fallar o completar un job con fence token vencido o sin lease activa)
+- **Fix:** Implementada verificación transaccional estricta en `JobManager.FailJobAsync` y `JobManager.CompleteJobOrThrowAsync`, exigiendo `worker_id` y `expected_fence_token` validados contra la tabla `leases` en SQLite.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Reclamos de falla por workers zombis son rechazados con `AMCCA-JOB-003`.
+- **Estado:** CLOSED
 
 ### DEF-017 — Expired Lease Heartbeat Renewal
 - **Severidad:** HIGH
@@ -228,12 +228,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Jobs/JobService.cs`
 - **Comportamiento actual:** `RenewLeaseAsync` no valida explícitamente si `expires_at` ya venció en el momento del heartbeat.
 - **Por qué falla:** Si la lease expiró, el heartbeat debe ser denegado.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` (intento de renovación de lease con `lease_until` en el pasado retorna false y lanza `AMCCA-JOB-002`)
+- **Fix:** En `JobManager.HeartbeatLeaseAsync` se añadió la cláusula condicional atómica `AND lease_until > @Now`, impidiendo renovar leases ya expiradas. Añadido `HeartbeatLeaseOrThrowAsync` que lanza `AMCCA-JOB-002`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 377/377 tests pasando; garantizada la exclusión mutua de leases y renovación condicional a vigencia real.
+- **Estado:** CLOSED
 
 ### DEF-018 — Migrations Must Be The Real Schema
 - **Severidad:** CRITICAL

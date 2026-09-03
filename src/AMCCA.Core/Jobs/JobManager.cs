@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using Dapper;
 
@@ -144,11 +145,15 @@ public class JobManager
         var now = DateTimeOffset.UtcNow.ToString("O");
         var newLeaseUntil = DateTimeOffset.UtcNow.Add(extension).ToString("O");
 
+        // DEF-017: Must verify lease is still active (lease_until > now), owned by workerId, and fence token matches!
         const string sql = @"
             UPDATE leases
             SET lease_until = @NewLeaseUntil,
                 heartbeat_at = @Now
-            WHERE job_id = @JobId AND owner_id = @WorkerId AND fence_token = @ExpectedFenceToken;
+            WHERE job_id = @JobId
+              AND owner_id = @WorkerId
+              AND fence_token = @ExpectedFenceToken
+              AND lease_until > @Now;
         ";
         var rowsAffected = await connection.ExecuteAsync(sql, new
         {
@@ -159,6 +164,23 @@ public class JobManager
             ExpectedFenceToken = expectedFenceToken
         });
         return rowsAffected > 0;
+    }
+
+    public async Task HeartbeatLeaseOrThrowAsync(
+        string jobId,
+        string workerId,
+        long expectedFenceToken,
+        TimeSpan extension,
+        CancellationToken ct = default)
+    {
+        var success = await HeartbeatLeaseAsync(jobId, workerId, expectedFenceToken, extension, ct);
+        if (!success)
+        {
+            throw new AmccaException(
+                AmccaErrors.Job002,
+                ErrorCategory.Transient,
+                $"Heartbeat refused for job '{jobId}': lease is expired, fence token {expectedFenceToken} is stale, or lease owned by another worker (DEF-017).");
+        }
     }
 
     public async Task<bool> CompleteJobAsync(
@@ -186,6 +208,81 @@ public class JobManager
 
         tx.Commit();
         return true;
+    }
+
+    public async Task CompleteJobOrThrowAsync(
+        string jobId,
+        string workerId,
+        long expectedFenceToken,
+        CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        using var tx = connection.BeginTransaction();
+
+        const string checkSql = "SELECT owner_id AS OwnerId, fence_token AS FenceToken FROM leases WHERE job_id = @JobId;";
+        var lease = await connection.QuerySingleOrDefaultAsync<dynamic>(checkSql, new { JobId = jobId }, transaction: tx);
+
+        if (lease == null || (string)lease.OwnerId != workerId || (long)lease.FenceToken != expectedFenceToken)
+        {
+            tx.Rollback();
+            throw new AmccaException(
+                AmccaErrors.Job003,
+                ErrorCategory.Security,
+                $"CompleteJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold lease (DEF-016).");
+        }
+
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        await connection.ExecuteAsync("UPDATE jobs SET state = 'COMPLETED', updated_at = @Now WHERE id = @JobId;",
+            new { Now = now, JobId = jobId }, transaction: tx);
+        await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
+            new { JobId = jobId }, transaction: tx);
+
+        tx.Commit();
+    }
+
+    public async Task FailJobAsync(
+        string jobId,
+        string workerId,
+        long expectedFenceToken,
+        string reason,
+        CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        using var tx = connection.BeginTransaction();
+
+        // DEF-016: Stale worker / fence token check: must hold current lease with matching fence token
+        const string checkSql = "SELECT owner_id AS OwnerId, fence_token AS FenceToken FROM leases WHERE job_id = @JobId;";
+        var lease = await connection.QuerySingleOrDefaultAsync<dynamic>(checkSql, new { JobId = jobId }, transaction: tx);
+
+        if (lease == null || (string)lease.OwnerId != workerId || (long)lease.FenceToken != expectedFenceToken)
+        {
+            tx.Rollback();
+            throw new AmccaException(
+                AmccaErrors.Job003,
+                ErrorCategory.Security,
+                $"FailJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold active lease (DEF-016).");
+        }
+
+        var job = await connection.QuerySingleOrDefaultAsync<JobRecord>(
+            "SELECT id, attempt, max_attempts AS MaxAttempts FROM jobs WHERE id = @Id;",
+            new { Id = jobId }, transaction: tx);
+
+        if (job == null)
+        {
+            tx.Rollback();
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        string newState = job.Attempt >= job.MaxAttempts ? "DEAD_LETTER" : "QUEUED";
+
+        await connection.ExecuteAsync(
+            "UPDATE jobs SET state = @State, updated_at = @Now WHERE id = @Id;",
+            new { State = newState, Now = now, Id = jobId }, transaction: tx);
+
+        await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @Id;", new { Id = jobId }, transaction: tx);
+
+        tx.Commit();
     }
 
     public async Task FailJobAsync(string jobId, string reason, CancellationToken ct = default)

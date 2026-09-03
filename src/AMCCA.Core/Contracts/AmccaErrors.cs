@@ -49,6 +49,11 @@ public static class AmccaErrors
     public const string Pol001 = "AMCCA-POL-001"; // Policy evaluation rejected or failed
     public const string Pol003 = "AMCCA-POL-003"; // Operation refused: global or per-platform kill switch is active
     public const string Pol004 = "AMCCA-POL-004"; // Human approval required before entering protected state
+
+    // Job Domain
+    public const string Job001 = "AMCCA-JOB-001"; // Lease expired mid-execution; fence token stale, work abandoned
+    public const string Job002 = "AMCCA-JOB-002"; // Lease heartbeat refused: expired lease or duplicate key
+    public const string Job003 = "AMCCA-JOB-003"; // Fail/Complete refused: stale fence token or dead-lettered
 }
 
 public enum ErrorCategory
