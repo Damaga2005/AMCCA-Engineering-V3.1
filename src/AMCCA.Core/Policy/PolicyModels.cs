@@ -20,6 +20,11 @@ public record PolicyEvaluationContext(
     bool ProviderDisabled = false,
     decimal RequestedCost = 0m);
 
+public record ApprovalScope(
+    string Target,
+    string Subject,
+    decimal CostCeiling);
+
 public class BudgetRecord
 {
     public string Id { get; set; } = string.Empty;

@@ -129,6 +129,169 @@ public class MigrationService
                 DROP TABLE IF EXISTS kill_switch_state;
                 DROP TABLE IF EXISTS settings;
             "
+        ),
+        (
+            2,
+            "002_domain_policy_approvals_and_triggers",
+            @"
+                -- DEF-015: Events table append-only triggers
+                CREATE TRIGGER IF NOT EXISTS trg_events_prevent_update
+                BEFORE UPDATE ON events
+                BEGIN
+                    SELECT RAISE(ABORT, 'events table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS trg_events_prevent_delete
+                BEFORE DELETE ON events
+                BEGIN
+                    SELECT RAISE(ABORT, 'events table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
+                -- DEF-018: Full schema tables
+                CREATE TABLE IF NOT EXISTS approvals (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    scope_json TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('PENDING','APPROVED','REJECTED','EXPIRED','CONSUMED')),
+                    single_use INTEGER NOT NULL DEFAULT 1,
+                    decided_by TEXT NULL,
+                    decided_at TEXT NULL,
+                    consumed_at TEXT NULL,
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS budgets (
+                    id TEXT PRIMARY KEY,
+                    window TEXT NOT NULL,
+                    scope_id TEXT NOT NULL,
+                    limit_amount REAL NOT NULL,
+                    reserved REAL NOT NULL DEFAULT 0.0,
+                    spent REAL NOT NULL DEFAULT 0.0,
+                    currency TEXT NOT NULL DEFAULT 'EUR',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS policy_decisions (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    decision TEXT NOT NULL CHECK(decision IN ('ALLOW','REQUIRE_APPROVAL','BLOCK')),
+                    rule_key TEXT NOT NULL,
+                    policy_version_id TEXT NOT NULL,
+                    inputs_hash TEXT NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    decided_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS productions (
+                    id TEXT PRIMARY KEY,
+                    state TEXT NOT NULL,
+                    blocked_from TEXT NULL,
+                    unknown_from TEXT NULL,
+                    rework_attempts INTEGER NOT NULL DEFAULT 0,
+                    aggregate_version INTEGER NOT NULL DEFAULT 0,
+                    autonomy_mode TEXT NOT NULL,
+                    title TEXT NULL,
+                    language TEXT NOT NULL,
+                    niche_id TEXT NULL,
+                    opportunity_id TEXT NULL,
+                    current_manifest_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS state_transitions (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    transition_id TEXT NOT NULL,
+                    from_state TEXT NOT NULL,
+                    to_state TEXT NOT NULL,
+                    event_id TEXT NOT NULL,
+                    actor_type TEXT NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS jobs (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    job_type TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    priority INTEGER NOT NULL DEFAULT 0,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    max_attempts INTEGER NOT NULL DEFAULT 3,
+                    fence_token INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS leases (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL,
+                    owner TEXT NOT NULL,
+                    fence_token INTEGER NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS platform_accounts (
+                    id TEXT PRIMARY KEY,
+                    platform TEXT NOT NULL,
+                    account_handle TEXT NOT NULL,
+                    credential_secret_ref TEXT NOT NULL CHECK(credential_secret_ref LIKE 'secret://%'),
+                    state TEXT NOT NULL CHECK(state IN ('DISCONNECTED','CONNECTED','REAUTH_REQUIRED','SUSPENDED','DISABLED')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS revenue_events (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    publication_id TEXT NULL,
+                    program_id TEXT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('PENDING','CONFIRMED','DISPUTED','REVERSED')),
+                    provenance TEXT NOT NULL CHECK(provenance IN ('OFFICIAL_API','STATEMENT_IMPORT','MANUAL_CONFIRMED')),
+                    gross_amount REAL NOT NULL,
+                    fee_amount REAL NOT NULL DEFAULT 0.0,
+                    net_amount REAL NOT NULL,
+                    currency TEXT NOT NULL,
+                    statement_ref TEXT NULL,
+                    occurred_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    CHECK(provenance <> 'ESTIMATED')
+                );
+
+                CREATE TABLE IF NOT EXISTS cost_events (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    job_id TEXT NULL,
+                    kind TEXT NOT NULL CHECK(kind IN ('RESERVATION','SETTLEMENT','REFUND','ADJUSTMENT')),
+                    amount REAL NOT NULL,
+                    currency TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+            ",
+            @"
+                DROP TABLE IF EXISTS cost_events;
+                DROP TABLE IF EXISTS revenue_events;
+                DROP TABLE IF EXISTS platform_accounts;
+                DROP TABLE IF EXISTS leases;
+                DROP TABLE IF EXISTS jobs;
+                DROP TABLE IF EXISTS state_transitions;
+                DROP TABLE IF EXISTS productions;
+                DROP TABLE IF EXISTS policy_decisions;
+                DROP TABLE IF EXISTS budgets;
+                DROP TABLE IF EXISTS approvals;
+                DROP TRIGGER IF EXISTS trg_events_prevent_delete;
+                DROP TRIGGER IF EXISTS trg_events_prevent_update;
+            "
         )
     };
 

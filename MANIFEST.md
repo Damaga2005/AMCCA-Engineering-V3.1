@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 252
-**Total bytes:** 1155271
+**Files:** 253
+**Total bytes:** 1174982
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,7 +17,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `b04efa5e79f85ea22293898073f73076ca332159e25e2f8e539f406eef2286a1` | 19677 |
+| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `53a4bbecf8353eb67c9776a789029f6b4c470edafc0802537d5e5f46b9c21bab` | 20176 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
@@ -192,7 +192,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
 | `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
-| `src/AMCCA.Core/Database/MigrationService.cs` | `79c9d4f080e6fdbec71285a540010e1422fa94c8a15037495e15163d3cac4730` | 11348 |
+| `src/AMCCA.Core/Database/MigrationService.cs` | `9a84d7cc900557271c9c7bb4d3ab36778d75f709f9a2e80b0c1a99733279a5a5` | 18670 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `a95a52c38ce4758f826a9df7b7609413af53db393511b1b4dd3f3c85ac7a9493` | 11157 |
@@ -209,10 +209,10 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `92eca4c6684a295ea7a7c48d11caab516c5638cab33666063bbd7c7666e603a5` | 4891 |
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `2cd38f31143823693c50f04cdbc94c647948f97767ad2e7695f4276f5aaa3f90` | 3914 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
-| `src/AMCCA.Core/Policy/ApprovalManager.cs` | `30ca8974c71627105edf7bc47668b3e2ce8e5a74d55135c412ad466d425af630` | 4009 |
+| `src/AMCCA.Core/Policy/ApprovalManager.cs` | `7775ba076eab484934ff343896c990970bc248408e6cdd0aa4a5506309426457` | 7292 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `554e98a90ac6a6a625aac57703a143edced2e8ed8978932bc54b576903be88b2` | 2707 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `1418b75387add8fcd7f00013edc0891f730d411daf287dcddac71fefc042d1aa` | 5684 |
-| `src/AMCCA.Core/Policy/PolicyModels.cs` | `3e28181cb3446c4f8bfa278788067c78a21d61be72d17b21aeddfc1256959018` | 1597 |
+| `src/AMCCA.Core/Policy/PolicyModels.cs` | `f10206e6479d7cb8a7657c076a1f05ff5fc281d7fd3725ab7498f0c77b34a1da` | 1692 |
 | `src/AMCCA.Core/Preflight/PreflightReport.cs` | `444a11ee9eeeefeefb6212ab3b70433c6b081488842d4d7cdff31da4bbf29482` | 468 |
 | `src/AMCCA.Core/Preflight/PreflightService.cs` | `f36bdcef1e37a0fd97e1b838c667f2a1f73ab7d180c8c0eb0bf8f2b12c1ace5a` | 1750 |
 | `src/AMCCA.Core/Prompts/PromptModels.cs` | `57a626c2b9d31ce8f0e151892c29991945c3772b51593b3d05ef16fd307166d2` | 1467 |
@@ -245,6 +245,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Tools/ToolModels.cs` | `e8457379adc579425afa93ae53bfd6be08aea2351172d406200aa8ce4f4ce0c9` | 480 |
 | `src/AMCCA.Core/Tools/ToolRegistry.cs` | `00c351026f3810669888b451a30a99d0ebc2696c9c6ea87bf6acdef5b3e2a43c` | 699 |
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `35c19031d7530bc74a1aabb783de04014ba2b9f2e257f0fabeec118be9cefb59` | 852 |
+| `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs` | `fba53fdfba4914ac6f5c49875a06e96c4734ccf474353d3d20f3efe7eb83ae46` | 8512 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `661c791e3c5c8e34b6b7f504d41ed2f3fb04ebfc547dbd957bfe4573da568f60` | 8256 |
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |

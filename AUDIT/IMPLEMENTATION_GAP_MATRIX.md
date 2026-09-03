@@ -10,8 +10,8 @@
 | ID | Severidad | Especificación | Componente / Archivos | Estado |
 |---|---|---|---|:---:|
 | **DEF-001** | CRITICAL | `SPEC/08_POLICY_ENGINE.md` | `src/AMCCA.Core/Policy/PolicyEngine.cs` | CLOSED |
-| **DEF-002** | HIGH | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | OPEN |
-| **DEF-003** | CRITICAL | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | OPEN |
+| **DEF-002** | HIGH | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | CLOSED |
+| **DEF-003** | CRITICAL | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | CLOSED |
 | **DEF-004** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | OPEN |
 | **DEF-005** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | OPEN |
 | **DEF-006** | CRITICAL | `SPEC/07_GATEWAY_PORT.md`, `SPEC/72_SECURITY_TESTS.md` | `src/AMCCA.Core/Gateway/*` | OPEN |
@@ -59,12 +59,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Policy/ApprovalManager.cs`
 - **Comportamiento actual:** `ValidateAndConsumeApprovalAsync` no verifica los campos de `scope_json` (exact target, subject, cost ceiling). Además no liga el consumo de forma indivisible a la ejecución de la acción protegida ante fallo o concurrencia.
 - **Por qué falla:** Permite reutilizar aprobaciones para propósitos no acordados o carreras concurrentes.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs`
+- **Fix:** `src/AMCCA.Core/Policy/ApprovalManager.cs` implementa `ExecuteWithApprovalAsync` con validación estricta de `ApprovalScope` (Target, Subject, CostCeiling) y consumo atómico transaccional con rollback en fallo y serialización ante concurrencia.
+- **Test ejecutado:** `dotnet test AMCCA.sln` (5 tests de scope, límites, rollback y concurrencia multihilo)
+- **Resultado:** PASS
+- **Evidencia:** 319/319 tests pasando; concurrencia probada con 5 hilos simultáneos garantizando que sólo uno consume la aprobación de uso único.
+- **Estado:** CLOSED
 
 ### DEF-004 / DEF-005 — Agent MaxCost & TimeoutSeconds Enforcement
 - **Severidad:** HIGH
