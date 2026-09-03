@@ -90,15 +90,32 @@ public class MigrationService
 
                 CREATE TABLE IF NOT EXISTS publications (
                     id TEXT PRIMARY KEY,
-                    state TEXT NOT NULL,
-                    external_id TEXT NULL,
-                    evidence_source TEXT NULL,
-                    evidence_retrieved_at TEXT NULL,
+                    production_id TEXT NOT NULL,
+                    platform TEXT NOT NULL,
+                    account_id TEXT NOT NULL,
+                    content_version_id TEXT NOT NULL,
+                    metadata_version_id TEXT NULL,
+                    referral_version_id TEXT NULL,
                     synthetic_declaration_id TEXT NULL,
                     platform_label_required INTEGER NOT NULL DEFAULT 0,
+                    state TEXT NOT NULL,
+                    required INTEGER NOT NULL DEFAULT 1,
+                    idempotency_key TEXT NOT NULL,
+                    provider_request_id TEXT NULL,
+                    external_id TEXT NULL,
+                    external_url TEXT NULL,
+                    evidence_source TEXT NULL,
+                    evidence_retrieved_at TEXT NULL,
                     synthetic_label_applied INTEGER NOT NULL DEFAULT 0,
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    last_error_code TEXT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
                     FOREIGN KEY (synthetic_declaration_id) REFERENCES synthetic_declarations(id),
-                    CHECK (state IN ('INTENT_CREATED', 'UPLOAD_REQUESTED', 'UPLOADED', 'PROCESSING', 'PUBLISHED', 'VERIFIED', 'REJECTED', 'FAILED', 'UNKNOWN_EXTERNAL_STATE', 'CANCELLED')),
+                    UNIQUE (idempotency_key),
+                    UNIQUE (production_id, platform, account_id, content_version_id),
+                    CHECK (state IN ('QUEUED', 'SUBMITTED', 'PROCESSING', 'PUBLISHED', 'VERIFIED', 'RECONCILING', 'FAILED', 'RETRACTED', 'UNKNOWN_EXTERNAL_STATE', 'INTENT_CREATED', 'UPLOAD_REQUESTED', 'UPLOADED', 'REJECTED', 'CANCELLED')),
                     CHECK (platform_label_required = 0 OR synthetic_declaration_id IS NOT NULL),
                     CHECK (state <> 'VERIFIED' OR (external_id IS NOT NULL
                            AND evidence_source IN ('OFFICIAL_API', 'OFFICIAL_DASHBOARD', 'OPERATOR_CONFIRMATION')
@@ -241,7 +258,8 @@ public class MigrationService
                     correlation_id TEXT NULL,
                     payload_json TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(idempotency_key)
                 );
 
                 CREATE TABLE IF NOT EXISTS leases (
@@ -821,7 +839,8 @@ public class MigrationService
                     fallback_order INTEGER NOT NULL DEFAULT 100,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
-                    UNIQUE(provider, model_id, capability)
+                    UNIQUE(provider, model_id, capability),
+                    CHECK(enabled = 0 OR last_verified_at IS NOT NULL)
                 );
 
                 CREATE TABLE IF NOT EXISTS provider_health (

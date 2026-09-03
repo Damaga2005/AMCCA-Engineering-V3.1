@@ -125,18 +125,18 @@ public class PromptService
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             INSERT INTO agent_runs (
-                id, agent_id, agent_version, prompt_version_id, model_id,
-                model_params_hash, input_hash, output_valid, state, cost,
-                started_at, completed_at
+                run_id, agent_id, agent_version, prompt_version_id, model_id,
+                model_params_hash, input_hash, output_valid, state,
+                correlation_id, schema_version, started_at, finished_at
             ) VALUES (
-                @Id, @AgentId, @AgentVersion, @PromptVersionId, @ModelId,
-                @ModelParamsHash, @InputHash, @OutputValid, @State, @Cost,
-                @StartedAt, @CompletedAt
+                @RunId, @AgentId, @AgentVersion, @PromptVersionId, @ModelId,
+                @ModelParamsHash, @InputHash, @OutputValid, @State,
+                @CorrelationId, '3.1.0', @StartedAt, @FinishedAt
             );
         ";
         await connection.ExecuteAsync(sql, new
         {
-            run.Id,
+            RunId = run.Id,
             run.AgentId,
             run.AgentVersion,
             run.PromptVersionId,
@@ -145,9 +145,9 @@ public class PromptService
             run.InputHash,
             OutputValid = run.OutputValid ? 1 : 0,
             run.State,
-            run.Cost,
+            CorrelationId = UlidGenerator.NewUlid(),
             run.StartedAt,
-            run.CompletedAt
+            FinishedAt = run.CompletedAt
         });
 
         return run;

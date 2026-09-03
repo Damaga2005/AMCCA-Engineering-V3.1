@@ -25,45 +25,8 @@ public class ResearchAndClaimValidationContractTests : IDisposable
         _dbPath = Path.Combine(_testDir, "research_test.db");
         _factory = new DatabaseConnectionFactory(_dbPath);
 
-        using (var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS sources (
-                    id TEXT PRIMARY KEY,
-                    url TEXT NOT NULL,
-                    publisher TEXT NULL,
-                    published_at TEXT NULL,
-                    retrieved_at TEXT NOT NULL,
-                    content_hash TEXT NOT NULL,
-                    trust_tier TEXT NOT NULL CHECK(trust_tier IN ('PRIMARY','SECONDARY','AGGREGATOR','UNRATED')),
-                    robots_allowed INTEGER NOT NULL,
-                    created_at TEXT NOT NULL,
-                    UNIQUE(url, content_hash)
-                );
-
-                CREATE TABLE IF NOT EXISTS claims (
-                    id TEXT PRIMARY KEY,
-                    production_id TEXT NOT NULL,
-                    text TEXT NOT NULL,
-                    status TEXT NOT NULL CHECK(status IN ('VERIFIED','DISPUTED','ESTIMATED','UNKNOWN')),
-                    materiality TEXT NOT NULL,
-                    subject_class TEXT NOT NULL,
-                    contains_personal_data INTEGER NOT NULL DEFAULT 0,
-                    schema_version TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS claim_sources (
-                    claim_id TEXT NOT NULL,
-                    source_id TEXT NOT NULL,
-                    relation TEXT NOT NULL CHECK(relation IN ('SUPPORTS','CONTRADICTS','CONTEXT')),
-                    excerpt_hash TEXT NULL,
-                    PRIMARY KEY(claim_id, source_id)
-                );
-            ";
-            cmd.ExecuteNonQuery();
-        }
+        var migrator = new MigrationService(_factory, _testDir);
+        migrator.UpgradeAsync().GetAwaiter().GetResult();
 
         _researchService = new ResearchService(_factory);
     }
@@ -255,6 +218,13 @@ public class ResearchAndClaimValidationContractTests : IDisposable
             RobotsAllowed = true
         };
         await _researchService.InsertSourceAsync(source1);
+
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at) VALUES ('prod-200', 'RESEARCH', 0, 1, 'FULL_AUTONOMY', 'es', '3.1.0', datetime('now'), datetime('now'));";
+            await cmd.ExecuteNonQueryAsync();
+        }
 
         var claim = new Claim
         {

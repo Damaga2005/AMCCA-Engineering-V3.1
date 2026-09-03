@@ -27,47 +27,8 @@ public class ContentPipelineAndPromptContractTests : IDisposable
         _dbPath = Path.Combine(_testDir, "content_test.db");
         _factory = new DatabaseConnectionFactory(_dbPath);
 
-        using (var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS prompt_templates (
-                    id TEXT PRIMARY KEY,
-                    key TEXT NOT NULL UNIQUE,
-                    purpose TEXT NOT NULL,
-                    current_version_id TEXT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS prompt_versions (
-                    id TEXT PRIMARY KEY,
-                    template_id TEXT NOT NULL REFERENCES prompt_templates(id),
-                    version_no INTEGER NOT NULL,
-                    body_sha256 TEXT NOT NULL,
-                    body_ref TEXT NOT NULL,
-                    notes TEXT NULL,
-                    created_at TEXT NOT NULL,
-                    UNIQUE(template_id, version_no)
-                );
-
-                CREATE TABLE IF NOT EXISTS agent_runs (
-                    id TEXT PRIMARY KEY,
-                    agent_id TEXT NOT NULL,
-                    agent_version TEXT NOT NULL,
-                    prompt_version_id TEXT NOT NULL REFERENCES prompt_versions(id),
-                    model_id TEXT NOT NULL,
-                    model_params_hash TEXT NOT NULL,
-                    input_hash TEXT NOT NULL,
-                    output_valid INTEGER NOT NULL DEFAULT 0,
-                    state TEXT NOT NULL CHECK(state IN ('QUEUED','RUNNING','COMPLETED','VALIDATION_FAILED','BLOCKED','FAILED')),
-                    cost TEXT NOT NULL DEFAULT '0.00',
-                    started_at TEXT NOT NULL,
-                    completed_at TEXT NULL
-                );
-            ";
-            cmd.ExecuteNonQuery();
-        }
+        var migrator = new MigrationService(_factory, _testDir);
+        migrator.UpgradeAsync().GetAwaiter().GetResult();
 
         _promptService = new PromptService(_factory);
     }

@@ -162,45 +162,6 @@ public class StateMachineContractTests : IDisposable
         var migrator = new MigrationService(_factory, _testDir);
         await migrator.UpgradeAsync();
 
-        // Add productions and state_transitions tables if not present in migration 001
-        using (var conn = await _factory.CreateOpenConnectionAsync())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS productions (
-                    id TEXT PRIMARY KEY,
-                    state TEXT NOT NULL,
-                    blocked_from TEXT NULL,
-                    unknown_from TEXT NULL,
-                    rework_attempts INTEGER NOT NULL DEFAULT 0,
-                    aggregate_version INTEGER NOT NULL DEFAULT 0,
-                    autonomy_mode TEXT NOT NULL,
-                    title TEXT NULL,
-                    language TEXT NOT NULL,
-                    niche_id TEXT NULL,
-                    opportunity_id TEXT NULL,
-                    current_manifest_id TEXT NULL,
-                    schema_version TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS state_transitions (
-                    id TEXT PRIMARY KEY,
-                    production_id TEXT NOT NULL,
-                    transition_id TEXT NOT NULL,
-                    from_state TEXT NOT NULL,
-                    to_state TEXT NOT NULL,
-                    event_id TEXT NOT NULL,
-                    actor_type TEXT NOT NULL,
-                    correlation_id TEXT NOT NULL,
-                    occurred_at TEXT NOT NULL,
-                    UNIQUE(event_id)
-                );
-            ";
-            await cmd.ExecuteNonQueryAsync();
-        }
-
         var eventStore = new EventStore(_factory);
         var productionService = new ProductionService(_factory, _registry, eventStore);
 

@@ -24,62 +24,8 @@ public class JobsAndLeasesContractTests : IDisposable
         _dbPath = Path.Combine(_testDir, "jobs_test.db");
         _factory = new DatabaseConnectionFactory(_dbPath);
 
-        // Initialize schema with jobs, leases, intents, and reconciliation_attempts
-        using var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE IF NOT EXISTS jobs (
-                id TEXT PRIMARY KEY,
-                type TEXT NOT NULL,
-                state TEXT NOT NULL CHECK(state IN ('QUEUED','LEASED','RUNNING','COMPLETED','FAILED','DEAD_LETTER','CANCELLED')),
-                priority INTEGER NOT NULL DEFAULT 3,
-                idempotency_key TEXT NOT NULL UNIQUE,
-                attempt INTEGER NOT NULL DEFAULT 0,
-                max_attempts INTEGER NOT NULL DEFAULT 3,
-                correlation_id TEXT NOT NULL,
-                payload_json TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS leases (
-                job_id TEXT PRIMARY KEY REFERENCES jobs(id) ON DELETE CASCADE,
-                owner_id TEXT NOT NULL,
-                acquired_at TEXT NOT NULL,
-                lease_until TEXT NOT NULL,
-                heartbeat_at TEXT NOT NULL,
-                fence_token INTEGER NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS intents (
-                id TEXT PRIMARY KEY,
-                job_id TEXT NULL REFERENCES jobs(id),
-                production_id TEXT NULL,
-                kind TEXT NOT NULL,
-                target TEXT NOT NULL,
-                idempotency_key TEXT NOT NULL UNIQUE,
-                request_fingerprint TEXT NOT NULL,
-                state TEXT NOT NULL CHECK(state IN ('CREATED','DISPATCHED','CONFIRMED','REFUTED','UNKNOWN','ABANDONED')),
-                external_request_id TEXT NULL,
-                attempt_count INTEGER NOT NULL DEFAULT 0,
-                dispatched_at TEXT NULL,
-                resolved_at TEXT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS reconciliation_attempts (
-                id TEXT PRIMARY KEY,
-                intent_id TEXT NOT NULL REFERENCES intents(id),
-                attempt_no INTEGER NOT NULL,
-                method TEXT NOT NULL,
-                outcome TEXT NOT NULL CHECK(outcome IN ('CONFIRMED','REFUTED','INCONCLUSIVE')),
-                evidence_ref TEXT NULL,
-                occurred_at TEXT NOT NULL,
-                UNIQUE(intent_id, attempt_no)
-            );
-        ";
-        cmd.ExecuteNonQuery();
+        var migrator = new MigrationService(_factory, _testDir);
+        migrator.UpgradeAsync().GetAwaiter().GetResult();
     }
 
     public void Dispose()

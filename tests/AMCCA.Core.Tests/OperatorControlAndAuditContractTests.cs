@@ -35,39 +35,6 @@ public class OperatorControlAndAuditContractTests : IDisposable
         var migrator = new MigrationService(_factory, _testDir);
         migrator.UpgradeAsync().GetAwaiter().GetResult();
 
-        using (var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS approvals (
-                    id TEXT PRIMARY KEY,
-                    production_id TEXT NOT NULL,
-                    action TEXT NOT NULL,
-                    scope_json TEXT NOT NULL,
-                    state TEXT NOT NULL CHECK(state IN ('PENDING','APPROVED','REJECTED','EXPIRED','CONSUMED')),
-                    single_use INTEGER NOT NULL DEFAULT 1,
-                    decided_by TEXT NULL,
-                    decided_at TEXT NULL,
-                    consumed_at TEXT NULL,
-                    expires_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS budgets (
-                    id TEXT PRIMARY KEY,
-                    window TEXT NOT NULL,
-                    scope_id TEXT NOT NULL,
-                    limit_amount REAL NOT NULL,
-                    reserved REAL NOT NULL DEFAULT 0.0,
-                    spent REAL NOT NULL DEFAULT 0.0,
-                    currency TEXT NOT NULL DEFAULT 'EUR',
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-            ";
-            cmd.ExecuteNonQuery();
-        }
-
         _auditStore = new AuditStore(_factory);
         _budgetManager = new BudgetManager(_factory);
         _approvalManager = new ApprovalManager(_factory);

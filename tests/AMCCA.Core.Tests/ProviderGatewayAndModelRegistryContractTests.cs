@@ -24,29 +24,8 @@ public class ProviderGatewayAndModelRegistryContractTests : IDisposable
         _dbPath = Path.Combine(_testDir, "gateway_test.db");
         _factory = new DatabaseConnectionFactory(_dbPath);
 
-        using (var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS model_registry (
-                    id TEXT PRIMARY KEY,
-                    provider TEXT NOT NULL,
-                    model_id TEXT NOT NULL,
-                    capability TEXT NOT NULL,
-                    protocol TEXT NOT NULL,
-                    enabled INTEGER NOT NULL DEFAULT 0,
-                    constraints_json TEXT NOT NULL,
-                    pricing_snapshot_id TEXT NULL,
-                    last_verified_at TEXT NULL,
-                    fallback_order INTEGER NOT NULL DEFAULT 100,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    UNIQUE(provider, model_id, capability),
-                    CHECK(enabled = 0 OR last_verified_at IS NOT NULL)
-                );
-            ";
-            cmd.ExecuteNonQuery();
-        }
+        var migrator = new MigrationService(_factory, _testDir);
+        migrator.UpgradeAsync().GetAwaiter().GetResult();
 
         _modelRegistry = new ModelRegistry(_factory);
     }

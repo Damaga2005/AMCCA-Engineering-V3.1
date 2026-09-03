@@ -24,41 +24,8 @@ public class PublishingAndPlatformHubContractTests : IDisposable
         _dbPath = Path.Combine(_testDir, "publishing_test.db");
         _factory = new DatabaseConnectionFactory(_dbPath);
 
-        using (var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS platform_accounts (
-                    id TEXT PRIMARY KEY,
-                    platform TEXT NOT NULL,
-                    account_handle TEXT NOT NULL,
-                    credential_secret_ref TEXT NOT NULL CHECK(credential_secret_ref LIKE 'secret://%'),
-                    state TEXT NOT NULL CHECK(state IN ('DISCONNECTED','CONNECTED','REAUTH_REQUIRED','SUSPENDED','DISABLED')),
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS publications (
-                    id TEXT PRIMARY KEY,
-                    production_id TEXT NOT NULL,
-                    platform TEXT NOT NULL,
-                    account_id TEXT NOT NULL REFERENCES platform_accounts(id),
-                    content_version_id TEXT NOT NULL,
-                    state TEXT NOT NULL CHECK(state IN ('QUEUED','SUBMITTED','PROCESSING','PUBLISHED','VERIFIED','RECONCILING','FAILED','RETRACTED')),
-                    idempotency_key TEXT NOT NULL UNIQUE,
-                    provider_request_id TEXT NULL,
-                    external_id TEXT NULL,
-                    external_url TEXT NULL,
-                    evidence_source TEXT NULL,
-                    evidence_retrieved_at TEXT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    UNIQUE(production_id, platform, account_id, content_version_id),
-                    CHECK(state <> 'VERIFIED' OR (evidence_source IS NOT NULL AND evidence_retrieved_at IS NOT NULL))
-                );
-            ";
-            cmd.ExecuteNonQuery();
-        }
+        var migrator = new MigrationService(_factory, _testDir);
+        migrator.UpgradeAsync().GetAwaiter().GetResult();
 
         _platformHub = new PlatformHub(_factory);
     }
@@ -113,7 +80,7 @@ public class PublishingAndPlatformHubContractTests : IDisposable
 
         var adapter = new FakePlatformAdapter(
             shouldVerify: true,
-            evidenceSource: "https://www.googleapis.com/youtube/v3/videos?id=video123",
+            evidenceSource: "OFFICIAL_API",
             externalUrl: "https://youtube.com/shorts/video123");
 
         var verified = await _platformHub.VerifyPublicationAsync(pub.Id, "video123", adapter);
@@ -122,7 +89,7 @@ public class PublishingAndPlatformHubContractTests : IDisposable
         var retrieved = await _platformHub.GetPublicationAsync(pub.Id);
         retrieved.Should().NotBeNull();
         retrieved!.State.Should().Be("VERIFIED");
-        retrieved.EvidenceSource.Should().Be("https://www.googleapis.com/youtube/v3/videos?id=video123");
+        retrieved.EvidenceSource.Should().Be("OFFICIAL_API");
         retrieved.EvidenceRetrievedAt.Should().NotBeNullOrWhiteSpace();
         retrieved.ExternalUrl.Should().Be("https://youtube.com/shorts/video123");
     }

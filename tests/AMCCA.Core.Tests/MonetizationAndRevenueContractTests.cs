@@ -24,41 +24,8 @@ public class MonetizationAndRevenueContractTests : IDisposable
         _dbPath = Path.Combine(_testDir, "revenue_test.db");
         _factory = new DatabaseConnectionFactory(_dbPath);
 
-        using (var conn = _factory.CreateOpenConnectionAsync().GetAwaiter().GetResult())
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS revenue_events (
-                    id TEXT PRIMARY KEY,
-                    production_id TEXT NULL,
-                    publication_id TEXT NULL,
-                    program_id TEXT NULL,
-                    state TEXT NOT NULL CHECK(state IN ('PENDING','CONFIRMED','DISPUTED','REVERSED')),
-                    provenance TEXT NOT NULL CHECK(provenance IN ('OFFICIAL_API','STATEMENT_IMPORT','MANUAL_CONFIRMED')),
-                    gross_amount REAL NOT NULL,
-                    fee_amount REAL NOT NULL DEFAULT 0.0,
-                    net_amount REAL NOT NULL,
-                    currency TEXT NOT NULL,
-                    statement_ref TEXT NULL,
-                    occurred_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    CHECK(provenance <> 'ESTIMATED')
-                );
-
-                CREATE TABLE IF NOT EXISTS cost_events (
-                    id TEXT PRIMARY KEY,
-                    production_id TEXT NOT NULL,
-                    job_id TEXT NULL,
-                    kind TEXT NOT NULL CHECK(kind IN ('RESERVATION','SETTLEMENT','REFUND','ADJUSTMENT')),
-                    amount REAL NOT NULL,
-                    currency TEXT NOT NULL,
-                    provider TEXT NOT NULL,
-                    occurred_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-            ";
-            cmd.ExecuteNonQuery();
-        }
+        var migrator = new MigrationService(_factory, _testDir);
+        migrator.UpgradeAsync().GetAwaiter().GetResult();
 
         _revenueService = new RevenueService(_factory);
     }
