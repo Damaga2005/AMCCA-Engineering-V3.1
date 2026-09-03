@@ -75,7 +75,7 @@ def read(*parts):
 
 
 def walk_files():
-    skip_dirs = {".git", "__pycache__", ".venv", "bin", "obj"}
+    skip_dirs = {".git", "__pycache__", ".venv", "bin", "obj", "artifacts", "dist"}
     skip_files = {".git"}
     for base, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in skip_dirs]
