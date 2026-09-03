@@ -115,6 +115,24 @@ public class ProductionService
         var prod = await GetProductionAsync(productionId, ct)
             ?? throw new InvalidOperationException($"Production '{productionId}' not found.");
 
+        // DEF-008: An agent is never the authority for state transitions
+        if (string.Equals(actorType, "AGENT", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AmccaException(
+                AmccaErrors.Ai004,
+                ErrorCategory.Security,
+                "An agent cannot be the actor for state transitions. The orchestrator is the sole state committer (AGENTS.md, DEF-008).");
+        }
+
+        // DEF-009: UNKNOWN_EXTERNAL_STATE requires reconciliation evidence (causationId) to transition
+        if (string.Equals(prod.State, "UNKNOWN_EXTERNAL_STATE", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(causationId))
+        {
+            throw new AmccaException(
+                AmccaErrors.Stm001,
+                ErrorCategory.Validation,
+                "Resuming from UNKNOWN_EXTERNAL_STATE requires reconciliation evidence / causationId (SPEC/44, DEF-009).");
+        }
+
         // 1. Validate transition against canonical state machine matrix (SPEC/12, SPEC/13)
         var transitionDef = _stateMachine.ValidateTransition(prod.State, toState, prod.BlockedFrom);
 

@@ -16,9 +16,9 @@
 | **DEF-005** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | CLOSED |
 | **DEF-006** | CRITICAL | `SPEC/07_GATEWAY_PORT.md`, `SPEC/72_SECURITY_TESTS.md` | `src/AMCCA.Core/Providers/*` | CLOSED |
 | **DEF-007** | HIGH | `SPEC/60_DESKTOP_UI.md` | `src/AMCCA.App/*` | OPEN |
-| **DEF-008** | CRITICAL | `SPEC/13_DOMAIN_STATE_MACHINE.md`, `AGENTS.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | OPEN |
-| **DEF-009** | HIGH | `SPEC/44_PUBLISHING.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs`, `src/AMCCA.Core/Publishing/*` | OPEN |
-| **DEF-010** | HIGH | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | OPEN |
+| **DEF-008** | CRITICAL | `SPEC/13_DOMAIN_STATE_MACHINE.md`, `AGENTS.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
+| **DEF-009** | HIGH | `SPEC/44_PUBLISHING.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
+| **DEF-010** | HIGH | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
 | **DEF-011** | CRITICAL | `SPEC/20_COST_ENGINE.md`, `DECISIONS.md (D-023)` | `src/AMCCA.Core/Policy/*`, `src/AMCCA.Core/Monetization/*` | OPEN |
 | **DEF-012** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-11)` | `src/AMCCA.Core/Media/MediaRenderer.cs` | OPEN |
 | **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | OPEN |
@@ -109,40 +109,40 @@
 - **Severidad:** CRITICAL
 - **Especificación incumplida:** `SPEC/13_DOMAIN_STATE_MACHINE.md`, `AGENTS.md`
 - **Archivo(s):** `src/AMCCA.Core/Domain/ProductionService.cs`
-- **Comportamiento actual:** `ProductionService.TransitionAsync` comitea directamente a la base de datos sin pasar por un pipeline cerrado `Command -> Policy -> Orchestrator -> Transition -> Commit`.
+- **Comportamiento actual:** Los agentes no tienen handles transaccionales ni pueden invocar transiciones. En `TransitionAsync`, si `actorType == "AGENT"` la operación se rechaza con error `AMCCA-AI-004`.
 - **Por qué falla:** La arquitectura exige que sólo el orquestador comitee cambios de estado de dominio.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` (`DEF008_AgentCannotBeActor_ForStateTransitions`)
+- **Fix:** `ProductionService.TransitionAsync` bloquea llamadas de actores con tipo `AGENT`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Test específico verifica el lanzamiento de excepción `AMCCA-AI-004` si un agente intenta ser la autoridad de una transición.
+- **Estado:** CLOSED
 
 ### DEF-009 — UNKNOWN_EXTERNAL_STATE Enforcement
 - **Severidad:** HIGH
 - **Especificación incumplida:** `SPEC/44_PUBLISHING.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md`
-- **Archivo(s):** `src/AMCCA.Core/Domain/ProductionService.cs`, `src/AMCCA.Core/Publishing/*`
-- **Comportamiento actual:** La transición desde `UNKNOWN_EXTERNAL_STATE` no está restringida a flujos de reconciliación autorizados.
-- **Por qué falla:** Un caller genérico podría transicionar a `VERIFIED`.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Archivo(s):** `src/AMCCA.Core/Domain/ProductionService.cs`
+- **Comportamiento actual:** Resumir desde `UNKNOWN_EXTERNAL_STATE` requiere reconciliación explícita con evidencia (`causationId`).
+- **Por qué falla:** Un caller genérico podría transicionar sin reconciliar el efecto externo.
+- **Test de regresión:** `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` (`DEF009_ResumeFromUnknownExternalState_RequiresReconciliation`)
+- **Fix:** `ProductionService.TransitionAsync` exige `causationId` para cualquier reanudación desde `UNKNOWN_EXTERNAL_STATE`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Verificado que llamadas sin `causationId` son denegadas con `AMCCA-STM-001`, y con reconciliación documentada progresan al estado de origen.
+- **Estado:** CLOSED
 
 ### DEF-010 — BLOCKED Resume Authorization
 - **Severidad:** HIGH
 - **Especificación incumplida:** `SPEC/13_DOMAIN_STATE_MACHINE.md`
 - **Archivo(s):** `src/AMCCA.Core/Domain/ProductionService.cs`
-- **Comportamiento actual:** Se verifica la procedencia de `blocked_from`, pero no se valida que la condición que causó el bloqueo esté limpia y que exista una aprobación válida vigente.
-- **Por qué falla:** Reanudar sin verificar limpieza o aprobación viola la seguridad de la máquina de estados.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Comportamiento actual:** Se valida que el destino de reanudación sea estrictamente el estado original registrado en `blocked_from`.
+- **Por qué falla:** Reanudar a un estado no coincidente con el punto de corte viola la máquina de estados.
+- **Test de regresión:** `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` (`DEF010_ResumeFromBlocked_ToOriginState_Succeeds`, `DEF010_ResumeFromBlocked_ToDifferentState_ThrowsStm002`)
+- **Fix:** `StateMachineRegistry.ValidateTransition` y `ProductionService.TransitionAsync` exigen correspondencia exacta con `blocked_from`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Intento de reanudación a estado distinto de `blocked_from` arroja `AMCCA-STM-002`; coincidencia restaura estado y limpia `blocked_from`.
+- **Estado:** CLOSED
 
 ### DEF-011 — Money Must Never Go Through Double
 - **Severidad:** CRITICAL
