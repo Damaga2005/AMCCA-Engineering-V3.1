@@ -251,4 +251,111 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
             }
         }
     }
+
+    public async IAsyncEnumerable<string> StreamTextAsync(
+        GatewayTextRequest request,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(_endpoint) || string.IsNullOrWhiteSpace(_apiKeySecretRef))
+        {
+            throw new AmccaException(
+                AmccaErrors.Ai001,
+                ErrorCategory.Configuration,
+                "Model provider endpoint or ApiKeySecretRef missing.");
+        }
+
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/chat/completions");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKeySecretRef);
+        httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+
+        var payload = new
+        {
+            model = request.ModelId,
+            messages = new[]
+            {
+                new { role = "user", content = request.Prompt }
+            },
+            temperature = request.Temperature,
+            max_tokens = request.MaxTokens,
+            stream = true
+        };
+
+        httpRequest.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+        HttpResponseMessage httpResponse;
+        try
+        {
+            httpResponse = await _httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var safeMsg = ex.Message.Replace(_apiKeySecretRef, "[REDACTED]");
+            throw new AmccaException(
+                AmccaErrors.Ai001,
+                ErrorCategory.Provider,
+                $"Model provider HTTP transport failure during stream: {safeMsg}");
+        }
+
+        using (httpResponse)
+        {
+            if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new AmccaException(AmccaErrors.Ai001, ErrorCategory.Auth, "Authentication failed (HTTP 401).");
+            }
+            if ((int)httpResponse.StatusCode == 429)
+            {
+                throw new AmccaException(AmccaErrors.Ai002, ErrorCategory.RateLimited, "Rate limit exceeded (HTTP 429).");
+            }
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                throw new AmccaException(AmccaErrors.Ai001, ErrorCategory.Provider, $"Provider error (HTTP {(int)httpResponse.StatusCode}).");
+            }
+
+            using var stream = await httpResponse.Content.ReadAsStreamAsync(ct);
+            using var reader = new System.IO.StreamReader(stream, Encoding.UTF8);
+
+            while (!ct.IsCancellationRequested)
+            {
+                string? line;
+                try
+                {
+                    line = await reader.ReadLineAsync(ct);
+                }
+                catch (System.IO.IOException ex)
+                {
+                    throw new AmccaException(AmccaErrors.Ai001, ErrorCategory.Provider, $"Stream connection aborted: {ex.Message}");
+                }
+
+                if (line == null) break;
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (!line.StartsWith("data:")) continue;
+
+                var data = line.Substring(5).Trim();
+                if (data == "[DONE]") break;
+
+                string? deltaText = null;
+                try
+                {
+                    using var doc = JsonDocument.Parse(data);
+                    if (doc.RootElement.TryGetProperty("choices", out var choices) &&
+                        choices.GetArrayLength() > 0 &&
+                        choices[0].TryGetProperty("delta", out var delta) &&
+                        delta.TryGetProperty("content", out var contentProp))
+                    {
+                        deltaText = contentProp.GetString();
+                    }
+                }
+                catch (JsonException) { }
+
+                if (!string.IsNullOrEmpty(deltaText))
+                {
+                    yield return deltaText;
+                }
+            }
+        }
+    }
 }

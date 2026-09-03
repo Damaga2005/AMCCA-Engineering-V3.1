@@ -12,7 +12,7 @@ public record GatewayTextRequest(
     string Prompt,
     double Temperature,
     int MaxTokens,
-    string CorrelationId);
+    string CorrelationId = "");
 
 public record GatewayTextResponse(
     string Text,
