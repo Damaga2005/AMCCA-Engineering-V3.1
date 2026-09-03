@@ -27,7 +27,7 @@
 | **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
 | **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
 | **DEF-018** | CRITICAL | `SPEC/03_DATABASE.md` | `src/AMCCA.Core/Database/Migrations/*`, tests | CLOSED |
-| **DEF-019** | HIGH | `.github/workflows/ci.yml` | `.github/workflows/ci.yml` | OPEN |
+| **DEF-019** | HIGH | `.github/workflows/validation.yml` | `.github/workflows/validation.yml` | CLOSED |
 | **DEF-020** | HIGH | `BUILD_ORDER.md` | Repo root, commits | OPEN |
 | **DEF-021** | HIGH | `SPEC/76_PACKAGING.md` | Packaging scripts, build | OPEN |
 | **DEF-022** | MEDIUM | `SPEC/01_STACK_MANIFEST.md` | `src/AMCCA.Core/AMCCA.Core.csproj`, `src/AMCCA.App/AMCCA.App.csproj` | OPEN |
@@ -250,15 +250,15 @@
 ### DEF-019 — Real .NET CI Execution
 - **Severidad:** HIGH
 - **Especificación incumplida:** `SPEC/02_CI_CD.md`
-- **Archivo(s):** `.github/workflows/ci.yml`
-- **Comportamiento actual:** El CI sólo ejecuta validadores Python y no compila ni ejecuta la solución y tests .NET.
-- **Por qué falla:** El CI no garantiza la salud del código de producción ni de los tests.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Archivo(s):** `.github/workflows/validation.yml`
+- **Comportamiento actual:** El CI sólo ejecutaba validadores Python y no compilaba ni ejecutaba la solución y tests .NET.
+- **Por qué falla:** El CI no garantizaba la salud del código de producción ni de los tests en GitHub Actions.
+- **Test de regresión:** Verificación de ejecución del pipeline local de .NET en Release mode: `dotnet restore AMCCA.sln`, `dotnet build AMCCA.sln --no-restore --configuration Release`, `dotnet test AMCCA.sln --no-build --configuration Release --verbosity normal`.
+- **Fix:** Actualizado `.github/workflows/validation.yml` configurando el paso `actions/setup-dotnet@v4` con `dotnet-version: '8.0.x'`, seguido de `dotnet restore`, `dotnet build` en Release y `dotnet test` con reporting normal.
+- **Test ejecutado:** Ejecución completa local del pipeline Release (0 advertencias, 0 errores, 379 tests pasando).
+- **Resultado:** PASS
+- **Evidencia:** Pipeline de CI ahora cubre integralmente tanto el plano de especificación/artefactos de Python como la solución y suites de tests reales de .NET 8.
+- **Estado:** CLOSED
 
 ### DEF-020 — Reconciliation of BUILD_ORDER.md
 - **Severidad:** HIGH

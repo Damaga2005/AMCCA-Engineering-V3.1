@@ -7,17 +7,17 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 265
-**Total bytes:** 1304207
+**Total bytes:** 1305390
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
-| `.github/workflows/validation.yml` | `6f8dcf5615e7ff4fe23c583ea7c86f0c75dce744c5998496fdaaea7bdaeaca80` | 1827 |
+| `.github/workflows/validation.yml` | `83df0f3780609e060c9d6c71c0aa6bd5d940f012d4c0dd6fc8509082ff04570d` | 2296 |
 | `.gitignore` | `247826b483e39e376c3f77f7966f6fc8bfb8323959247de4496b6db515497b8b` | 98 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `fa10cc64c2b1c971aefd728389ce5f6a2e562b40b0aac74fe684cdbe1ec196c7` | 26911 |
+| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `b1dbaa7a55d6c8984825532c7406c2d0f9b000d5f425cfa5fa6e4e16d4c36ebb` | 27625 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
