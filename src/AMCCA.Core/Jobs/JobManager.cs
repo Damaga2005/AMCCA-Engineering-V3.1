@@ -220,9 +220,9 @@ public class JobManager
         using var tx = connection.BeginTransaction();
 
         const string checkSql = "SELECT owner_id AS OwnerId, fence_token AS FenceToken FROM leases WHERE job_id = @JobId;";
-        var lease = await connection.QuerySingleOrDefaultAsync<dynamic>(checkSql, new { JobId = jobId }, transaction: tx);
+        var lease = await connection.QuerySingleOrDefaultAsync<LeaseCheckRecord>(checkSql, new { JobId = jobId }, transaction: tx);
 
-        if (lease == null || (string)lease.OwnerId != workerId || (long)lease.FenceToken != expectedFenceToken)
+        if (lease == null || lease.OwnerId != workerId || lease.FenceToken != expectedFenceToken)
         {
             tx.Rollback();
             throw new AmccaException(
@@ -252,9 +252,9 @@ public class JobManager
 
         // DEF-016: Stale worker / fence token check: must hold current lease with matching fence token
         const string checkSql = "SELECT owner_id AS OwnerId, fence_token AS FenceToken FROM leases WHERE job_id = @JobId;";
-        var lease = await connection.QuerySingleOrDefaultAsync<dynamic>(checkSql, new { JobId = jobId }, transaction: tx);
+        var lease = await connection.QuerySingleOrDefaultAsync<LeaseCheckRecord>(checkSql, new { JobId = jobId }, transaction: tx);
 
-        if (lease == null || (string)lease.OwnerId != workerId || (long)lease.FenceToken != expectedFenceToken)
+        if (lease == null || lease.OwnerId != workerId || lease.FenceToken != expectedFenceToken)
         {
             tx.Rollback();
             throw new AmccaException(
@@ -345,4 +345,6 @@ public class JobManager
         ";
         return await connection.QuerySingleOrDefaultAsync<JobRecord>(sql, new { Id = jobId });
     }
+
+    private record LeaseCheckRecord(string? OwnerId, long FenceToken);
 }

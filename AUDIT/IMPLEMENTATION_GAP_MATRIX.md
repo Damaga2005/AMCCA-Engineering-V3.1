@@ -30,7 +30,7 @@
 | **DEF-019** | HIGH | `.github/workflows/validation.yml` | `.github/workflows/validation.yml` | CLOSED |
 | **DEF-020** | HIGH | `BUILD_ORDER.md` | Repo root, commits | OPEN |
 | **DEF-021** | HIGH | `SPEC/76_PACKAGING.md` | Packaging scripts, build | OPEN |
-| **DEF-022** | MEDIUM | `SPEC/01_STACK_MANIFEST.md` | `src/AMCCA.Core/AMCCA.Core.csproj`, `src/AMCCA.App/AMCCA.App.csproj` | OPEN |
+| **DEF-022** | MEDIUM | `SPEC/01_TECH_STACK.md` | `src/AMCCA.Core/AMCCA.Core.csproj`, `src/AMCCA.App/AMCCA.App.csproj` | CLOSED |
 | **DEF-023** | HIGH | `SPEC/71_TEST_MATRIX.md` | `tests/*` | OPEN |
 | **DEF-024** | MEDIUM | `SPEC/06_AGENT_SYSTEM.md` | `src/AMCCA.Core/Tools/ToolRegistry.cs` | CLOSED |
 | **DEF-025** | MEDIUM | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | CLOSED |
@@ -288,16 +288,16 @@
 
 ### DEF-022 — Mandatory Architectural Dependencies
 - **Severidad:** MEDIUM
-- **Especificación incumplida:** `SPEC/01_STACK_MANIFEST.md`
+- **Especificación incumplida:** `SPEC/01_TECH_STACK.md`
 - **Archivo(s):** `src/AMCCA.Core/AMCCA.Core.csproj`, `src/AMCCA.App/AMCCA.App.csproj`
 - **Comportamiento actual:** Ausencia de dependencias normativas como `HttpClientFactory`, `Polly`, `Serilog` integradas activamente en los proyectos de código.
-- **Por qué falla:** La arquitectura exige resiliencia con Polly, logging estructurado con Serilog y gestión de conexiones HTTP con `IHttpClientFactory`.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Por qué falla:** La arquitectura exige resiliencia con Polly (D-006), logging estructurado con Serilog (D-007) y gestión de conexiones HTTP con `IHttpClientFactory` (D-005).
+- **Test de regresión:** `tests/AMCCA.Core.Tests/ArchitecturalDependenciesRegressionTests.cs` (`DEF022_MandatoryArchitecturalDependencies_HttpClientFactory_Polly_Serilog_AreFunctional`)
+- **Fix:** Añadidas las referencias a `Microsoft.Extensions.Http`, `Polly`, `Serilog`, `Microsoft.Extensions.Hosting` en `AMCCA.Core.csproj` y `AMCCA.App.csproj`, verificando su correcta resolución de DI, ejecución de pipelines de resiliencia y logging estructurado.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 383/383 tests pasando; dependencias del stack normativo activas, operativas y probadas.
+- **Estado:** CLOSED
 
 ### DEF-023 — Comprehensive Test Pyramid
 - **Severidad:** HIGH
