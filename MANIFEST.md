@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 241
-**Total bytes:** 1105452
+**Files:** 244
+**Total bytes:** 1115793
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -193,7 +193,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `a95a52c38ce4758f826a9df7b7609413af53db393511b1b4dd3f3c85ac7a9493` | 11157 |
-| `src/AMCCA.Core/Events/AuditStore.cs` | `9a39b9f8deebd5404b3d1bdef900866b040d828e70580cf1e8cd376874399601` | 3482 |
+| `src/AMCCA.Core/Events/AuditStore.cs` | `f29074949b72c61cc88ba81174d48937e7f85d9d18d728145b0277e6bd1767f7` | 3672 |
 | `src/AMCCA.Core/Events/EventStore.cs` | `0003439f50cbfaa58902681298faa38ff5d1302263e32469fb8c45322ddcf1b8` | 2884 |
 | `src/AMCCA.Core/Jobs/IntentKeyGenerator.cs` | `1e2e0d0cc64e9ce7af544df84ca87257ecea9f973ca34722f5502d24de8563ca` | 1043 |
 | `src/AMCCA.Core/Jobs/IntentManager.cs` | `645e4a3feb627d35dbc046424f95615ec870fde47b5a29281e3fe280b5aabd16` | 4736 |
@@ -204,6 +204,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Media/MediaRenderer.cs` | `465cf8bcd395a747a39b7c38c17a3401ff46fd4624b5175180da77498382b58c` | 3323 |
 | `src/AMCCA.Core/Monetization/MonetizationModels.cs` | `a2b38400d47de09ed9cd018f7553208bba3e8f98ffbd65c7a7b30e9ed989528e` | 1478 |
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `92eca4c6684a295ea7a7c48d11caab516c5638cab33666063bbd7c7666e603a5` | 4891 |
+| `src/AMCCA.Core/Operator/OperatorControlService.cs` | `2cd38f31143823693c50f04cdbc94c647948f97767ad2e7695f4276f5aaa3f90` | 3914 |
+| `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
 | `src/AMCCA.Core/Policy/ApprovalManager.cs` | `30ca8974c71627105edf7bc47668b3e2ce8e5a74d55135c412ad466d425af630` | 4009 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `554e98a90ac6a6a625aac57703a143edced2e8ed8978932bc54b576903be88b2` | 2707 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `feeef0c621ab4a6497c448ccfb6990c24a5ec92c640205d62a03c436cf23357b` | 1952 |
@@ -243,6 +245,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `a071b39cbb7a7661b92011bdf6b1af3165afe5702d764b488148477b5a9a31ff` | 11425 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
 | `tests/AMCCA.Core.Tests/MonetizationAndRevenueContractTests.cs` | `46ac2578c1297e510a03b6145e73a35141728b778db91d60f1cfb86c0b65f45d` | 6379 |
+| `tests/AMCCA.Core.Tests/OperatorControlAndAuditContractTests.cs` | `440a2b2db0849af752cf092265e00578fa4e80d2824a3180491a5abc8d6a3891` | 6048 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `621f5372f0ecb38a6afaf20affef75a4b92864e133a2671815ba6900977b33c2` | 6727 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
 | `tests/AMCCA.Core.Tests/ProviderGatewayAndModelRegistryContractTests.cs` | `37e2c175023ff30c7b9cd39be8a5be1a66f759b84e1d47a1d4425f01cc2e243c` | 6957 |

@@ -27,7 +27,7 @@ public record AuditRecord(
 public interface IAuditStore
 {
     Task AppendAuditAsync(AuditRecord record, CancellationToken ct = default);
-    Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, CancellationToken ct = default);
+    Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, string? action = null, CancellationToken ct = default);
 }
 
 public class AuditStore : IAuditStore
@@ -65,7 +65,7 @@ public class AuditStore : IAuditStore
         await connection.ExecuteAsync(sql, record);
     }
 
-    public async Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, string? action = null, CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         string sql = @"
@@ -84,15 +84,20 @@ public class AuditStore : IAuditStore
                 schema_version AS SchemaVersion,
                 occurred_at AS OccurredAt
             FROM audit_log
+            WHERE 1=1
         ";
 
         if (!string.IsNullOrEmpty(correlationId))
         {
-            sql += " WHERE correlation_id = @CorrelationId";
+            sql += " AND correlation_id = @CorrelationId";
+        }
+        if (!string.IsNullOrEmpty(action))
+        {
+            sql += " AND action = @Action";
         }
         sql += " ORDER BY occurred_at ASC;";
 
-        var result = await connection.QueryAsync<AuditRecord>(sql, new { CorrelationId = correlationId });
+        var result = await connection.QueryAsync<AuditRecord>(sql, new { CorrelationId = correlationId, Action = action });
         return result.ToList();
     }
 }
