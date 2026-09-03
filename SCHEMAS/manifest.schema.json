@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "amcca://schema/manifest/3.1.0",
+  "title": "Production artifact manifest",
+  "description": "The hash-verifiable inventory of everything a production is made of.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "production_id",
+    "sealed",
+    "artifacts",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3.1.0",
+      "description": "Contract version. Required on every persisted object (D-004)."
+    },
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "production_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "sealed": {
+      "type": "boolean"
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_version_id",
+          "artifact_kind",
+          "sha256",
+          "bytes",
+          "state"
+        ],
+        "properties": {
+          "artifact_version_id": {
+            "type": "string",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+            "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+          },
+          "artifact_kind": {
+            "enum": [
+              "RESEARCH",
+              "SCRIPT",
+              "STORYBOARD",
+              "IMAGE",
+              "VIDEO_CLIP",
+              "VOICE",
+              "MUSIC",
+              "CAPTION",
+              "RENDER",
+              "THUMBNAIL",
+              "METADATA"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "path": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "CURRENT",
+              "SUPERSEDED",
+              "INVALIDATED",
+              "TOMBSTONED"
+            ]
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+              "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+            }
+          },
+          "generator_model_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rights_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+                "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+    }
+  }
+}

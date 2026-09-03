@@ -76,9 +76,12 @@ def read(*parts):
 
 def walk_files():
     skip_dirs = {".git", "__pycache__", ".venv"}
+    skip_files = {".git"}
     for base, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in skip_dirs]
         for fn in files:
+            if fn in skip_files:
+                continue
             p = os.path.join(base, fn)
             yield os.path.relpath(p, ROOT).replace(os.sep, "/")
 

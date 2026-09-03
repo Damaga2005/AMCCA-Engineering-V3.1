@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "amcca://schema/event/3.1.0",
+  "title": "Domain event (append-only)",
+  "description": "Append-only operational history. Separate from the audit log (D-018).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "aggregate_type",
+    "aggregate_id",
+    "aggregate_version",
+    "correlation_id",
+    "occurred_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3.1.0",
+      "description": "Contract version. Required on every persisted object (D-004)."
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^[a-z]+(\\.[a-z_]+)+$"
+    },
+    "aggregate_type": {
+      "enum": [
+        "production",
+        "publication",
+        "job",
+        "budget",
+        "policy",
+        "platform_account",
+        "referral",
+        "experiment",
+        "artifact"
+      ]
+    },
+    "aggregate_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "aggregate_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "causation_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transition_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^T-[0-9A-Z]{3}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}
