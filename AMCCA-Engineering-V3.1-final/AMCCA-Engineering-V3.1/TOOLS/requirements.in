@@ -1,0 +1,10 @@
+# Required to run TOOLS/*.py. See requirements.txt for exact pinned versions
+# (regenerated with pip-compile; see TOOLS/requirements.txt's header).
+#
+# rfc3339-validator is NOT optional: jsonschema's FormatChecker silently accepts
+# every string for format:"date-time" unless this package is installed (confirmed
+# empirically while building V3.1 -- this is exactly the failure mode V31-02 was
+# written to close, and it reproduced immediately without this pin).
+jsonschema>=4.18
+rfc3339-validator>=0.1.4
+pyyaml>=6.0

@@ -1,0 +1,47 @@
+# Provider gateway configuration.
+#
+# VERIFICATION STATUS: UNVERIFIED.
+#
+# The V2 package asserted a base URL, Bearer auth, OpenAI-compatible chat routes,
+# image and video routes, async task lookup, and an X-Oneapi-Request-Id header for
+# this provider, with no source reference and no retrieval date, in violation of its
+# own fact-checking policy. Those assertions are NOT carried forward here.
+#
+# At least four distinct projects use closely similar names (omnirouter, OmniRouter,
+# OmniRoute, omnirouters), so even the service identity is ambiguous from the name.
+#
+# Before implementing the adapter (SPEC/23):
+#   1. Retrieve the official documentation; record its URL and date in `evidence`.
+#   2. Confirm the service identity unambiguously.
+#   3. Probe each capability live; record results in model_registry.
+#   4. Leave capabilities_verified false until 1-3 succeed.
+
+schema_version: "3.1.0"
+
+gateway:
+  id: "omnirouters"
+  enabled: false
+  base_url: null                    # REPLACE with the verified base URL
+  auth_scheme: null                 # REPLACE with the verified scheme
+  api_key_secret_ref: "secret://amcca/gateway_api_key"
+  timeout_seconds: 120
+  capabilities_verified: false
+  evidence:
+    documentation_url: null
+    retrieved_at: null
+    identity_confirmed: false
+    confirmed_by: null
+    notes: "No verified evidence exists at package authoring time (2026-09-02)."
+  capabilities:
+    text:   { supported: null, route: null, verified_at: null }
+    image:  { supported: null, route: null, verified_at: null }
+    video:  { supported: null, route: null, verified_at: null }
+    speech: { supported: null, route: null, verified_at: null }
+
+# D-013: a second IProviderGateway implementation MUST exist before AUTONOMOUS mode
+# is enabled. A port with one implementation has never been tested as a port.
+secondary_gateway:
+  id: null
+  enabled: false
+  required_before_autonomous: true
+  minimum_capability: text

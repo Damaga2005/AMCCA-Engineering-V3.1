@@ -1,0 +1,53 @@
+# 14 — Job System
+
+> **Normative language:** MUST/SHALL = mandatory; SHOULD = recommended unless a documented exception exists; MAY = optional.
+
+## Fields
+
+See `job.schema.json` and the `jobs` table. Every job has `id`, `type`, `state`, `priority`,
+`idempotency_key`, `attempt`, `max_attempts`, `correlation_id` and a payload.
+
+## Priorities
+
+| P | Class | Examples |
+|---|---|---|
+| 0 | Emergency and control | Kill switch propagation, reconciliation of an unknown publication |
+| 1 | Publication and verification | Publish, poll status, verify |
+| 2 | Operator requested | Anything the operator asked for directly |
+| 3 | Scheduled production | The autonomous pipeline |
+| 4 | Analytics | Metric ingestion |
+| 5 | Discovery | Signal and trend gathering |
+
+Aging raises effective priority over time so that P5 work is not starved indefinitely by a busy pipeline.
+Reconciliation is P0 rather than P1 because an unresolved ambiguity blocks correctness, not just progress.
+
+## Leasing
+
+A worker claims a job with a single conditional statement:
+
+```sql
+UPDATE jobs SET state='LEASED' WHERE id=? AND state='QUEUED';
+```
+
+paired with an insert into `leases` carrying a monotonically increasing `fence_token`.
+Read-then-write claiming is forbidden. Heartbeats extend `lease_until`. An expired lease becomes
+recoverable only after validating that the previous owner's fence token is stale; a worker whose token is
+stale MUST abandon its write rather than complete it.
+
+## Concurrency limits
+
+A global worker cap, plus per-provider and per-platform caps by rate class. The scheduler never dispatches
+work whose reserved budget is unavailable or whose disk requirement exceeds free space — a render that
+cannot finish is not started.
+
+## Retries and dead-lettering
+
+Bounded by `max_attempts` and by cumulative retry cost. On exhaustion the job moves to `DEAD_LETTER` with
+`AMCCA-JOB-003` and a notification. A dead-lettered job is never silently dropped and never automatically
+retried; it waits for an operator.
+
+## What a job may not do
+
+Hold a database transaction across its whole execution. Perform an `EXTERNAL_UNSAFE` call without a
+committed intent. Extend its own lease indefinitely without heartbeating. Modify a production's state
+directly rather than through the Orchestrator.

@@ -1,0 +1,38 @@
+# Environment definitions.
+# Environment and flags are two orthogonal axes (README, "Modes and environments").
+# dry_run is a boolean flag, NOT an environment. V2 conflated the two.
+
+schema_version: "3.1.0"
+
+environments:
+
+  DEVELOPMENT:
+    description: "Local development. External mutations blocked."
+    autonomy_mode: MANUAL
+    publishing_enabled: false      # rejected by preflight if set true
+    dry_run: true
+    logging_level: Debug
+
+  STAGING:
+    description: >
+      The only environment where publishing_enabled may be combined with
+      dry_run=false, and only against non-production platform accounts,
+      and only while providers.gateway.capabilities_verified is true.
+    autonomy_mode: ASSISTED
+    publishing_enabled: true
+    dry_run: false
+    logging_level: Information
+    constraints:
+      - "platform accounts MUST be non-production"
+      - "providers.gateway.capabilities_verified MUST be true"
+      - "a second IProviderGateway implementation MUST be registered (D-013)"
+
+  PRODUCTION:
+    description: "Live operation."
+    autonomy_mode: ASSISTED        # AUTONOMOUS is an explicit, audited operator change
+    publishing_enabled: true
+    dry_run: false
+    logging_level: Information
+    constraints:
+      - "all suites in SPEC/72, SPEC/73, SPEC/74 green"
+      - "every criterion in SPEC/79 demonstrated by execution"

@@ -1,0 +1,27 @@
+# Budget windows.
+#
+# This file uses the SAME vocabulary as config.example.yaml. V2 used two different
+# key sets for the same concepts across two files, with no schema to catch it.
+# The canonical keys are defined once in SCHEMAS/config.schema.json.
+
+schema_version: "3.1.0"
+
+budgets:
+  per_production: "5.000000"
+  per_rework:     "2.000000"
+  per_recovery:   "1.000000"
+  daily:          "25.000000"
+  monthly:        "300.000000"
+  warn_percent:   70
+  pause_percent:  85
+  block_percent:  100
+
+# Precedence (SPEC/20): a reservation must satisfy EVERY applicable window;
+# the most restrictive binds. per_production, per_rework and per_recovery are
+# sub-budgets of one production and are NOT fungible.
+#
+# Preflight rejects: per_production > daily, or daily > monthly (AMCCA-CFG-004).
+#
+# NOTE ON REALISM: per_production of 5.00 EUR has NOT been validated against actual
+# provider pricing. Populate pricing_snapshots from retrieved provider pricing and
+# re-derive this figure before relying on it.

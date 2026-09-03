@@ -1,0 +1,11 @@
+# Model registry seed.
+#
+# DELIBERATELY EMPTY. Models are runtime data, never constants (SPEC/23, SPEC/24).
+# A model cannot be enabled without a successful live capability probe:
+#   CHECK(enabled = 0 OR last_verified_at IS NOT NULL)
+#
+# Populating this file with plausible model names would be inventing external facts,
+# which POLICIES/FACT_CHECKING_POLICY.md forbids.
+
+schema_version: "3.1.0"
+models: []

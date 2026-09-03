@@ -1,0 +1,49 @@
+{
+  "_comment": "Every schema conditional (allOf entry with if/then) discovered by conformance_tests.py MUST have an entry here, or the suite fails with UNCOVERED CONDITIONAL and exit code 1 (V31-03). Each entry names one positive case and one negative case that must exist among CASES in conformance_tests.py and must have should_pass True / False respectively.",
+  "cost-event.schema.json": [
+    {
+      "id": "I-cost-signed",
+      "path": "/allOf/0",
+      "positive_case": "settled cost",
+      "negative_case": "negative amount for a non-adjustment kind"
+    }
+  ],
+  "job.schema.json": [
+    {
+      "id": "I-05",
+      "path": "/allOf/0",
+      "positive_case": "RUNNING with a lease",
+      "negative_case": "LEASED without a lease owner"
+    }
+  ],
+  "publication.schema.json": [
+    {
+      "id": "I-11",
+      "path": "/allOf/0",
+      "positive_case": "VERIFIED with authoritative evidence",
+      "negative_case": "VERIFIED with POST_PUBLISH_CHECK evidence"
+    },
+    {
+      "id": "I-18",
+      "path": "/allOf/1",
+      "positive_case": "VERIFIED with required label applied",
+      "negative_case": "VERIFIED with required label not applied"
+    }
+  ],
+  "referral.schema.json": [
+    {
+      "id": "I-referral-active",
+      "path": "/allOf/0",
+      "positive_case": "ACTIVE via official API with evidence",
+      "negative_case": "ACTIVE via HTTP_CHECK"
+    }
+  ],
+  "tool-run.schema.json": [
+    {
+      "id": "I-03",
+      "path": "/allOf/0",
+      "positive_case": "EXTERNAL_UNSAFE with an intent",
+      "negative_case": "EXTERNAL_UNSAFE without an intent"
+    }
+  ]
+}

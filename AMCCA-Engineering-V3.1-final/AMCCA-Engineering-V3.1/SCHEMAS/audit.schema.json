@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "amcca://schema/audit/3.1.0",
+  "title": "Audit record",
+  "description": "Who did what, under which authority, with what outcome.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "audit_id",
+    "action",
+    "actor_type",
+    "actor_id",
+    "outcome",
+    "correlation_id",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3.1.0",
+      "description": "Contract version. Required on every persisted object (D-004)."
+    },
+    "audit_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "actor_type": {
+      "enum": [
+        "OPERATOR",
+        "SCHEDULER",
+        "ORCHESTRATOR",
+        "RECONCILER",
+        "SYSTEM"
+      ]
+    },
+    "actor_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "subject_type": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "subject_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "production_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "ALLOWED",
+        "DENIED",
+        "BLOCKED",
+        "APPROVED",
+        "REJECTED",
+        "ERROR"
+      ]
+    },
+    "policy_decision_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason_code": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^AMCCA-[A-Z]{2,4}-[0-9]{3}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+    }
+  }
+}

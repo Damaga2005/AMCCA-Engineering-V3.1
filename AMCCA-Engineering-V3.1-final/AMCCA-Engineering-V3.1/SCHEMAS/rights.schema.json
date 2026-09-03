@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "amcca://schema/rights/3.1.0",
+  "title": "Asset rights record",
+  "description": "Rights status per asset.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "rights_id",
+    "production_id",
+    "asset_hash",
+    "status",
+    "license",
+    "provenance",
+    "commercial_use",
+    "modification",
+    "evaluated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3.1.0",
+      "description": "Contract version. Required on every persisted object (D-004)."
+    },
+    "rights_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "production_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "asset_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "enum": [
+        "GREEN",
+        "YELLOW",
+        "RED"
+      ]
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "provenance": {
+      "enum": [
+        "GENERATED",
+        "LICENSED_STOCK",
+        "PUBLIC_DOMAIN",
+        "OPERATOR_SUPPLIED",
+        "OPEN_LICENCE",
+        "UNKNOWN"
+      ]
+    },
+    "generator_model_id": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "author": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "acquired_at": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expires_at": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "commercial_use": {
+      "enum": [
+        "ALLOWED",
+        "DENIED",
+        "UNKNOWN"
+      ]
+    },
+    "modification": {
+      "enum": [
+        "ALLOWED",
+        "DENIED",
+        "UNKNOWN"
+      ]
+    },
+    "attribution_required": {
+      "type": "boolean"
+    },
+    "attribution_text": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "restrictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_ref": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+    }
+  }
+}

@@ -1,0 +1,73 @@
+# AMCCA configuration — example
+# Validated at startup against SCHEMAS/config.schema.json. One vocabulary only.
+# Cross-field consistency rules are enforced by preflight (SPEC/03, SPEC/49).
+
+schema_version: "3.1.0"
+
+environment: DEVELOPMENT          # DEVELOPMENT | STAGING | PRODUCTION
+autonomy_mode: MANUAL             # MANUAL | ASSISTED | AUTONOMOUS
+publishing_enabled: false         # safe default (D-020)
+dry_run: true                     # orthogonal flag, not an environment
+data_root: "%LOCALAPPDATA%/AMCCA/data"
+currency: EUR
+
+logging:
+  level: Information
+  retention_days: 30
+
+# Money is a decimal string with six fractional digits (D-023). Never a float.
+# Preflight enforces: per_production <= daily <= monthly,
+# and warn_percent < pause_percent < block_percent <= 100.
+budgets:
+  per_production: "5.000000"
+  per_rework:     "2.000000"
+  per_recovery:   "1.000000"
+  daily:          "25.000000"
+  monthly:        "300.000000"
+  warn_percent:   70
+  pause_percent:  85
+  block_percent:  100
+
+storage:
+  minimum_free_gb: 20
+  temp_retention_hours: 24
+  cache_retention_days: 7
+
+providers:
+  gateway:
+    id: "omnirouters"
+    enabled: false
+    base_url: "https://REPLACE-WITH-VERIFIED-BASE-URL/"
+    api_key_secret_ref: "secret://amcca/gateway_api_key"
+    timeout_seconds: 120
+    # Stays false until a live capability probe succeeds (SPEC/23, D-028).
+    # AUTONOMOUS mode is refused while this is false.
+    capabilities_verified: false
+
+platforms:
+  youtube:
+    enabled: false
+    synthetic_label_required: true
+    capabilities: []
+  tiktok:
+    enabled: false
+    synthetic_label_required: true
+    capabilities: []
+  instagram:
+    enabled: false
+    synthetic_label_required: true
+    capabilities: []
+
+policy:
+  research:
+    min_sources: 2
+    max_attempts: 3
+  qa:
+    overall_min: 8.5
+    critical_min: 8.0
+  rework:
+    max_attempts: 3
+    min_severity: MEDIUM
+  reconcile:
+    max_attempts: 5
+    interval_seconds: 300

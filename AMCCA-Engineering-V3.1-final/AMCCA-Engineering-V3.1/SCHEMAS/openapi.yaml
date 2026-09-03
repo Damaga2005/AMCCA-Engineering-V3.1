@@ -1,0 +1,125 @@
+# Optional localhost API contract.
+#
+# DISABLED BY DEFAULT (D-011, SPEC/65). This document exists so that enabling the
+# boundary does not create an unspecified attack surface.
+#
+# GENERATED ARTIFACT: emitted from the command and query contracts in SPEC/64.
+# A hand-edited OpenAPI document that disagrees with the commands it describes is
+# worse than none, because it is trusted.
+#
+# V2 defect closed: the V2 package referenced an OpenAPI document by a relative
+# path that did not resolve, and stated two different endpoint counts in two files.
+
+openapi: 3.1.0
+info:
+  title: AMCCA Local API
+  version: "3.1.0"
+  description: >
+    Loopback-only read surface plus a strictly enumerated command subset.
+    Every protected action is still routed through the policy engine; this API is
+    a caller, not an authority. Never exposes secrets, personal-data-flagged
+    content, autonomy changes, policy changes, or emergency-stop clearing.
+
+servers:
+  - url: http://127.0.0.1:{port}/v1
+    description: Loopback only. Binding to a non-loopback address is refused at startup.
+    variables:
+      port: { default: "17423" }
+
+security:
+  - localBearer: []
+
+components:
+  securitySchemes:
+    localBearer:
+      type: http
+      scheme: bearer
+      description: Locally generated token held in the secret store. No anonymous access.
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          pattern: '^AMCCA-[A-Z]{2,4}-[0-9]{3}$'
+          description: A code from SPEC/05. Never a free-text-only error.
+        message: { type: string }
+        correlation_id: { type: string }
+  responses:
+    Unauthorized:
+      description: Missing or invalid local token. Audited.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /health:
+    get:
+      summary: Liveness and preflight summary
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /productions:
+    get:
+      summary: List productions
+      description: Read-only. Never returns personal-data-flagged claim content.
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /productions/{id}:
+    get:
+      summary: Production detail with lineage summary
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: Not found }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /jobs:
+    get:
+      summary: Job queue summary including dead-letter items
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /approvals:
+    get:
+      summary: Pending approvals with their exact scope
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /notifications:
+    get:
+      summary: Unacknowledged notifications
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /commands/retry-job:
+    post:
+      summary: Requeue a dead-lettered job
+      description: >
+        Protected action. Routed through the policy engine exactly as the UI path is.
+      responses:
+        '202': { description: Accepted }
+        '403': { description: Blocked by policy, with the rule that blocked it }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /commands/reconcile-intent:
+    post:
+      summary: Trigger reconciliation of an ambiguous intent
+      description: Protected action. Never resolves an intent without evidence.
+      responses:
+        '202': { description: Accepted }
+        '403': { description: Blocked by policy }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+# Deliberately absent, and their absence is normative (SPEC/65):
+#   secret resolution, autonomy changes, policy activation, emergency-stop clearing,
+#   publishing without the same preflight the UI path uses, raw provider payloads.

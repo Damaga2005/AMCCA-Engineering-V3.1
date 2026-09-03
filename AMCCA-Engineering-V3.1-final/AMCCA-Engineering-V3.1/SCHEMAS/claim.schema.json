@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "amcca://schema/claim/3.1.0",
+  "title": "Research claim",
+  "description": "Evidence-plane record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_id",
+    "production_id",
+    "text",
+    "status",
+    "materiality",
+    "sources",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3.1.0",
+      "description": "Contract version. Required on every persisted object (D-004)."
+    },
+    "claim_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "production_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "status": {
+      "enum": [
+        "VERIFIED",
+        "DISPUTED",
+        "ESTIMATED",
+        "UNKNOWN"
+      ]
+    },
+    "materiality": {
+      "enum": [
+        "MATERIAL",
+        "INCIDENTAL"
+      ]
+    },
+    "subject_class": {
+      "enum": [
+        "GENERAL",
+        "PERSON",
+        "HEALTH",
+        "FINANCE",
+        "LEGAL",
+        "BREAKING_EVENT"
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "url",
+          "retrieved_at",
+          "trust_tier"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+            "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+          },
+          "publisher": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "trust_tier": {
+            "enum": [
+              "PRIMARY",
+              "SECONDARY",
+              "AGGREGATOR",
+              "UNRATED"
+            ]
+          },
+          "excerpt_hash": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "contradicted_by": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+        "description": "ULID, generated locally. External identifiers are never primary keys (D-003)."
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp in UTC with explicit offset. format:date-time is enforced by FormatChecker at every validation call site (V31-02); it is not merely declared."
+    }
+  }
+}

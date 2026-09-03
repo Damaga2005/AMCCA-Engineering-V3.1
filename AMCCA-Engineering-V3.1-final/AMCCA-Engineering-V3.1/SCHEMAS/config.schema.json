@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "amcca://schema/config/3.1.0",
+  "title": "AMCCA configuration",
+  "description": "Validated at startup by the preflight (SPEC/49).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "environment",
+    "autonomy_mode",
+    "publishing_enabled",
+    "dry_run",
+    "data_root",
+    "budgets",
+    "storage",
+    "logging",
+    "providers",
+    "platforms"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3.1.0"
+    },
+    "environment": {
+      "enum": [
+        "DEVELOPMENT",
+        "STAGING",
+        "PRODUCTION"
+      ]
+    },
+    "autonomy_mode": {
+      "enum": [
+        "MANUAL",
+        "ASSISTED",
+        "AUTONOMOUS"
+      ]
+    },
+    "publishing_enabled": {
+      "type": "boolean"
+    },
+    "dry_run": {
+      "type": "boolean"
+    },
+    "data_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "Verbose",
+            "Debug",
+            "Information",
+            "Warning",
+            "Error",
+            "Fatal"
+          ]
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "per_production",
+        "per_rework",
+        "per_recovery",
+        "daily",
+        "monthly",
+        "warn_percent",
+        "pause_percent",
+        "block_percent"
+      ],
+      "properties": {
+        "per_production": {
+          "type": "string",
+          "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+          "description": "A budget limit cannot be negative (V31-04)."
+        },
+        "per_rework": {
+          "type": "string",
+          "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+          "description": "Decimal string, six fractional digits, NEVER negative. Used for budgets, estimates, reservations and settlements, none of which are conceptually signed quantities (V31-04). Money is NEVER a float (D-023)."
+        },
+        "per_recovery": {
+          "type": "string",
+          "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+          "description": "Decimal string, six fractional digits, NEVER negative. Used for budgets, estimates, reservations and settlements, none of which are conceptually signed quantities (V31-04). Money is NEVER a float (D-023)."
+        },
+        "daily": {
+          "type": "string",
+          "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+          "description": "Decimal string, six fractional digits, NEVER negative. Used for budgets, estimates, reservations and settlements, none of which are conceptually signed quantities (V31-04). Money is NEVER a float (D-023)."
+        },
+        "monthly": {
+          "type": "string",
+          "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+          "description": "Decimal string, six fractional digits, NEVER negative. Used for budgets, estimates, reservations and settlements, none of which are conceptually signed quantities (V31-04). Money is NEVER a float (D-023)."
+        },
+        "warn_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "pause_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "block_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_free_gb",
+        "temp_retention_hours",
+        "cache_retention_days"
+      ],
+      "properties": {
+        "minimum_free_gb": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "temp_retention_hours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cache_retention_days": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "providers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gateway"
+      ],
+      "properties": {
+        "gateway": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "enabled",
+            "base_url",
+            "api_key_secret_ref",
+            "timeout_seconds",
+            "capabilities_verified"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "base_url": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            },
+            "api_key_secret_ref": {
+              "type": "string",
+              "pattern": "^secret://"
+            },
+            "timeout_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 900
+            },
+            "capabilities_verified": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "platforms": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "synthetic_label_required": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "research": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min_sources": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_attempts": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "qa": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "overall_min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "critical_min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            }
+          }
+        },
+        "rework": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_attempts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "min_severity": {
+              "enum": [
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "CRITICAL"
+              ]
+            }
+          }
+        },
+        "reconcile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_attempts": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "interval_seconds": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+name: Validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned dependencies
+        run: pip install -r TOOLS/requirements.txt
+
+      # NOTE: this workflow deliberately does NOT run
+      # `python TOOLS/generate_artifacts.py --regen` anywhere, and never will.
+      # --regen WRITES the generator's output to disk; running it in CI would
+      # silently overwrite a wrong, hand-edited, or drifted committed artifact
+      # with a freshly-regenerated "correct" one and then have every downstream
+      # check pass against the file CI itself just fixed -- which would hide
+      # exactly the defect class this whole validation-hardening pass exists to
+      # catch (V31-01: a hand-edit of a generated artifact silently passing
+      # validation). CI's job is to prove what is COMMITTED is right, not to
+      # make it right on the fly. --check (below) only ever reads and diffs;
+      # it never writes. If --check fails, the fix is to run --regen locally,
+      # review the diff, and commit it -- never to let the pipeline do that
+      # silently.
+      - name: Structural, contract and drift checks
+        run: python TOOLS/validate_package.py
+
+      - name: Conformance tests (schema conditionals, positive/negative cases)
+        run: python TOOLS/conformance_tests.py
+
+      - name: Generated-artifact drift check (--check only, never --regen)
+        run: python TOOLS/generate_artifacts.py --check
+
+      - name: Release gate (canonical release-readiness command)
+        run: python TOOLS/release_gate.py

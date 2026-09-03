@@ -1,0 +1,76 @@
+# Platform rule sets.
+#
+# EVIDENCE REQUIREMENT (POLICIES/FACT_CHECKING_POLICY.md):
+# every rule set carries source_ref and retrieved_at. A rule set older than
+# staleness_days degrades the platform capability to UNVERIFIED, which blocks
+# autonomous publication to that target (D-028).
+#
+# The values below were retrieved on 2026-09-02 from SECONDARY sources. Per SPEC/42
+# (V31-09), a secondary source can only ever justify DISCOVERED status, never
+# VERIFIED -- the database CHECK constraint on platform_capabilities.evidence_source
+# enforces this regardless of what any config file claims. Read every entry below as
+# DISCOVERED, not VERIFIED, until confirmed against each platform's own help pages.
+
+schema_version: "3.1.0"
+staleness_days: 90
+
+platforms:
+
+  youtube:
+    enabled: false
+    synthetic_label:
+      required_when: "realistic depiction of a person, place or event"
+      exempt: [script_assistance, captions, subtitles, translation, colour_grading, reframing]
+      mechanism: "creator disclosure in Studio > Attributes"
+      capability: apply_synthetic_label
+      source_ref: "https://frameos.studio/blog/ai-content-disclosure-labels"
+      retrieved_at: "2026-09-02"
+      verification_status: DISCOVERED  # V31-09: secondary source; never sufficient for VERIFIED
+    media_profile_ref: "youtube_default"
+    media_profile_source_ref: "REPLACE - retrieve from YouTube Help before use"
+    media_profile_retrieved_at: null
+
+  tiktok:
+    enabled: false
+    synthetic_label:
+      required_when: "realistic AI-generated visuals or audio depicting people, places or events"
+      exempt: [script_assistance, captions, subtitles, translation, colour_grading, reframing]
+      mechanism: "AI-generated label; C2PA Content Credentials auto-detected"
+      capability: apply_synthetic_label
+      notes: "synthetic media of private individuals reported as prohibited"
+      source_ref: "https://storrito.com/resources/tiktoks-2026-ai-labeling-rules-and-what-they-signal-for-platform-governance/"
+      retrieved_at: "2026-09-02"
+      verification_status: DISCOVERED  # V31-09: secondary source; never sufficient for VERIFIED
+    media_profile_ref: "tiktok_default"
+    media_profile_source_ref: "REPLACE - retrieve from TikTok Help before use"
+    media_profile_retrieved_at: null
+
+  instagram:
+    enabled: false
+    synthetic_label:
+      required_when: "realistic AI-generated imagery"
+      exempt: [script_assistance, captions, subtitles, translation, colour_grading, reframing]
+      mechanism: "Meta AI info tag; self-declaration plus metadata detection"
+      capability: apply_synthetic_label
+      source_ref: "https://creatorsagency.co/blog/youtube-tiktok-ai-disclosure-rules-2026"
+      retrieved_at: "2026-09-02"
+      verification_status: DISCOVERED  # V31-09: secondary source; never sufficient for VERIFIED
+    media_profile_ref: "instagram_reels_default"
+    media_profile_source_ref: "REPLACE - retrieve from Meta Help before use"
+    media_profile_retrieved_at: null
+
+# Regulatory context applying across platforms for an EU-established operator.
+# See SPEC/45 for the full treatment and the confidence notes.
+regulatory:
+  eu_ai_act_article_50:
+    status: IN_FORCE
+    applies_from: "2026-08-02"
+    covers: [providers, deployers]
+    source_ref: "https://digital-strategy.ec.europa.eu/en/policies/guidelines-ai-transparency-obligations"
+    retrieved_at: "2026-09-02"
+    notes: >
+      Machine-readable marking under Article 50(2) is reported to have a transitional
+      deadline of 2026-12-02 for generative systems placed on the market before
+      2026-08-02. Confidence in the precise scope of that transitional provision is
+      LOWER than in the 2026-08-02 application date. Verify directly before relying on it.
+      This is not legal advice.

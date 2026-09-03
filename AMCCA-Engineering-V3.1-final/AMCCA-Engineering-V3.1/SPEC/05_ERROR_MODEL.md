@@ -1,0 +1,86 @@
+# 05 — Error Model and Catalogue
+
+> **Normative language:** MUST/SHALL = mandatory; SHOULD = recommended unless a documented exception exists; MAY = optional.
+
+This file is both the taxonomy and the catalogue. V2 split them and the catalogue covered nine codes
+against sixteen categories, so seven classes of failure had no defined handling.
+
+## Code format
+
+`AMCCA-{DOMAIN}-{NNN}` where DOMAIN is two to four uppercase letters. Machine codes are stable
+forever; human messages are separate and may be reworded or localised freely.
+
+## Categories and retry disposition
+
+| Category | Retryable | Backoff | Notes |
+|---|---|---|---|
+| `TRANSIENT` | Yes | Exponential with jitter | Bounded by attempt count and cumulative retry cost |
+| `RATE_LIMITED` | Yes | Honour `Retry-After`, else exponential | Counts against provider concurrency, not against attempts |
+| `AUTH` | No | — | Moves the account to `REAUTH_REQUIRED`; operator action |
+| `CONFIGURATION` | No | — | Startup or preflight abort |
+| `VALIDATION` | No | — | Contract violation; regenerate or rework, never retry identically |
+| `PROVIDER` | Conditional | Circuit-breaker governed | Retry only if the adapter can prove no side effect occurred |
+| `PLATFORM` | Conditional | Circuit-breaker governed | Same proof requirement |
+| `MEDIA` | Yes if bounded | Linear | Re-render; a repeated identical failure signature stops the loop |
+| `RIGHTS` | No | — | Requires a rights decision, not a retry |
+| `COMPLIANCE` | No | — | Requires a disclosure or policy resolution |
+| `POLICY` | No | — | Terminal for the attempted action until policy state changes (I-10) |
+| `BUDGET` | No | — | Requires an authorised budget change |
+| `STORAGE` | Yes if bounded | Linear | Free space or path problem; may resolve after collection |
+| `SECURITY` | No | — | Halts the affected capability; never retried automatically |
+| `USER_ACTION_REQUIRED` | No | — | Blocks with a notification explaining the required action |
+| `UNKNOWN_EXTERNAL_STATE` | **Never blindly** | — | Reconcile first; retry only if reconciliation proves no side effect |
+| `INTERNAL` | No | — | Bug. Fails the job, preserves state, raises a CRITICAL notification |
+
+## Catalogue
+
+| Code | Category | Retry | Operator action |
+|---|---|---|---|
+| `AMCCA-CFG-001` | CONFIGURATION | No | Configuration failed schema validation |
+| `AMCCA-CFG-004` | CONFIGURATION | No | Budget window consistency rule violated |
+| `AMCCA-SEC-001` | SECURITY | No | Security policy block; review and resolve |
+| `AMCCA-SEC-002` | SECURITY | No | Literal credential found in configuration; move to the secret store |
+| `AMCCA-SEC-003` | SECURITY | No | SSRF guard rejected a research target |
+| `AMCCA-SEC-004` | SECURITY | No | Archive rejected: entry count, size or path validation failed |
+| `AMCCA-DB-001` | INTERNAL | No | Foreign keys or WAL not enabled |
+| `AMCCA-DB-002` | CONFIGURATION | No | Migration checksum mismatch; do not run on this database |
+| `AMCCA-DB-003` | TRANSIENT | Yes | SQLite busy beyond `busy_timeout` |
+| `AMCCA-STM-001` | INTERNAL | No | Attempted a transition absent from `SPEC/13` |
+| `AMCCA-STM-002` | INTERNAL | No | Resume attempted to a state other than `blocked_from` |
+| `AMCCA-JOB-001` | TRANSIENT | Yes | Lease expired mid-execution; fence token stale, work abandoned |
+| `AMCCA-JOB-002` | INTERNAL | No | Duplicate idempotency key |
+| `AMCCA-JOB-003` | USER_ACTION_REQUIRED | No | Job dead-lettered after max attempts |
+| `AMCCA-AI-001` | PROVIDER | Conditional | Gateway error; check provider health |
+| `AMCCA-AI-002` | UNKNOWN_EXTERNAL_STATE | No | Reconcile before any retry |
+| `AMCCA-AI-003` | VALIDATION | No | Agent output failed its declared schema |
+| `AMCCA-AI-004` | POLICY | No | Agent attempted a forbidden tool |
+| `AMCCA-AI-005` | BUDGET | No | Agent cost ceiling exceeded |
+| `AMCCA-RES-001` | VALIDATION | No | Material claim lacks sufficient independent sources |
+| `AMCCA-RES-002` | TRANSIENT | Yes | Research source unavailable |
+| `AMCCA-MED-001` | MEDIA | Yes if bounded | Render failed; re-render |
+| `AMCCA-MED-002` | MEDIA | No | FFmpeg timeout or output ceiling exceeded |
+| `AMCCA-QA-001` | VALIDATION | No | QA failure; rework |
+| `AMCCA-QA-002` | INTERNAL | No | AI-assisted finding attempted to set a verdict |
+| `AMCCA-RGT-001` | RIGHTS | No | Asset not GREEN; review rights |
+| `AMCCA-CMP-001` | COMPLIANCE | No | Required synthetic-content label not applied |
+| `AMCCA-CMP-002` | COMPLIANCE | No | Required affiliate disclosure missing |
+| `AMCCA-PLT-001` | PLATFORM | Conditional | Platform rejected the request |
+| `AMCCA-PLT-002` | AUTH | No | Credential invalid or expired; re-authenticate |
+| `AMCCA-PLT-003` | RATE_LIMITED | Yes | Platform rate limit |
+| `AMCCA-PUB-001` | PLATFORM | Conditional | Publication attempt failed |
+| `AMCCA-PUB-007` | UNKNOWN_EXTERNAL_STATE | No | Publication outcome unknown; reconcile |
+| `AMCCA-PUB-008` | POLICY | No | Duplicate publication prevented by unique constraint |
+| `AMCCA-BUD-001` | BUDGET | No | Budget threshold reached |
+| `AMCCA-BUD-002` | BUDGET | No | Reservation refused; insufficient remaining budget |
+| `AMCCA-STO-001` | STORAGE | Yes if bounded | Insufficient free space |
+| `AMCCA-STO-002` | STORAGE | No | Artifact file missing for an existing version row |
+| `AMCCA-REF-001` | VALIDATION | No | Referral validation insufficient for ACTIVE |
+| `AMCCA-INT-001` | INTERNAL | No | Unhandled internal error |
+
+## Rules
+
+1. A code is never reused for a different meaning. Retire, never repurpose.
+2. Every code appearing in `jobs.last_error_code` or `publications.last_error_code` MUST exist here;
+   the validator checks that the pattern is satisfied and a test checks membership.
+3. An error whose category is `UNKNOWN_EXTERNAL_STATE` is never counted as a failure for retry purposes,
+   because it is not known to have failed.

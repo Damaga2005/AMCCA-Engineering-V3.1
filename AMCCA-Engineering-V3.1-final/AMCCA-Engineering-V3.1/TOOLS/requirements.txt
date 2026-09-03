@@ -1,0 +1,38 @@
+# Pinned, exact dependency versions for TOOLS/*.py (V3.1.1).
+#
+# Generated with `pip-compile TOOLS/requirements.in -o TOOLS/requirements.txt`
+# (pip-tools) against the versions resolvable in the build environment on
+# 2026-09-03. Re-run pip-compile to refresh; do not hand-edit version numbers.
+#
+# rfc3339-validator is NOT optional: jsonschema's FormatChecker silently accepts
+# every string for format:"date-time" unless this package is installed (confirmed
+# empirically while building V3.1 -- this is exactly the failure mode V31-02 was
+# written to close, and it reproduced immediately without this pin).
+#
+# See TOOLS/requirements.in for the loose, top-level dependency list this was
+# compiled from.
+
+attrs==26.1.0
+    # via
+    #   jsonschema
+    #   referencing
+jsonschema==4.26.0
+    # via -r requirements.in
+jsonschema-specifications==2025.9.1
+    # via jsonschema
+pyyaml==6.0.3
+    # via -r requirements.in
+referencing==0.37.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+rfc3339-validator==0.1.4
+    # via -r requirements.in
+rpds-py==2026.6.3
+    # via
+    #   jsonschema
+    #   referencing
+six==1.17.0
+    # via rfc3339-validator
+typing-extensions==4.16.0
+    # via referencing
