@@ -33,7 +33,7 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
         }
         else
         {
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient(AMCCA.Core.Security.SsrfValidator.CreateSafeSocketsHttpHandler());
             _ownsHttpClient = true;
         }
     }

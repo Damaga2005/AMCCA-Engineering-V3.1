@@ -10,6 +10,8 @@ namespace AMCCA.Core.Security;
 
 public static class SsrfValidator
 {
+    public static void ValidateUrl(Uri uri) => ValidateDestinationUri(uri);
+
     public static void ValidateDestinationUri(Uri uri)
     {
         if (uri == null)

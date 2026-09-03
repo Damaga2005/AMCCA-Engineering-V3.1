@@ -8,13 +8,82 @@ using Dapper;
 
 namespace AMCCA.Core.Research;
 
-public class ResearchService
+using System.Net.Http;
+using System.Security.Cryptography;
+using AMCCA.Core.Security;
+
+public class ResearchService : IDisposable
 {
     private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly HttpClient _httpClient;
+    private readonly bool _ownsHttpClient;
 
-    public ResearchService(DatabaseConnectionFactory connectionFactory)
+    public ResearchService(DatabaseConnectionFactory connectionFactory, HttpClient? httpClient = null)
     {
         _connectionFactory = connectionFactory;
+        if (httpClient != null)
+        {
+            _httpClient = httpClient;
+            _ownsHttpClient = false;
+        }
+        else
+        {
+            _httpClient = new HttpClient(SsrfValidator.CreateSafeSocketsHttpHandler());
+            _ownsHttpClient = true;
+        }
+    }
+
+    public async Task<Source> FetchAndIngestSourceAsync(
+        string url,
+        string publisher,
+        string trustTier,
+        bool robotsAllowed,
+        CancellationToken ct = default)
+    {
+        var uri = new Uri(url);
+        // Pre-flight check
+        SsrfValidator.ValidateDestinationUri(uri);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.GetAsync(uri, ct);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is AmccaException amccaEx)
+        {
+            throw amccaEx;
+        }
+
+        using (response)
+        {
+            response.EnsureSuccessStatusCode();
+            var contentBytes = await response.Content.ReadAsByteArrayAsync(ct);
+            var contentHash = Convert.ToHexString(SHA256.HashData(contentBytes)).ToLowerInvariant();
+
+            var source = new Source
+            {
+                Id = UlidGenerator.NewUlid(),
+                Url = url,
+                Publisher = publisher,
+                PublishedAt = DateTimeOffset.UtcNow.ToString("O"),
+                RetrievedAt = DateTimeOffset.UtcNow.ToString("O"),
+                ContentHash = contentHash,
+                TrustTier = trustTier,
+                RobotsAllowed = robotsAllowed,
+                CreatedAt = DateTimeOffset.UtcNow.ToString("O")
+            };
+
+            await InsertSourceAsync(source, ct);
+            return source;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_ownsHttpClient)
+        {
+            _httpClient.Dispose();
+        }
     }
 
     public async Task InsertSourceAsync(Source source, CancellationToken ct = default)
