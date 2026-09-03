@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 234
-**Total bytes:** 1078299
+**Files:** 238
+**Total bytes:** 1092704
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -215,6 +215,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Providers/ModelRegistry.cs` | `354e0550d7d3675c9e277cabc68fc55dda7b3ea3e626e27424ebb346bb030c72` | 4780 |
 | `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `81f0b9f0f57e6d54b8c9d9f07dd0a05a93f4f8653bf460771822ac625ff9394f` | 1624 |
 | `src/AMCCA.Core/Providers/ProviderModels.cs` | `101f9fa88daf13a2459048644630a9a3992a79e97672157ef92cc697e12278d7` | 1091 |
+| `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `e0d260cb0672b2fdb3bc1eb826dbc26b53030e90921ae535df799de70072af5a` | 277 |
+| `src/AMCCA.Core/Publishing/PlatformHub.cs` | `ffbee01928f785648c781bc8a9de9ef66b44f12658e204a19cbcac0764d89d37` | 5726 |
+| `src/AMCCA.Core/Publishing/PublishingModels.cs` | `e3dd8cb29ce165e50ed2d54ac355a265fddc6ea4449d0602135ab02ecdeb6aaf` | 971 |
 | `src/AMCCA.Core/QA/ArtifactDag.cs` | `535fb1f5b1520de1f032f3f50fcf8d9a01ef04a865f20b791ddaa00f029f20c5` | 2502 |
 | `src/AMCCA.Core/QA/QaModels.cs` | `f5210afa9329f5a237558e451f73aca7d5cf4b9380bab9d948e8b023cc53041c` | 958 |
 | `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `4921945956ad5419f57cb662736275ce4b91817d6a8999f46012bcd7c3a0e82a` | 1777 |
@@ -240,6 +243,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `621f5372f0ecb38a6afaf20affef75a4b92864e133a2671815ba6900977b33c2` | 6727 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
 | `tests/AMCCA.Core.Tests/ProviderGatewayAndModelRegistryContractTests.cs` | `37e2c175023ff30c7b9cd39be8a5be1a66f759b84e1d47a1d4425f01cc2e243c` | 6957 |
+| `tests/AMCCA.Core.Tests/PublishingAndPlatformHubContractTests.cs` | `a2fb6860e32eed9de66f957176ac10db4e275f9f8778a31861ee3438c55e6d45` | 7431 |
 | `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e44e2cbf8c14f9b3516594970cb4093178314e1a95d66c2623a39c8534c9dc0b` | 4735 |
 | `tests/AMCCA.Core.Tests/ResearchAndClaimValidationContractTests.cs` | `efd472e6d4651ccb703fc921c0685233de2f5847e635079a012517099fe4b9fb` | 9840 |
 | `tests/AMCCA.Core.Tests/SecretStoreContractTests.cs` | `ea0b82db06e14f5724af2748bcd0a7bcf825d473150903645a2226b3c3f9a0e9` | 1919 |
