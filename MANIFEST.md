@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 213
-**Total bytes:** 1004602
+**Files:** 217
+**Total bytes:** 1022699
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -207,6 +207,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Providers/ModelRegistry.cs` | `354e0550d7d3675c9e277cabc68fc55dda7b3ea3e626e27424ebb346bb030c72` | 4780 |
 | `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `81f0b9f0f57e6d54b8c9d9f07dd0a05a93f4f8653bf460771822ac625ff9394f` | 1624 |
 | `src/AMCCA.Core/Providers/ProviderModels.cs` | `101f9fa88daf13a2459048644630a9a3992a79e97672157ef92cc697e12278d7` | 1091 |
+| `src/AMCCA.Core/Research/ClaimValidator.cs` | `b16d3aff481491822ecdcb2d8da60e7998a3ef5fdd15260e1a00795b3e59eada` | 2040 |
+| `src/AMCCA.Core/Research/ResearchModels.cs` | `681ef7c07810e4f89c8cc97ef46fee8112037f1e299991f96c50bc3828c2e20b` | 1450 |
+| `src/AMCCA.Core/Research/ResearchService.cs` | `bad872b0b0cfdee82fb523470a6f1626a7aee833772d29030f298fcc3b5d5696` | 4767 |
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `ce7cd5197af36b90979079e9e6365b62dad5815281ba8b7fa43c49d73ab50608` | 939 |
 | `src/AMCCA.Core/Security/SecretReference.cs` | `b6e95821d1d0249d4208aa16a77d4a33a24ff8cb58ffa228f0c52cf8ed3ffd85` | 1883 |
@@ -221,6 +224,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `a071b39cbb7a7661b92011bdf6b1af3165afe5702d764b488148477b5a9a31ff` | 11425 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
 | `tests/AMCCA.Core.Tests/ProviderGatewayAndModelRegistryContractTests.cs` | `37e2c175023ff30c7b9cd39be8a5be1a66f759b84e1d47a1d4425f01cc2e243c` | 6957 |
+| `tests/AMCCA.Core.Tests/ResearchAndClaimValidationContractTests.cs` | `efd472e6d4651ccb703fc921c0685233de2f5847e635079a012517099fe4b9fb` | 9840 |
 | `tests/AMCCA.Core.Tests/SecretStoreContractTests.cs` | `ea0b82db06e14f5724af2748bcd0a7bcf825d473150903645a2226b3c3f9a0e9` | 1919 |
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `ed64f655e912c0d2c6c6937e3d4457e30ecb7acbe81ba4187a78a8ce6d912fb5` | 8518 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
