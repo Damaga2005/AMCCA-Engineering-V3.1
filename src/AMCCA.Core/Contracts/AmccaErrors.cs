@@ -36,6 +36,11 @@ public static class AmccaErrors
     public const string Res001 = "AMCCA-RES-001"; // Source count below policy minimum or missing backing claim
     public const string Res002 = "AMCCA-RES-002"; // Unsubstantiated material claim
     public const string Res003 = "AMCCA-RES-003"; // Source domain not allowed by policy or failed SSRF check
+
+    // QA Domain
+    public const string Qa001 = "AMCCA-QA-001";   // QA check failed on critical dimension
+    public const string Qa002 = "AMCCA-QA-002";   // Verdict set from AI-assisted check alone (prohibited)
+    public const string Qa003 = "AMCCA-QA-003";   // Threshold profile unknown or invalid
 }
 
 public enum ErrorCategory
