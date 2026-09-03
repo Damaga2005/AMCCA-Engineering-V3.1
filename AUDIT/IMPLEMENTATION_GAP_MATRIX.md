@@ -14,7 +14,7 @@
 | **DEF-003** | CRITICAL | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | CLOSED |
 | **DEF-004** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | CLOSED |
 | **DEF-005** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | CLOSED |
-| **DEF-006** | CRITICAL | `SPEC/07_GATEWAY_PORT.md`, `SPEC/72_SECURITY_TESTS.md` | `src/AMCCA.Core/Gateway/*` | OPEN |
+| **DEF-006** | CRITICAL | `SPEC/07_GATEWAY_PORT.md`, `SPEC/72_SECURITY_TESTS.md` | `src/AMCCA.Core/Providers/*` | CLOSED |
 | **DEF-007** | HIGH | `SPEC/60_DESKTOP_UI.md` | `src/AMCCA.App/*` | OPEN |
 | **DEF-008** | CRITICAL | `SPEC/13_DOMAIN_STATE_MACHINE.md`, `AGENTS.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | OPEN |
 | **DEF-009** | HIGH | `SPEC/44_PUBLISHING.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs`, `src/AMCCA.Core/Publishing/*` | OPEN |
@@ -85,12 +85,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Gateway/OmniRoutersGatewayAdapter.cs`, `src/AMCCA.Core/Gateway/DirectOpenAiCompatibleGatewayAdapter.cs`
 - **Comportamiento actual:** Los adaptadores comprueban formato de secret pero devuelven respuestas sintéticas sin invocar clientes HTTP tipados con serialización, timeout, parseo y manejo de errores reales.
 - **Por qué falla:** Son stubs que sustituyen la integración real.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/AiProviderRealIntegrationTests.cs` (10 tests cubriendo los 15 requerimientos de HTTP real)
+- **Fix:** `DirectOpenAiCompatibleGatewayAdapter.cs` y `OmniRoutersGatewayAdapter.cs` implementan comunicación HTTP tipada real con serialización de mensajes, cabeceras Bearer, parseo de JSON, extracción de uso de tokens, mapeo de errores HTTP (401/403/429/500), probes reales y protección contra fuga de secretos en logs/excepciones.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 334/334 tests pasando; cero stubs en adaptadores de proveedores de IA; 15/15 casos cubiertos.
+- **Estado:** CLOSED
 
 ### DEF-007 — WPF Application Architecture
 - **Severidad:** HIGH

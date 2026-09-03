@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 255
-**Total bytes:** 1185686
+**Files:** 256
+**Total bytes:** 1211405
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,7 +17,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `938975d4525c41ddf6e5032c477e0080f188175aff9e28f9b372cc3934770223` | 20725 |
+| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `f0d8051e5863fc3e4228baa10e1892c07226f6f353dc0fd01c8feed0b312cd28` | 21247 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
@@ -218,10 +218,10 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Preflight/PreflightService.cs` | `f36bdcef1e37a0fd97e1b838c667f2a1f73ab7d180c8c0eb0bf8f2b12c1ace5a` | 1750 |
 | `src/AMCCA.Core/Prompts/PromptModels.cs` | `57a626c2b9d31ce8f0e151892c29991945c3772b51593b3d05ef16fd307166d2` | 1467 |
 | `src/AMCCA.Core/Prompts/PromptService.cs` | `def86426daaf36d728b9550697a575a81c619f006219243ee85af3bf9700b532` | 5161 |
-| `src/AMCCA.Core/Providers/DirectOpenAiCompatibleGatewayAdapter.cs` | `0ab295ec0af7d1ceadaee18548ae011cf4724e2f694f23b1e5c33350fc42a144` | 1616 |
+| `src/AMCCA.Core/Providers/DirectOpenAiCompatibleGatewayAdapter.cs` | `70f216e5cd0b5bcf62bdf6f16b6c743c493c33ed869e143f8f1793d73078acde` | 9026 |
 | `src/AMCCA.Core/Providers/IProviderGateway.cs` | `8efd09b469fc589bce6ac1f9f644c8d20eb477653597d8e9a4435ceede0a2013` | 402 |
 | `src/AMCCA.Core/Providers/ModelRegistry.cs` | `354e0550d7d3675c9e277cabc68fc55dda7b3ea3e626e27424ebb346bb030c72` | 4780 |
-| `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `81f0b9f0f57e6d54b8c9d9f07dd0a05a93f4f8653bf460771822ac625ff9394f` | 1624 |
+| `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `6e095c7385b1b66bd807842a1923d4bb20ac6d463b3594711f417863f23a8c06` | 8707 |
 | `src/AMCCA.Core/Providers/ProviderModels.cs` | `101f9fa88daf13a2459048644630a9a3992a79e97672157ef92cc697e12278d7` | 1091 |
 | `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `e0d260cb0672b2fdb3bc1eb826dbc26b53030e90921ae535df799de70072af5a` | 277 |
 | `src/AMCCA.Core/Publishing/PlatformHub.cs` | `ffbee01928f785648c781bc8a9de9ef66b44f12658e204a19cbcac0764d89d37` | 5726 |
@@ -247,6 +247,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Tools/ToolRegistry.cs` | `00c351026f3810669888b451a30a99d0ebc2696c9c6ea87bf6acdef5b3e2a43c` | 699 |
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `35c19031d7530bc74a1aabb783de04014ba2b9f2e257f0fabeec118be9cefb59` | 852 |
 | `tests/AMCCA.Core.Tests/AgentContractEnforcementRegressionTests.cs` | `eb8d0928b96537fc2a66be35b3c8e62e99417c561c763feafd4050b8db0425c4` | 8244 |
+| `tests/AMCCA.Core.Tests/AiProviderRealIntegrationTests.cs` | `af25d657338520c5ad0b5b2e48975069ec3ffe2266325ff164da8b4364c2ac5e` | 10704 |
 | `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs` | `fba53fdfba4914ac6f5c49875a06e96c4734ccf474353d3d20f3efe7eb83ae46` | 8512 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `661c791e3c5c8e34b6b7f504d41ed2f3fb04ebfc547dbd957bfe4573da568f60` | 8256 |
