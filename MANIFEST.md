@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 265
-**Total bytes:** 1305390
+**Files:** 266
+**Total bytes:** 1317199
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,7 +17,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `b1dbaa7a55d6c8984825532c7406c2d0f9b000d5f425cfa5fa6e4e16d4c36ebb` | 27625 |
+| `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `9658d06b14388a0f3b4315316439611bec69ec9cb8c806831b8df5a146c19436` | 28974 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
 | `AUDIT/V31_1_1_VERSION_AUDIT.md` | `bd3df2f3d0df942935d68914229ea98b7f8f0ec58260a7778064b6d3c21dbf1a` | 5337 |
 | `BLUEPRINT/00_MASTER_BLUEPRINT.md` | `a773b2214fba34d8f72d9a10470e3592cec1b4a0157c0717f7fb99f85f79362c` | 5540 |
@@ -197,7 +197,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Database/MigrationService.cs` | `42b95ca7199dc64a037ae4276ff507192bf83073f75135392a4ba625b926fd14` | 46880 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
-| `src/AMCCA.Core/Domain/ProductionService.cs` | `ebf35f5629cd6b1f0c11b51ab496731b6b970fe34151e37f5e84ee212f642c0b` | 12090 |
+| `src/AMCCA.Core/Domain/ProductionService.cs` | `abeb13370c31cd3db355a3c561013747dd1d31b2b93303300fa4d2ad0e403053` | 12467 |
 | `src/AMCCA.Core/Events/AuditStore.cs` | `f29074949b72c61cc88ba81174d48937e7f85d9d18d728145b0277e6bd1767f7` | 3672 |
 | `src/AMCCA.Core/Events/EventStore.cs` | `0003439f50cbfaa58902681298faa38ff5d1302263e32469fb8c45322ddcf1b8` | 2884 |
 | `src/AMCCA.Core/Jobs/IntentKeyGenerator.cs` | `1e2e0d0cc64e9ce7af544df84ca87257ecea9f973ca34722f5502d24de8563ca` | 1043 |
@@ -243,14 +243,15 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/SqlSurfaceAuditor.cs` | `1a43e2399fcfd7d8c3bd380503e68967f07fbdb677877b211b72e33a253b8b57` | 1227 |
 | `src/AMCCA.Core/Security/SsrfValidator.cs` | `ba519bc135a705007755d1f6173bbdcbf86bccd410f8223499194465681a67cf` | 8492 |
 | `src/AMCCA.Core/Security/WindowsDpapiSecretStore.cs` | `324976b1c7fd502c744fa0978f71c221396d316be45a54d5cac9e1ba33012c76` | 2436 |
-| `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | `6275da76b1afe18a1d5dc1f3a64d77e9fe5602fd56f942b1ecfea857ae8a6257` | 4994 |
+| `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | `b489361679c966825639b6f50663dcb89706583ef550b86420be834dcd6ec7d2` | 5964 |
 | `src/AMCCA.Core/StateMachine/TransitionDefinition.cs` | `5c8823a1fe73a71aac1ae76d4c332886a86c4d928184a5ecad3a4783908fb064` | 647 |
 | `src/AMCCA.Core/Tools/ToolModels.cs` | `e8457379adc579425afa93ae53bfd6be08aea2351172d406200aa8ce4f4ce0c9` | 480 |
-| `src/AMCCA.Core/Tools/ToolRegistry.cs` | `00c351026f3810669888b451a30a99d0ebc2696c9c6ea87bf6acdef5b3e2a43c` | 699 |
+| `src/AMCCA.Core/Tools/ToolRegistry.cs` | `30ae345cac66de00b81d4207171474363e61e6b4fa3715e28fc4499cdcc45ff7` | 1070 |
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `35c19031d7530bc74a1aabb783de04014ba2b9f2e257f0fabeec118be9cefb59` | 852 |
 | `tests/AMCCA.Core.Tests/AgentContractEnforcementRegressionTests.cs` | `eb8d0928b96537fc2a66be35b3c8e62e99417c561c763feafd4050b8db0425c4` | 8244 |
 | `tests/AMCCA.Core.Tests/AiProviderRealIntegrationTests.cs` | `af25d657338520c5ad0b5b2e48975069ec3ffe2266325ff164da8b4364c2ac5e` | 10704 |
 | `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs` | `fba53fdfba4914ac6f5c49875a06e96c4734ccf474353d3d20f3efe7eb83ae46` | 8512 |
+| `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` | `31bc22b832e944ab044af8f56a466de46bca429f05dc2f27f5636e9721ba686c` | 8742 |
 | `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `40bb41e32a868d3c1da014a20533079b60574ce85e14bbdc15f64634b2f6150b` | 6216 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `661c791e3c5c8e34b6b7f504d41ed2f3fb04ebfc547dbd957bfe4573da568f60` | 8256 |

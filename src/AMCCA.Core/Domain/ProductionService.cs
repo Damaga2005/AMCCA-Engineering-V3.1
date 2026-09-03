@@ -172,87 +172,94 @@ public class ProductionService
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 
-        const string updateSql = @"
-            UPDATE productions
-            SET state = @ToState,
-                blocked_from = @BlockedFrom,
-                unknown_from = @UnknownFrom,
-                rework_attempts = @ReworkAttempts,
-                aggregate_version = @NextVersion,
-                updated_at = @UpdatedAt
-            WHERE id = @Id AND aggregate_version = @ExpectedVersion;
-        ";
-
-        var rowsAffected = await connection.ExecuteAsync(updateSql, new
+        try
         {
-            ToState = toState,
-            BlockedFrom = newBlockedFrom,
-            UnknownFrom = newUnknownFrom,
-            ReworkAttempts = newReworkAttempts,
-            NextVersion = nextVersion,
-            UpdatedAt = now,
-            Id = prod.Id,
-            ExpectedVersion = prod.AggregateVersion
-        }, transaction: tx);
+            const string updateSql = @"
+                UPDATE productions
+                SET state = @ToState,
+                    blocked_from = @BlockedFrom,
+                    unknown_from = @UnknownFrom,
+                    rework_attempts = @ReworkAttempts,
+                    aggregate_version = @NextVersion,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id AND aggregate_version = @ExpectedVersion;
+            ";
 
-        if (rowsAffected == 0)
+            var rowsAffected = await connection.ExecuteAsync(updateSql, new
+            {
+                ToState = toState,
+                BlockedFrom = newBlockedFrom,
+                UnknownFrom = newUnknownFrom,
+                ReworkAttempts = newReworkAttempts,
+                NextVersion = nextVersion,
+                UpdatedAt = now,
+                Id = prod.Id,
+                ExpectedVersion = prod.AggregateVersion
+            }, transaction: tx);
+
+            if (rowsAffected == 0)
+            {
+                throw new InvalidOperationException($"Optimistic concurrency violation on production '{productionId}'. Expected version {prod.AggregateVersion}.");
+            }
+
+            const string transitionSql = @"
+                INSERT INTO state_transitions (
+                    id, production_id, transition_id, from_state, to_state,
+                    event_id, actor_type, correlation_id, occurred_at
+                ) VALUES (
+                    @Id, @ProductionId, @TransitionId, @FromState, @ToState,
+                    @EventId, @ActorType, @CorrelationId, @OccurredAt
+                );
+            ";
+
+            await connection.ExecuteAsync(transitionSql, new
+            {
+                Id = transitionRecordId,
+                ProductionId = prod.Id,
+                TransitionId = transitionDef.Id,
+                FromState = prod.State,
+                ToState = toState,
+                EventId = eventId,
+                ActorType = actorType,
+                CorrelationId = correlationId,
+                OccurredAt = now
+            }, transaction: tx);
+
+            const string eventSql = @"
+                INSERT INTO events (
+                    event_id, event_type, aggregate_type, aggregate_id, aggregate_version,
+                    correlation_id, causation_id, transition_id, payload_json, schema_version,
+                    occurred_at, seq
+                ) VALUES (
+                    @EventId, @EventType, @AggregateType, @AggregateId, @AggregateVersion,
+                    @CorrelationId, @CausationId, @TransitionId, @PayloadJson, @SchemaVersion,
+                    @OccurredAt, @Seq
+                );
+            ";
+
+            await connection.ExecuteAsync(eventSql, new
+            {
+                EventId = eventId,
+                EventType = "production.state_changed",
+                AggregateType = "production",
+                AggregateId = prod.Id,
+                AggregateVersion = nextVersion,
+                CorrelationId = correlationId,
+                CausationId = causationId,
+                TransitionId = transitionDef.Id,
+                PayloadJson = JsonSerializer.Serialize(new { from = prod.State, to = toState, transition_id = transitionDef.Id }),
+                SchemaVersion = "3.1.0",
+                OccurredAt = now,
+                Seq = nextVersion + 1
+            }, transaction: tx);
+
+            tx.Commit();
+        }
+        catch
         {
             tx.Rollback();
-            throw new InvalidOperationException($"Optimistic concurrency violation on production '{productionId}'. Expected version {prod.AggregateVersion}.");
+            throw;
         }
-
-        const string transitionSql = @"
-            INSERT INTO state_transitions (
-                id, production_id, transition_id, from_state, to_state,
-                event_id, actor_type, correlation_id, occurred_at
-            ) VALUES (
-                @Id, @ProductionId, @TransitionId, @FromState, @ToState,
-                @EventId, @ActorType, @CorrelationId, @OccurredAt
-            );
-        ";
-
-        await connection.ExecuteAsync(transitionSql, new
-        {
-            Id = transitionRecordId,
-            ProductionId = prod.Id,
-            TransitionId = transitionDef.Id,
-            FromState = prod.State,
-            ToState = toState,
-            EventId = eventId,
-            ActorType = actorType,
-            CorrelationId = correlationId,
-            OccurredAt = now
-        }, transaction: tx);
-
-        const string eventSql = @"
-            INSERT INTO events (
-                event_id, event_type, aggregate_type, aggregate_id, aggregate_version,
-                correlation_id, causation_id, transition_id, payload_json, schema_version,
-                occurred_at, seq
-            ) VALUES (
-                @EventId, @EventType, @AggregateType, @AggregateId, @AggregateVersion,
-                @CorrelationId, @CausationId, @TransitionId, @PayloadJson, @SchemaVersion,
-                @OccurredAt, @Seq
-            );
-        ";
-
-        await connection.ExecuteAsync(eventSql, new
-        {
-            EventId = eventId,
-            EventType = "production.state_changed",
-            AggregateType = "production",
-            AggregateId = prod.Id,
-            AggregateVersion = nextVersion,
-            CorrelationId = correlationId,
-            CausationId = causationId,
-            TransitionId = transitionDef.Id,
-            PayloadJson = JsonSerializer.Serialize(new { from = prod.State, to = toState, transition_id = transitionDef.Id }),
-            SchemaVersion = "3.1.0",
-            OccurredAt = now,
-            Seq = nextVersion + 1
-        }, transaction: tx);
-
-        tx.Commit();
 
         prod.State = toState;
         prod.BlockedFrom = newBlockedFrom;

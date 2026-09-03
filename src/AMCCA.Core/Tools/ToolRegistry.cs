@@ -16,7 +16,16 @@ public class ToolRegistry
 
     public void RegisterTool(ITool tool)
     {
-        _tools[tool.Definition.ToolId] = tool;
+        ArgumentNullException.ThrowIfNull(tool);
+        if (string.IsNullOrWhiteSpace(tool.Definition.ToolId))
+        {
+            throw new ArgumentException("Tool ID cannot be null or empty.", nameof(tool));
+        }
+
+        if (!_tools.TryAdd(tool.Definition.ToolId, tool))
+        {
+            throw new InvalidOperationException($"Tool with ID '{tool.Definition.ToolId}' is already registered.");
+        }
     }
 
     public ITool? GetTool(string toolId)

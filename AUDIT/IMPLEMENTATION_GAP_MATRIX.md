@@ -32,9 +32,9 @@
 | **DEF-021** | HIGH | `SPEC/76_PACKAGING.md` | Packaging scripts, build | OPEN |
 | **DEF-022** | MEDIUM | `SPEC/01_STACK_MANIFEST.md` | `src/AMCCA.Core/AMCCA.Core.csproj`, `src/AMCCA.App/AMCCA.App.csproj` | OPEN |
 | **DEF-023** | HIGH | `SPEC/71_TEST_MATRIX.md` | `tests/*` | OPEN |
-| **DEF-024** | MEDIUM | `SPEC/06_AGENT_SYSTEM.md` | `src/AMCCA.Core/Tools/ToolRegistry.cs` | OPEN |
-| **DEF-025** | MEDIUM | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/StateMachineRegistry.cs` | OPEN |
-| **DEF-026** | CRITICAL | `SPEC/03_DATABASE.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | OPEN |
+| **DEF-024** | MEDIUM | `SPEC/06_AGENT_SYSTEM.md` | `src/AMCCA.Core/Tools/ToolRegistry.cs` | CLOSED |
+| **DEF-025** | MEDIUM | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | CLOSED |
+| **DEF-026** | CRITICAL | `SPEC/03_DATABASE.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
 
 ---
 
@@ -316,27 +316,27 @@
 - **Severidad:** MEDIUM
 - **Especificación incumplida:** `SPEC/06_AGENT_SYSTEM.md`
 - **Archivo(s):** `src/AMCCA.Core/Tools/ToolRegistry.cs`
-- **Comportamiento actual:** Registro de tool con nombre repetido sobrescribe o no lanza excepción explícita.
+- **Comportamiento actual:** Registro de tool con nombre repetido sobrescribía silenciosamente.
 - **Por qué falla:** La especificación prohíbe sobrescrituras silenciosas de tools.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` (`DEF024_ToolRegistry_DuplicateToolRegistration_ThrowsException_AndDoesNotOverwrite`)
+- **Fix:** Modificado `ToolRegistry.RegisterTool` para validar `ArgumentNullException` y lanzar `InvalidOperationException` si `_tools.TryAdd` retorna false por ID duplicado.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Registro de tool duplicada lanza excepción explícita y conserva la definición original.
+- **Estado:** CLOSED
 
 ### DEF-025 — StateMachineRegistry Construction Validation
 - **Severidad:** MEDIUM
 - **Especificación incumplida:** `SPEC/13_DOMAIN_STATE_MACHINE.md`
-- **Archivo(s):** `src/AMCCA.Core/Domain/StateMachineRegistry.cs`
-- **Comportamiento actual:** Permite registrar transiciones sin validar duplicidad o estados inalcanzables.
-- **Por qué falla:** La especificación exige construcción estricta de la máquina de estados.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Archivo(s):** `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs`
+- **Comportamiento actual:** Permitía registrar transiciones sin validar duplicidad, self-loops, estados inexistentes o salidas de estados terminales.
+- **Por qué falla:** La especificación exige construcción estricta y validación estructural de la máquina de estados.
+- **Test de regresión:** `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` (`DEF025_StateMachineRegistry_ConstructionValidation_RejectsInvalidStructures`)
+- **Fix:** Añadida validación integral en el constructor de `StateMachineRegistry`: rechazo de IDs de transición duplicados, estados desconocidos, self-loops y transiciones salientes desde estados terminales.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Rechazo estricto con `InvalidOperationException` de cualquier máquina de estados malformada o inválida.
+- **Estado:** CLOSED
 
 ### DEF-026 — Event / State Atomic Transaction
 - **Severidad:** CRITICAL
@@ -344,9 +344,9 @@
 - **Archivo(s):** `src/AMCCA.Core/Domain/ProductionService.cs`
 - **Comportamiento actual:** La mutación de estado y la inserción de evento deben garantizarse bajo la misma transacción atómica en SQLite, asegurando que ante cualquier excepción no exista estado cambiado sin evento o evento sin cambio de estado.
 - **Por qué falla:** Un fallo parcial corrompe la trazabilidad del event sourcing.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` (`DEF026_ProductionStateTransition_IsStrictlyAtomic_UnderTX1`)
+- **Fix:** Envuelta toda la secuencia TX-1 en `ProductionService.TransitionAsync` dentro de un bloque explícito `try { ... tx.Commit(); } catch { tx.Rollback(); throw; }`, asegurando atomicidad estricta entre `productions`, `state_transitions` y `events`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 382/382 tests pasando; rollback completo y consistente ante cualquier fallo en la transición.
+- **Estado:** CLOSED

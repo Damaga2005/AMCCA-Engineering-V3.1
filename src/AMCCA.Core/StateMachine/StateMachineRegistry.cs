@@ -52,6 +52,31 @@ public class StateMachineRegistry
             var guard = t.GetProperty("guard").GetString()!;
             var actor = t.GetProperty("actor").GetString()!;
 
+            if (_transitionsById.ContainsKey(id))
+            {
+                throw new InvalidOperationException($"Duplicate transition ID '{id}'.");
+            }
+
+            if (!_states.ContainsKey(from))
+            {
+                throw new InvalidOperationException($"Unknown 'from' state '{from}' in transition '{id}'.");
+            }
+
+            if (!_states.ContainsKey(to))
+            {
+                throw new InvalidOperationException($"Unknown 'to' state '{to}' in transition '{id}'.");
+            }
+
+            if (_terminalStates.Contains(from))
+            {
+                throw new InvalidOperationException($"Terminal state '{from}' cannot have outbound transitions (transition '{id}').");
+            }
+
+            if (string.Equals(from, to, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Self-loop transition is not permitted: '{from}' -> '{to}' (transition '{id}').");
+            }
+
             var def = new TransitionDefinition(id, from, to, trigger, guard, actor);
             _transitionsById[id] = def;
 
