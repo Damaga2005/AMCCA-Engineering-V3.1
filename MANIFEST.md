@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 275
-**Total bytes:** 1370258
+**Files:** 276
+**Total bytes:** 1382343
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -231,7 +231,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `e0d260cb0672b2fdb3bc1eb826dbc26b53030e90921ae535df799de70072af5a` | 277 |
 | `src/AMCCA.Core/Publishing/PlatformHub.cs` | `ffbee01928f785648c781bc8a9de9ef66b44f12658e204a19cbcac0764d89d37` | 5726 |
 | `src/AMCCA.Core/Publishing/PublishingModels.cs` | `e3dd8cb29ce165e50ed2d54ac355a265fddc6ea4449d0602135ab02ecdeb6aaf` | 971 |
-| `src/AMCCA.Core/QA/ArtifactDag.cs` | `535fb1f5b1520de1f032f3f50fcf8d9a01ef04a865f20b791ddaa00f029f20c5` | 2502 |
+| `src/AMCCA.Core/QA/ArtifactDag.cs` | `3c02d9c265f7ca53837f53f8a63b350ac4702e171305e5ab183b27b4ca395020` | 8025 |
 | `src/AMCCA.Core/QA/QaModels.cs` | `f5210afa9329f5a237558e451f73aca7d5cf4b9380bab9d948e8b023cc53041c` | 958 |
 | `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `4921945956ad5419f57cb662736275ce4b91817d6a8999f46012bcd7c3a0e82a` | 1777 |
 | `src/AMCCA.Core/Research/ClaimValidator.cs` | `b16d3aff481491822ecdcb2d8da60e7998a3ef5fdd15260e1a00795b3e59eada` | 2040 |
@@ -260,6 +260,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `40bb41e32a868d3c1da014a20533079b60574ce85e14bbdc15f64634b2f6150b` | 6216 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
+| `tests/AMCCA.Core.Tests/DagReworkAndInvalidationContractTests.cs` | `0402ffa482753f07cdacbe3e1c4fa38e865322166161ad8828f52d2bd6ab4c45` | 6562 |
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
