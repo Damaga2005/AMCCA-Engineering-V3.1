@@ -24,6 +24,13 @@ public static class AmccaErrors
     public const string Stm001 = "AMCCA-STM-001"; // Transition not listed in canonical matrix
     public const string Stm002 = "AMCCA-STM-002"; // Illegal resume from BLOCKED (must match blocked_from)
     public const string Stm003 = "AMCCA-STM-003"; // Transition from terminal state attempted
+
+    // AI / Agent Domain
+    public const string Ai001 = "AMCCA-AI-001";   // Model provider returned error
+    public const string Ai002 = "AMCCA-AI-002";   // Rate limit exceeded on AI gateway
+    public const string Ai003 = "AMCCA-AI-003";   // Agent output failed schema validation
+    public const string Ai004 = "AMCCA-AI-004";   // Agent attempted to call a tool outside its allowed_tools set (blocked and audited)
+    public const string Ai005 = "AMCCA-AI-005";   // Agent run exceeded timeout or max_cost ceiling
 }
 
 public enum ErrorCategory
