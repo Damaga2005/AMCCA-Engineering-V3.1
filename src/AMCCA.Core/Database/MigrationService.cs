@@ -147,6 +147,19 @@ public class MigrationService
                     SELECT RAISE(ABORT, 'events table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
                 END;
 
+                -- DEF-015: audit_log table append-only triggers
+                CREATE TRIGGER IF NOT EXISTS trg_audit_log_prevent_update
+                BEFORE UPDATE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS trg_audit_log_prevent_delete
+                BEFORE DELETE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
                 -- DEF-018: Full schema tables
                 CREATE TABLE IF NOT EXISTS approvals (
                     id TEXT PRIMARY KEY,

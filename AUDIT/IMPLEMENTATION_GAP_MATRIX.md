@@ -23,7 +23,7 @@
 | **DEF-012** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-11)` | `src/AMCCA.Core/Media/MediaRenderer.cs` | CLOSED |
 | **DEF-013** | HIGH | `SPEC/50_SECURITY.md`, `SPEC/72_SECURITY_TESTS.md (S-10)` | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | CLOSED |
 | **DEF-014** | CRITICAL | `SPEC/28_RESEARCH_SOURCE_SECURITY.md`, `SPEC/72 (S-06, S-08)` | `src/AMCCA.Core/Security/SsrfValidator.cs` | CLOSED |
-| **DEF-015** | CRITICAL | `SPEC/03_DATABASE.md`, `DECISIONS.md (D-001)` | `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql` | OPEN |
+| **DEF-015** | CRITICAL | `SPEC/03_DATABASE.md`, `DECISIONS.md (D-001)` | `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql` | CLOSED |
 | **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
 | **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | OPEN |
 | **DEF-018** | CRITICAL | `SPEC/03_DATABASE.md` | `src/AMCCA.Core/Database/Migrations/*`, tests | OPEN |
@@ -202,12 +202,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql`
 - **Comportamiento actual:** La inmutabilidad de la tabla `events` depende de que el código no ejecute UPDATE/DELETE. SQLite permite que cualquier conexión ejecute `UPDATE events` o `DELETE FROM events`.
 - **Por qué falla:** La especificación exige que la base de datos impida físicamente mutaciones en `events` (vía triggers de abort/raise).
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` (5 tests comprobando INSERT funcional, bloqueo físico de UPDATE con excepción SQLite, bloqueo físico de DELETE con excepción SQLite, protección análoga para `audit_log` y supervivencia de triggers tras reconexiones)
+- **Fix:** Implementados triggers reales en SQLite (`trg_events_prevent_update`, `trg_events_prevent_delete`, `trg_audit_log_prevent_update`, `trg_audit_log_prevent_delete`) utilizando `RAISE(ABORT, ...)` para bloquear físicamente cualquier intento de mutación o borrado tanto a nivel de aplicación como de conexión SQL directa.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 376/376 tests pasando; cualquier intento de UPDATE o DELETE en `events` o `audit_log` es rechazado físicamente por SQLite.
+- **Estado:** CLOSED
 
 ### DEF-016 — Job Fail Fence Token Protection
 - **Severidad:** HIGH
