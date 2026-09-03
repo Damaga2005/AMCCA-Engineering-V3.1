@@ -49,7 +49,7 @@ HISTORICAL_FILE_PATTERNS = [
 
 HISTORY_HEADING_RE = re.compile(r"^#{1,6}\s*(History|Changelog)\b", re.I)
 
-SKIP_DIRS = {".git", "__pycache__", ".venv"}
+SKIP_DIRS = {".git", "__pycache__", ".venv", "bin", "obj"}
 SKIP_FILES = {".git"}
 
 

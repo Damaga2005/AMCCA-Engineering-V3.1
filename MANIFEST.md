@@ -6,14 +6,15 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 167
-**Total bytes:** 848827
+**Files:** 183
+**Total bytes:** 883420
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
 | `.github/workflows/validation.yml` | `6f8dcf5615e7ff4fe23c583ea7c86f0c75dce744c5998496fdaaea7bdaeaca80` | 1827 |
-| `.gitignore` | `de97b115f0af91700bf08cef31ccf66fde5c74c95d42463a772ca44d7034db29` | 81 |
+| `.gitignore` | `247826b483e39e376c3f77f7966f6fc8bfb8323959247de4496b6db515497b8b` | 98 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
+| `AMCCA.sln` | `1b2146ca4d77fd5c681b20a8b7540fb2bfddf92681c862c407e28a15a85bfcbe` | 1993 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
@@ -176,5 +177,20 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_requirements_lockfile_fresh.py` | `46668d64e50f78458ef2fb0ead8612777759e186557c6573e3dc8c7569997a9f` | 6069 |
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
-| `TOOLS/test_version_consistency.py` | `98b226e9b8169fe53ef50fd1534434c921732bd4678ed2e5236779e4c5ad12de` | 7018 |
-| `TOOLS/validate_package.py` | `aa026f27a6ee8cd983d8d1973cf65c55f28185a1c5e8b2d123500576040d40e8` | 24451 |
+| `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
+| `TOOLS/validate_package.py` | `3d864529a25c892b818652eeacf433429fe735ffee90a858a8f14a9034522eee` | 24465 |
+| `src/AMCCA.Core/AMCCA.Core.csproj` | `c1ed4dc56cfbd218e90a9676f900c6ac3e6884b16199d4a65cb9034446d830a4` | 477 |
+| `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
+| `src/AMCCA.Core/Configuration/ConfigService.cs` | `6418753e0c57b408c16d181ee9235adfda02135dfc70d6abf9b491b1eb1caea6` | 7267 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `ee9c48b6eb3cd6ba22d9c74464ec634d1930384cd20b655e93b9c44dae1cb247` | 1354 |
+| `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
+| `src/AMCCA.Core/Preflight/PreflightReport.cs` | `444a11ee9eeeefeefb6212ab3b70433c6b081488842d4d7cdff31da4bbf29482` | 468 |
+| `src/AMCCA.Core/Preflight/PreflightService.cs` | `f36bdcef1e37a0fd97e1b838c667f2a1f73ab7d180c8c0eb0bf8f2b12c1ace5a` | 1750 |
+| `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
+| `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `ce7cd5197af36b90979079e9e6365b62dad5815281ba8b7fa43c49d73ab50608` | 939 |
+| `src/AMCCA.Core/Security/SecretReference.cs` | `b6e95821d1d0249d4208aa16a77d4a33a24ff8cb58ffa228f0c52cf8ed3ffd85` | 1883 |
+| `src/AMCCA.Core/Security/WindowsDpapiSecretStore.cs` | `324976b1c7fd502c744fa0978f71c221396d316be45a54d5cac9e1ba33012c76` | 2436 |
+| `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `35c19031d7530bc74a1aabb783de04014ba2b9f2e257f0fabeec118be9cefb59` | 852 |
+| `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
+| `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
+| `tests/AMCCA.Core.Tests/SecretStoreContractTests.cs` | `ea0b82db06e14f5724af2748bcd0a7bcf825d473150903645a2226b3c3f9a0e9` | 1919 |
