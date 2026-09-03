@@ -6,15 +6,15 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 248
-**Total bytes:** 1125635
+**Files:** 250
+**Total bytes:** 1127103
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
 | `.github/workflows/validation.yml` | `6f8dcf5615e7ff4fe23c583ea7c86f0c75dce744c5998496fdaaea7bdaeaca80` | 1827 |
 | `.gitignore` | `247826b483e39e376c3f77f7966f6fc8bfb8323959247de4496b6db515497b8b` | 98 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
-| `AMCCA.sln` | `1b2146ca4d77fd5c681b20a8b7540fb2bfddf92681c862c407e28a15a85bfcbe` | 1993 |
+| `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
@@ -179,6 +179,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
 | `TOOLS/validate_package.py` | `3d864529a25c892b818652eeacf433429fe735ffee90a858a8f14a9034522eee` | 24465 |
+| `src/AMCCA.App/AMCCA.App.csproj` | `5c7aee1f8229208798adc73a84e08159d77ffdc2733b152db4103b5d50d2ca1b` | 420 |
+| `src/AMCCA.App/Program.cs` | `0e078af9b719542df43e52076dae49181587725153ee4f7de5a5d8903bc55b5a` | 480 |
 | `src/AMCCA.Core/AMCCA.Core.csproj` | `24fb2b2561844ec0a8c2554b6a0381c7615fec573252702597b6c45f819d13b7` | 612 |
 | `src/AMCCA.Core/Agents/AgentContract.cs` | `611dfbf5ed92c13d5e73a43ad0ac7cbb457e064cc1aabdc67feaf78d7209f9bd` | 338 |
 | `src/AMCCA.Core/Agents/AgentRuntime.cs` | `095672c1a038ad048d7c7e639225ed3d53ae32c704cd63ee9745f48c65d1c259` | 3888 |
