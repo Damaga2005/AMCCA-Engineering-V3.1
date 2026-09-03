@@ -28,10 +28,10 @@
 | **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
 | **DEF-018** | CRITICAL | `SPEC/03_DATABASE.md` | `src/AMCCA.Core/Database/Migrations/*`, tests | CLOSED |
 | **DEF-019** | HIGH | `.github/workflows/validation.yml` | `.github/workflows/validation.yml` | CLOSED |
-| **DEF-020** | HIGH | `BUILD_ORDER.md` | Repo root, commits | OPEN |
-| **DEF-021** | HIGH | `SPEC/76_PACKAGING.md` | Packaging scripts, build | OPEN |
+| **DEF-020** | HIGH | `BUILD_ORDER.md` | Repo root, commits | CLOSED |
+| **DEF-021** | HIGH | `SPEC/76_PACKAGING.md` | Packaging scripts, build | CLOSED |
 | **DEF-022** | MEDIUM | `SPEC/01_TECH_STACK.md` | `src/AMCCA.Core/AMCCA.Core.csproj`, `src/AMCCA.App/AMCCA.App.csproj` | CLOSED |
-| **DEF-023** | HIGH | `SPEC/71_TEST_MATRIX.md` | `tests/*` | OPEN |
+| **DEF-023** | HIGH | `SPEC/71_TEST_MATRIX.md` | `tests/*` | CLOSED |
 | **DEF-024** | MEDIUM | `SPEC/06_AGENT_SYSTEM.md` | `src/AMCCA.Core/Tools/ToolRegistry.cs` | CLOSED |
 | **DEF-025** | MEDIUM | `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | CLOSED |
 | **DEF-026** | CRITICAL | `SPEC/03_DATABASE.md`, `SPEC/13_DOMAIN_STATE_MACHINE.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | CLOSED |
@@ -266,12 +266,12 @@
 - **Archivo(s):** Historial y estructura del proyecto
 - **Comportamiento actual:** Discrepancia entre la numeración de 18 fases de `BUILD_ORDER.md` y los commits realizados en el ciclo inicial.
 - **Por qué falla:** La autoridad del orden es `BUILD_ORDER.md`.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** Verificación contra la tabla de fases 1-18 en `BUILD_ORDER.md` y suite de tests end-to-end.
+- **Fix:** Reconciliación completa de las 18 fases de `BUILD_ORDER.md` mapeadas directamente al árbol de código de producción, suites de pruebas unitarias, de integración, concurrencia, seguridad y empaquetado.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 18 fases documentadas, auditadas y operativas en el árbol de código.
+- **Estado:** CLOSED
 
 ### DEF-021 — Real Packaging Verification
 - **Severidad:** HIGH
@@ -279,12 +279,12 @@
 - **Archivo(s):** Packaging configuration
 - **Comportamiento actual:** Solo se compiló un binario self-contained sin script de verificación de instalación/MSI o dependencias.
 - **Por qué falla:** La especificación exige validación de empaquetado verificable.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` (`DEF021_PackagingConfiguration_ConformsToSpec76`)
+- **Fix:** Verificación formal de empaquetado para `win-x64` self-contained produciendo `AMCCA.exe`, confirmando que FFmpeg no está embebido indebidamente y que las propiedades de compilación determinista y runtime cumplen con `SPEC/76_PACKAGING.md`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** Publicación y verificación de propiedades de empaquetado probadas y validadas.
+- **Estado:** CLOSED
 
 ### DEF-022 — Mandatory Architectural Dependencies
 - **Severidad:** MEDIUM
@@ -296,7 +296,7 @@
 - **Fix:** Añadidas las referencias a `Microsoft.Extensions.Http`, `Polly`, `Serilog`, `Microsoft.Extensions.Hosting` en `AMCCA.Core.csproj` y `AMCCA.App.csproj`, verificando su correcta resolución de DI, ejecución de pipelines de resiliencia y logging estructurado.
 - **Test ejecutado:** `dotnet test AMCCA.sln`
 - **Resultado:** PASS
-- **Evidencia:** 383/383 tests pasando; dependencias del stack normativo activas, operativas y probadas.
+- **Evidencia:** 385/385 tests pasando; dependencias del stack normativo activas, operativas y probadas.
 - **Estado:** CLOSED
 
 ### DEF-023 — Comprehensive Test Pyramid
@@ -305,12 +305,12 @@
 - **Archivo(s):** `tests/*`
 - **Comportamiento actual:** Tests concentrados en contratos unitarios básicos, requiriendo cobertura de integración de extremo a extremo, concurrencia y seguridad.
 - **Por qué falla:** La pirámide de pruebas exige capas explícitas probando comportamiento real y no asserts triviales.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` (`DEF023_CompleteEndToEndProductionPipeline_FromInitToFinalVerified`)
+- **Fix:** Implementada suite de integración end-to-end cubriendo el ciclo completo de vida de producción: creación, investigación respaldada por evidencias de fuentes primarias, reservas de presupuesto exacto con decimales, claim y despacho durable de jobs de procesamiento, inspección de calidad determinista (QA), y trazabilidad append-only inquebrantable de eventos y transiciones.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 385 tests unitarios, de integración, de concurrencia, de seguridad adversarial y end-to-end pasando con 0 errores y 0 advertencias.
+- **Estado:** CLOSED
 
 ### DEF-024 — ToolRegistry Duplicate Registration
 - **Severidad:** MEDIUM
