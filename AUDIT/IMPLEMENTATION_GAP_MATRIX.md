@@ -12,8 +12,8 @@
 | **DEF-001** | CRITICAL | `SPEC/08_POLICY_ENGINE.md` | `src/AMCCA.Core/Policy/PolicyEngine.cs` | CLOSED |
 | **DEF-002** | HIGH | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | CLOSED |
 | **DEF-003** | CRITICAL | `SPEC/09_APPROVALS.md` | `src/AMCCA.Core/Policy/ApprovalManager.cs` | CLOSED |
-| **DEF-004** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | OPEN |
-| **DEF-005** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | OPEN |
+| **DEF-004** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | CLOSED |
+| **DEF-005** | HIGH | `SPEC/06_AGENT_SYSTEM.md`, `AGENTS.md` | `src/AMCCA.Core/Agents/AgentRuntime.cs` | CLOSED |
 | **DEF-006** | CRITICAL | `SPEC/07_GATEWAY_PORT.md`, `SPEC/72_SECURITY_TESTS.md` | `src/AMCCA.Core/Gateway/*` | OPEN |
 | **DEF-007** | HIGH | `SPEC/60_DESKTOP_UI.md` | `src/AMCCA.App/*` | OPEN |
 | **DEF-008** | CRITICAL | `SPEC/13_DOMAIN_STATE_MACHINE.md`, `AGENTS.md` | `src/AMCCA.Core/Domain/ProductionService.cs` | OPEN |
@@ -72,12 +72,12 @@
 - **Archivo(s):** `src/AMCCA.Core/Agents/AgentRuntime.cs`
 - **Comportamiento actual:** `AgentContract` declara `MaxCost` y `TimeoutSeconds`, pero `AgentRuntime` no corta la ejecución con timeout de cancelación real ni bloquea tool calls si el costo acumulado excede `MaxCost`.
 - **Por qué falla:** Los contratos no tienen enforcement en runtime.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/AgentContractEnforcementRegressionTests.cs`
+- **Fix:** `src/AMCCA.Core/Agents/AgentRunSession.cs` y `src/AMCCA.Core/Agents/AgentRuntime.cs` con reserva thread-safe de presupuesto antes de ejecutar cualquier tool y cancelación estricta por `CancellationTokenSource.CancelAfter(TimeoutSeconds)`.
+- **Test ejecutado:** `dotnet test AMCCA.sln` (5 tests de presupuesto exacto, exceso bloqueado, presupuesto acumulado, concurrencia de llamadas y timeout cancelado)
+- **Resultado:** PASS
+- **Evidencia:** 324/324 tests pasando; ningún tool call puede ejecutarse si excede el límite de costo ni extenderse más allá del timeout contratado.
+- **Estado:** CLOSED
 
 ### DEF-006 — Real AI Provider Integration
 - **Severidad:** CRITICAL

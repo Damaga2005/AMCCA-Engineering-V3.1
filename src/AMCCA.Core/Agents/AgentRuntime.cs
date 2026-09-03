@@ -27,9 +27,42 @@ public class AgentRuntime
         string toolId,
         string inputJson,
         ToolExecutionContext context,
+        decimal toolCost = 0m,
+        AgentRunSession? session = null,
         CancellationToken ct = default)
     {
-        // 1. Enforce agent contract permissions (AGENTS.md, SPEC/06, SPEC/07)
+        // 0. Enforce MaxCost budget (DEF-004)
+        if (session != null)
+        {
+            if (!session.TryReserveCost(toolCost))
+            {
+                throw new AmccaException(
+                    AmccaErrors.Cst002,
+                    ErrorCategory.Validation,
+                    $"Agent '{contract.AgentId}' call cost {toolCost:F2} exceeds remaining budget of {contract.MaxCost - session.AccumulatedCost:F2} (DEF-004).");
+            }
+        }
+        else if (toolCost > contract.MaxCost)
+        {
+            throw new AmccaException(
+                AmccaErrors.Cst002,
+                ErrorCategory.Validation,
+                $"Agent '{contract.AgentId}' call cost {toolCost:F2} exceeds contract MaxCost {contract.MaxCost:F2} (DEF-004).");
+        }
+
+        // 1. Enforce TimeoutSeconds (DEF-005)
+        using var linkedCts = contract.TimeoutSeconds > 0
+            ? CancellationTokenSource.CreateLinkedTokenSource(ct)
+            : null;
+
+        if (linkedCts != null)
+        {
+            linkedCts.CancelAfter(TimeSpan.FromSeconds(contract.TimeoutSeconds));
+        }
+
+        var effectiveCt = linkedCts?.Token ?? ct;
+
+        // 2. Enforce agent contract permissions (AGENTS.md, SPEC/06, SPEC/07)
         bool isForbidden = contract.ForbiddenTools.Contains(toolId);
         bool isAllowed = contract.AllowedTools.Contains(toolId);
 
@@ -51,7 +84,7 @@ public class AgentRuntime
                 SchemaVersion: "3.1.0",
                 OccurredAt: DateTimeOffset.UtcNow.ToString("O"));
 
-            await _auditStore.AppendAuditAsync(audit, ct);
+            await _auditStore.AppendAuditAsync(audit, effectiveCt);
 
             throw new AmccaException(
                 AmccaErrors.Ai004,
@@ -59,14 +92,14 @@ public class AgentRuntime
                 $"Agent '{contract.AgentId}' attempted to call tool '{toolId}' which is not in its allowed_tools set. Call blocked and audited (AGENTS.md, SPEC/06).");
         }
 
-        // 2. Resolve tool from registry
+        // 3. Resolve tool from registry
         var tool = _toolRegistry.GetTool(toolId)
             ?? throw new AmccaException(
                 AmccaErrors.Ai004,
                 ErrorCategory.Configuration,
                 $"Tool '{toolId}' is not registered in ToolRegistry.");
 
-        // 3. Structural invariant: EXTERNAL_UNSAFE requires committed intent before call (SPEC/07, SPEC/15)
+        // 4. Structural invariant: EXTERNAL_UNSAFE requires committed intent before call (SPEC/07, SPEC/15)
         if (tool.Definition.SideEffectClass == SideEffectClass.EXTERNAL_UNSAFE && string.IsNullOrEmpty(context.IntentId))
         {
             throw new AmccaException(
@@ -75,8 +108,8 @@ public class AgentRuntime
                 $"EXTERNAL_UNSAFE tool '{toolId}' cannot be executed without a committed intent (SPEC/07, SPEC/15).");
         }
 
-        // 4. Execute tool
-        return await tool.ExecuteAsync(inputJson, context, ct);
+        // 5. Execute tool with effective cancellation token
+        return await tool.ExecuteAsync(inputJson, context, effectiveCt);
     }
 
     public void ValidateAgentOutput(AgentContract contract, string outputJson)
