@@ -26,7 +26,7 @@
 | **DEF-015** | CRITICAL | `SPEC/03_DATABASE.md`, `DECISIONS.md (D-001)` | `src/AMCCA.Core/Database/Migrations/001_InitialSchema.sql` | CLOSED |
 | **DEF-016** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
 | **DEF-017** | HIGH | `SPEC/15_JOBS_AND_LEASES.md` | `src/AMCCA.Core/Jobs/JobService.cs` | CLOSED |
-| **DEF-018** | CRITICAL | `SPEC/03_DATABASE.md` | `src/AMCCA.Core/Database/Migrations/*`, tests | OPEN |
+| **DEF-018** | CRITICAL | `SPEC/03_DATABASE.md` | `src/AMCCA.Core/Database/Migrations/*`, tests | CLOSED |
 | **DEF-019** | HIGH | `.github/workflows/ci.yml` | `.github/workflows/ci.yml` | OPEN |
 | **DEF-020** | HIGH | `BUILD_ORDER.md` | Repo root, commits | OPEN |
 | **DEF-021** | HIGH | `SPEC/76_PACKAGING.md` | Packaging scripts, build | OPEN |
@@ -240,13 +240,12 @@
 - **Especificación incumplida:** `SPEC/03_DATABASE.md`
 - **Archivo(s):** `src/AMCCA.Core/Database/Migrations/*`, suites de tests
 - **Comportamiento actual:** En tests anteriores, se creaban tablas manualmente (`CREATE TABLE IF NOT EXISTS...`) dentro del setup de los tests en lugar de ejecutar la cadena formal de migraciones de `MigrationService`.
-- **Por qué falla:** Una base de datos de producción limpia falla si las migraciones oficiales no contienen todas las tablas y restricciones probadas en tests.
-- **Test de regresión:** Pendiente
-- **Fix:** Pendiente
-- **Test ejecutado:** Pendiente
-- **Resultado:** Pendiente
-- **Evidencia:** Pendiente
-- **Estado:** OPEN
+- **Test de regresión:** `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` (verificación de creación limpia de las 58 tablas canónicas declaradas en `SCHEMAS/tables.json`, presencia de triggers físicos de inmutabilidad y rollback/re-upgrade íntegro)
+- **Fix:** Añadida migración canónica formal `003_complete_canonical_schema` en `MigrationService.cs` incorporando el 100% de las tablas, relaciones FK, restricciones CHECK e índices definidos en `SPEC/11_DATABASE_SCHEMA.md` y `SCHEMAS/tables.json`.
+- **Test ejecutado:** `dotnet test AMCCA.sln`
+- **Resultado:** PASS
+- **Evidencia:** 379/379 tests pasando; una base de datos limpia genera exactamente el esquema canónico completo vía migraciones oficiales sin creación ad-hoc de tablas.
+- **Estado:** CLOSED
 
 ### DEF-019 — Real .NET CI Execution
 - **Severidad:** HIGH
