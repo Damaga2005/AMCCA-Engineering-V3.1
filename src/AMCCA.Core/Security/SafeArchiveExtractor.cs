@@ -39,7 +39,8 @@ public static class SafeArchiveExtractor
         var combinedPath = Path.Combine(fullTargetDir, entryPath);
 
         // Confinement check ensuring it does not escape target directory (DEF-012, DEF-013)
-        PathConfinement.EnsureConfined(combinedPath, fullTargetDir, AmccaErrors.Sec004);
+        // and does not traverse a symlink/junction on the way (SEC-09).
+        PathConfinement.EnsureConfinedNoReparsePoint(combinedPath, fullTargetDir, AmccaErrors.Sec004);
     }
 
     public static void ExtractZipSafely(
@@ -164,26 +165,24 @@ public static class SafeArchiveExtractor
 
     private static void CommitStaging(string stagingDir, string fullTargetDir)
     {
-        foreach (var dir in Directory.GetDirectories(stagingDir))
-        {
-            MergeInto(dir, Path.Combine(fullTargetDir, Path.GetFileName(dir)));
-        }
-        foreach (var file in Directory.GetFiles(stagingDir))
-        {
-            File.Move(file, Path.Combine(fullTargetDir, Path.GetFileName(file)), overwrite: true);
-        }
+        MergeInto(stagingDir, fullTargetDir, fullTargetDir);
     }
 
-    private static void MergeInto(string sourceDir, string destDir)
+    private static void MergeInto(string sourceDir, string destDir, string commitRoot)
     {
         Directory.CreateDirectory(destDir);
         foreach (var dir in Directory.GetDirectories(sourceDir))
         {
-            MergeInto(dir, Path.Combine(destDir, Path.GetFileName(dir)));
+            var childDest = Path.Combine(destDir, Path.GetFileName(dir));
+            // SEC-09: the commit target must not be reachable only through a symlink/junction.
+            PathConfinement.EnsureConfinedNoReparsePoint(childDest, commitRoot, AmccaErrors.Sec004);
+            MergeInto(dir, childDest, commitRoot);
         }
         foreach (var file in Directory.GetFiles(sourceDir))
         {
-            File.Move(file, Path.Combine(destDir, Path.GetFileName(file)), overwrite: true);
+            var fileDest = Path.Combine(destDir, Path.GetFileName(file));
+            PathConfinement.EnsureConfinedNoReparsePoint(fileDest, commitRoot, AmccaErrors.Sec004);
+            File.Move(file, fileDest, overwrite: true);
         }
     }
 

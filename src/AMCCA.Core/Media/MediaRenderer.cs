@@ -88,6 +88,7 @@ public class MediaRenderer
 
     public void ValidatePathConfinement(string candidatePath)
     {
-        AMCCA.Core.Security.PathConfinement.EnsureConfined(candidatePath, _dataRoot, AmccaErrors.Sec001);
+        // SEC-09: reject a path that escapes the data root textually or via a symlink/junction.
+        AMCCA.Core.Security.PathConfinement.EnsureConfinedNoReparsePoint(candidatePath, _dataRoot, AmccaErrors.Sec001);
     }
 }
