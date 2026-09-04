@@ -37,12 +37,13 @@ public class InstallationUpgradeRestoreValidationTests : IDisposable
     [Fact]
     public void InstallerArtifacts_AndSha256Checksums_AreValid()
     {
-        var installerDir = Path.Combine(AppContext.BaseDirectory, "../../../../dist/installer");
-        if (!Directory.Exists(installerDir))
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current != null && !File.Exists(Path.Combine(current.FullName, "AMCCA.sln")))
         {
-            // If running from different bin folder, fallback to repo root
-            installerDir = Path.GetFullPath("dist/installer");
+            current = current.Parent;
         }
+        var root = current?.FullName ?? Directory.GetCurrentDirectory();
+        var installerDir = Path.Combine(root, "dist", "installer");
 
         if (Directory.Exists(installerDir))
         {
