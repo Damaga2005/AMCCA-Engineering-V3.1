@@ -3,6 +3,7 @@ namespace AMCCA.Core.Jobs;
 public class JobRecord
 {
     public string Id { get; set; } = string.Empty;
+    public string? ProductionId { get; set; }
     public string Type { get; set; } = string.Empty;
     public string State { get; set; } = string.Empty;
     public long Priority { get; set; }

@@ -29,6 +29,11 @@ public class ProductionsViewModel : ViewModelBase
     private string _newTopic = string.Empty;
     private string _newNiche = "tech";
 
+    // The constructor starts a load, and so do Refresh and every create/cancel. Each load takes a token
+    // and only applies its results if no newer load has started since, so a slow earlier query cannot
+    // repaint the list with rows from before the operator's last action.
+    private int _loadRequestToken;
+
     public ObservableCollection<ProductionItem> Productions { get; } = new();
 
     public ProductionItem? SelectedProduction
@@ -71,10 +76,17 @@ public class ProductionsViewModel : ViewModelBase
 
     public async Task LoadProductionsAsync()
     {
-        Productions.Clear();
+        var token = ++_loadRequestToken;
         try
         {
             var rows = await _productionService.ListRecentAsync(50);
+
+            if (token != _loadRequestToken)
+            {
+                return; // a newer load has started; its results are the ones that count
+            }
+
+            Productions.Clear();
             foreach (var p in rows)
             {
                 Productions.Add(new ProductionItem(p.Id, p.Title ?? string.Empty, p.NicheId ?? string.Empty, p.State, p.CreatedAt, p.UpdatedAt));

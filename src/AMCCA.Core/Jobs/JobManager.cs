@@ -25,6 +25,7 @@ public class JobManager
         string payloadJson,
         int priority = 3,
         int maxAttempts = 3,
+        string? productionId = null,
         CancellationToken ct = default)
     {
         var id = UlidGenerator.NewUlid();
@@ -33,6 +34,7 @@ public class JobManager
         var job = new JobRecord
         {
             Id = id,
+            ProductionId = productionId,
             Type = type,
             State = "QUEUED",
             Priority = priority,
@@ -48,10 +50,10 @@ public class JobManager
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             INSERT INTO jobs (
-                id, type, state, priority, idempotency_key, attempt,
+                id, production_id, type, state, priority, idempotency_key, attempt,
                 max_attempts, correlation_id, payload_json, created_at, updated_at
             ) VALUES (
-                @Id, @Type, @State, @Priority, @IdempotencyKey, @Attempt,
+                @Id, @ProductionId, @Type, @State, @Priority, @IdempotencyKey, @Attempt,
                 @MaxAttempts, @CorrelationId, @PayloadJson, @CreatedAt, @UpdatedAt
             );
         ";
@@ -505,6 +507,7 @@ public class JobManager
         const string sql = @"
             SELECT
                 id AS Id,
+                production_id AS ProductionId,
                 type AS Type,
                 state AS State,
                 priority AS Priority,

@@ -24,6 +24,11 @@ public class ApprovalQueueViewModel : ViewModelBase
     private ApprovalItem? _selectedApproval;
     private string _approvalReason = "Operator approved release compliance";
 
+    // The constructor starts a load, and so do Refresh and every decision. Each load takes a token and
+    // only applies its results if no newer load has started since, so a slow earlier query cannot repaint
+    // the queue with approvals the operator has already decided.
+    private int _loadRequestToken;
+
     public ObservableCollection<ApprovalItem> Approvals { get; } = new();
 
     public ApprovalItem? SelectedApproval
@@ -60,10 +65,17 @@ public class ApprovalQueueViewModel : ViewModelBase
 
     public async Task LoadApprovalsAsync()
     {
-        Approvals.Clear();
+        var token = ++_loadRequestToken;
         try
         {
             var pending = await _operatorControlService.GetPendingApprovalsAsync();
+
+            if (token != _loadRequestToken)
+            {
+                return; // a newer load has started; its results are the ones that count
+            }
+
+            Approvals.Clear();
             foreach (var p in pending)
             {
                 Approvals.Add(new ApprovalItem(p.Id, p.ProductionId, p.Action, p.State, p.CreatedAt));
