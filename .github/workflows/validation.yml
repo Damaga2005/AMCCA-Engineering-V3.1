@@ -24,6 +24,12 @@ jobs:
       - name: Conformance tests (schema conditionals, positive/negative cases)
         run: python TOOLS/conformance_tests.py
 
+      - name: Repository hygiene check
+        run: python TOOLS/test_repository_hygiene.py
+
+      - name: Adversarial certification mutation tests
+        run: python TOOLS/test_certification_mutations.py
+
       - name: Generated-artifact drift check (--check only, never --regen)
         run: python TOOLS/generate_artifacts.py --check
 
@@ -43,10 +49,12 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r TOOLS/requirements.txt
 
-      - name: Validate package and conformance on Windows
+      - name: Validate package, conformance and hygiene on Windows
         run: |
           python TOOLS/validate_package.py
           python TOOLS/conformance_tests.py
+          python TOOLS/test_repository_hygiene.py
+          python TOOLS/test_certification_mutations.py
           python TOOLS/release_gate.py
 
       - name: Setup .NET SDK
@@ -96,5 +104,5 @@ jobs:
       - name: Run Deterministic Release Certification Pipeline
         shell: pwsh
         run: |
-          & powershell -ExecutionPolicy Bypass -File TOOLS/release_certification.ps1
+          & powershell -ExecutionPolicy Bypass -File TOOLS/release_certification.ps1 -ExpectedCommitSha $env:GITHUB_SHA
           Write-Host "Release certification completed successfully."
