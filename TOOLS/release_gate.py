@@ -341,7 +341,7 @@ def verify_release_invariants(
     if not os.path.exists(sums_file):
         failures.append("missing artifact: SHA256SUMS.txt not found")
     else:
-        with open(sums_file, "r", encoding="utf-8") as f:
+        with open(sums_file, "r", encoding="utf-8-sig") as f:
             sums_lines = [l.strip() for l in f if l.strip()]
 
         seen_files = set()
@@ -350,7 +350,7 @@ def verify_release_invariants(
             if len(parts) != 2:
                 failures.append(f"malformed line in SHA256SUMS.txt: {line!r}")
                 continue
-            declared_hash, fname = parts[0].lower(), parts[1]
+            declared_hash, fname = parts[0].strip().lstrip("\ufeff").lower(), parts[1]
             if fname == "SHA256SUMS.txt":
                 failures.append("SHA256SUMS.txt self-reference is forbidden")
             seen_files.add(fname)

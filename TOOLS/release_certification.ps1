@@ -178,7 +178,8 @@ $sums = @(
     "$zipHash  AMCCA-Desktop-$Runtime.zip"
 )
 $sumsFile = Join-Path $outPath "SHA256SUMS.txt"
-Set-Content -Path $sumsFile -Value $sums -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllLines($sumsFile, $sums, $utf8NoBom)
 
 # Bidirectional verification of SHA256SUMS.txt
 $sumsContent = Get-Content $sumsFile
