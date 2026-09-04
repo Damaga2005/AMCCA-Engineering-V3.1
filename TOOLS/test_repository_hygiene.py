@@ -47,6 +47,18 @@ covers:
      they already exist in `TOOLS/validate_package.py` and are correct; see
      IMPLEMENTATION_SUMMARY.md's P2 hardening section for the evidence.)
 
+  4. hygiene.all_tracked_files_in_manifest
+     The bidirectional completion of check 3: every path tracked by git
+     (except the self-excluded MANIFEST.md and MANIFEST.sha256) MUST be present
+     in `MANIFEST.sha256`. If walk_files() erroneously skips, drops, or conceals
+     any legitimate tracked file (e.g. .gitignore), this check immediately fails.
+
+  5. hygiene.worktree_metadata_isolation
+     Verifies that walk_files() isolates internal SCM metadata (.git), whether
+     .git is a directory (standard clone) or a file (worktree / submodule),
+     while strictly preserving valid dotfiles (.gitignore, .github/*) and
+     never treating project files with 'git' in their name as SCM metadata.
+
     python TOOLS/test_repository_hygiene.py
 """
 import fnmatch
@@ -163,6 +175,70 @@ def check_manifest_entries_are_git_tracked(tracked):
     return True
 
 
+def check_all_tracked_files_in_manifest(tracked):
+    """Bidi-integrity check: Every git-tracked file except MANIFEST.md and
+    MANIFEST.sha256 MUST appear in MANIFEST.sha256. This guarantees that
+    walk_files() cannot silently drop, skip, or conceal any real tracked file."""
+    tracked_set = set(tracked) - {"MANIFEST.md", "MANIFEST.sha256"}
+    listed = set()
+    with open(MANIFEST_SHA, encoding="utf-8") as f:
+        for line in f:
+            line = line.rstrip("\n")
+            if not line.strip():
+                continue
+            _, _, relpath = line.partition("  ")
+            listed.add(relpath)
+
+    missing_from_manifest = sorted(tracked_set - listed)
+    name = "hygiene.all_tracked_files_in_manifest"
+    if missing_from_manifest:
+        print(f"FAIL  {name}")
+        print(f"        git-tracked but omitted from MANIFEST.sha256: {missing_from_manifest[:10]}")
+        return False
+    print(f"PASS  {name} (all {len(tracked_set)} git-tracked content files are present in MANIFEST.sha256)")
+    return True
+
+
+def check_worktree_metadata_isolation():
+    """Verify that walk_files() strictly and exclusively isolates SCM metadata (.git),
+    whether .git is a directory (standard clone) or a file (worktree / submodule),
+    and NEVER drops or ignores any valid project dotfile (.gitignore, .github/*)
+    or file with 'git' in its name."""
+    sys.path.insert(0, TOOLS)
+    import validate_package as vp
+    walked = set(vp.walk_files())
+    name = "hygiene.worktree_metadata_isolation"
+
+    # 1. .git must never be in walked files
+    leaked = [p for p in walked if p == ".git" or p.endswith("/.git")]
+    if leaked:
+        print(f"FAIL  {name} (.git leaked into walk_files(): {leaked})")
+        return False
+
+    # 2. .gitignore MUST be in walked files
+    if ".gitignore" not in walked:
+        print(f"FAIL  {name} (.gitignore was erroneously excluded by walk_files())")
+        return False
+
+    # 3. .github workflow files MUST be in walked files
+    github_files = [p for p in walked if p.startswith(".github/")]
+    if not github_files:
+        print(f"FAIL  {name} (.github/ directory files were erroneously excluded)")
+        return False
+
+    # 4. If .git is a worktree file on disk, verify it is truly a git worktree pointer
+    git_path = os.path.join(ROOT, ".git")
+    if os.path.isfile(git_path):
+        with open(git_path, "r", encoding="utf-8") as f:
+            header = f.readline().strip()
+        if not header.startswith("gitdir:"):
+            print(f"FAIL  {name} (.git is a file but not a valid gitdir pointer: {header!r})")
+            return False
+
+    print(f"PASS  {name} (walk_files isolates .git without excluding .gitignore, .github, or project files)")
+    return True
+
+
 def run():
     tracked = _git_ls_files()
     patterns = _load_gitignore_patterns()
@@ -171,6 +247,8 @@ def run():
     ok &= check_no_tracked_junk(tracked, patterns)
     ok &= check_no_stray_canonical_duplicates(tracked)
     ok &= check_manifest_entries_are_git_tracked(tracked)
+    ok &= check_all_tracked_files_in_manifest(tracked)
+    ok &= check_worktree_metadata_isolation()
     return 0 if ok else 1
 
 

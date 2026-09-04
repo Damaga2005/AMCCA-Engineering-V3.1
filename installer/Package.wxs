@@ -1,0 +1,18 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="AMCCA Engineering V3.1"
+           Manufacturer="AMCCA Engineering"
+           Version="3.1.0"
+           UpgradeCode="E7F2F2D9-4B52-4F1A-B488-842C48D6C8F9">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of AMCCA Engineering is already installed." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="AMCCA" />
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="AMCCA Application" Level="1">
+      <ComponentGroupRef Id="AppComponents" />
+    </Feature>
+  </Package>
+</Wix>

@@ -49,7 +49,8 @@ HISTORICAL_FILE_PATTERNS = [
 
 HISTORY_HEADING_RE = re.compile(r"^#{1,6}\s*(History|Changelog)\b", re.I)
 
-SKIP_DIRS = {".git", "__pycache__", ".venv"}
+SKIP_DIRS = {".git", "__pycache__", ".venv", "bin", "obj"}
+SKIP_FILES = {".git"}
 
 
 def _is_historical_file(basename):
@@ -60,6 +61,8 @@ def _walk_files():
     for base, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for fn in files:
+            if fn in SKIP_FILES:
+                continue
             p = os.path.join(base, fn)
             yield os.path.relpath(p, ROOT).replace(os.sep, "/")
 

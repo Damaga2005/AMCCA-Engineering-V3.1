@@ -74,13 +74,37 @@ def read(*parts):
         return f.read()
 
 
-def walk_files():
-    skip_dirs = {".git", "__pycache__", ".venv"}
-    for base, dirs, files in os.walk(ROOT):
+def get_certified_repository_files(root=None):
+    """Canonical single-source definition of the certified repository universe (DEF-CERT-008).
+
+    Deterministically discovers all legitimate repository content files under `root`
+    (or ROOT by default). Excludes SCM metadata (.git) and ephemeral build/environment
+    directories (.git, __pycache__, .venv, venv, .pytest_cache, bin, obj, artifacts, dist),
+    while strictly preserving legitimate root configuration dotfiles like .gitignore,
+    and workflow files under .github/.
+    """
+    base_root = root or ROOT
+    skip_dirs = {".git", "__pycache__", ".venv", "venv", ".pytest_cache", "bin", "obj", "artifacts", "dist"}
+    skip_files = {".git"}
+    certified = []
+    for base, dirs, files in os.walk(base_root):
         dirs[:] = [d for d in dirs if d not in skip_dirs]
         for fn in files:
+            if fn in skip_files or fn.endswith(".pyc") or fn.endswith(".pyo") or fn.endswith(".swp"):
+                continue
             p = os.path.join(base, fn)
-            yield os.path.relpath(p, ROOT).replace(os.sep, "/")
+            rel = os.path.relpath(p, base_root).replace(os.sep, "/")
+            certified.append(rel)
+    return sorted(certified)
+
+
+CERTIFIED_REPOSITORY_FILES = get_certified_repository_files
+
+
+def walk_files():
+    """Generator yielding certified repository files relative to ROOT."""
+    for rel in get_certified_repository_files(ROOT):
+        yield rel
 
 
 def _validator_cls():
@@ -465,10 +489,12 @@ def check_manifest():
           and "  MANIFEST.md\n" not in sha_body and "  MANIFEST.sha256\n" not in sha_body)
     listed = dict((m[0], m[1]) for m in re.findall(r"\| `([^`]+)` \| `([a-f0-9]{64})` \|", body))
     actual = {r: h for r, h, _ in compute_manifest()}
+    mismatched = [r for r in set(listed) & set(actual) if listed[r] != actual[r]]
     check("manifest.matches_tree", listed == actual,
           f"listed {len(listed)} actual {len(actual)}; "
           f"missing {sorted(set(actual) - set(listed))[:3]}; "
-          f"stale {sorted(set(listed) - set(actual))[:3]}")
+          f"stale {sorted(set(listed) - set(actual))[:3]}; "
+          f"mismatched {sorted(mismatched)[:3]}")
 
 
 def check_drift():

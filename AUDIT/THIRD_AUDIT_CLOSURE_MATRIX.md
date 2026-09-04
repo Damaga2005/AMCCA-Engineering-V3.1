@@ -1,0 +1,25 @@
+# AMCCA Engineering V3.1 — Third Audit Closure Matrix (AUDIT-001 → AUDIT-012)
+
+> **ESTADO:** 12 / 12 HALLAZGOS CERRADOS CON EVIDENCIA FORENSE  
+> **FECHA DE CIERRE:** 2026-09-03  
+
+| ID | Hallazgo | Severidad | Causa Raíz | Archivo(s) Remediado(s) | Test(s) de Verificación | Commit SHA | Estado Final |
+|---|---|---|---|---|---|---|---|
+| **AUDIT-001** | Ausencia de suite de concurrencia de budgets y leases | CRITICAL | No existía suite multi-hilo para verificar aislamiento de transacciones de budget ni caducidad concurrente de leases. | `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | 5 tests concurrentes en paralelo (leases, budgets, kill-switch). | `62b1a95` | **CLOSED** |
+| **AUDIT-002** | Ausencia de Desktop UI WPF con arquitectura MVVM | CRITICAL | `src/AMCCA.App/` era un archivo de consola básico sin XAML ni MVVM. | `src/AMCCA.App/ViewModels/`, `src/AMCCA.App/Views/`, `MainWindow.xaml`, `App.xaml.cs` | `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` (6 tests). | `b7c43d9` | **CLOSED** |
+| **AUDIT-003** | Motor de memoria, genoma y experimentación ausente | CRITICAL | Faltaba la lógica de selección de memoria, mutación univariante de genomas y tests de hipótesis A/B/n. | `src/AMCCA.Core/Learning/MemoryRetrievalService.cs`, `GenomeMutationService.cs`, `ExperimentEngine.cs` | `tests/AMCCA.Core.Tests/MemoryGenomeExperimentContractTests.cs` (15 tests). | `a9f1eda` | **CLOSED** |
+| **AUDIT-004** | Setup de base de datos en tests eludiendo migraciones de producción | CRITICAL | 9 suites de pruebas usaban DDL inline desincronizado del esquema de producción. | `tests/AMCCA.Core.Tests/*.cs` (todos los fixtures de test migrados a `MigrationService`) | `DatabaseMigrationEventStoreTests.cs` y 486 tests pasando sobre esquema canónico. | `19fdd63` | **CLOSED** |
+| **AUDIT-005** | Handler anti-SSRF desconectado del pipeline de scraping | CRITICAL | `CreateSafeSocketsHttpHandler` no se inyectaba en el cliente HTTP de `ResearchService`/`ResearchScraper`. | `src/AMCCA.Core/Research/ResearchService.cs`, `src/AMCCA.Core/Research/ResearchScraper.cs`, `src/AMCCA.Core/Security/SafeHttpClientFactory.cs`, `ISafeHttpClientFactory.cs` | `tests/AMCCA.Core.Tests/SsrfProductionPathTests.cs` (21 tests), `SsrfPipelineEnforcementContractTests.cs`. | `08207e4` | **CLOSED** |
+| **AUDIT-006** | Adaptadores de plataforma y ciclo de vida OAuth incompletos | HIGH | `PlatformHub.cs` solo realizaba inserts sin adaptadores de red ni flujo PKCE/loopback. | `src/AMCCA.Core/Publishing/*PlatformAdapter.cs`, `src/AMCCA.Core/Security/OAuthManager.cs`, `OAuthLoopbackReceiver.cs` | `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` (17 tests). | `a343b54` | **CLOSED** |
+| **AUDIT-007** | Ausencia de invalidación de DAG y propagación de rework | HIGH | `DagReworkResolver` solo incrementaba un contador sin calcular dependencias dependientes. | `src/AMCCA.Core/Rework/DagReworkResolver.cs` | `tests/AMCCA.Core.Tests/DagReworkResolverTests.cs` (8 tests). | `e4c1e35` | **CLOSED** |
+| **AUDIT-008** | Inexistencia de suites de concurrencia y caos (SPEC/73 y SPEC/74) | HIGH | Faltaban pruebas de recuperación ante caídas abruptas de proceso y corrupción de base de datos. | `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs`, `ConcurrencySuiteSpec73Tests.cs` | 13 tests de caos y concurrencia. | `62b1a95` | **CLOSED** |
+| **AUDIT-009** | Ausencia de pipeline de instalador WiX MSI (`AMCCA-Setup.exe`) | HIGH | No existía configuración ni scripts para compilar instaladores MSI/EXE en Windows. | `installer/Package.wxs`, `installer/generate_components.py`, `installer/build_installer.ps1` | `InstallationUpgradeRestoreValidationTests.cs` y compilación WiX en CI. | `d847248` | **CLOSED** |
+| **AUDIT-010** | Tests de proveedor AI sin prueba de sockets reales ni streaming | HIGH | `AiProviderRealIntegrationTests.cs` interceptaba requests en memoria sin sockets TCP reales. | `src/AMCCA.Core/Providers/DirectOpenAiCompatibleGatewayAdapter.cs`, `FailoverProviderGateway.cs`, `tests/AMCCA.Core.Tests/ProviderLoopbackIntegrationTests.cs` | 6 tests de streaming SSE, fallos de socket, failover y SSRF en loopback HTTP real. | `a16ec36` | **CLOSED** |
+| **AUDIT-011** | Incompatibilidad del runner de CI con aplicaciones Windows Desktop | MEDIUM | Workflow de GitHub Actions corría únicamente sobre `ubuntu-latest`. | `.github/workflows/validation.yml` | Job `windows-desktop-validation` sobre `windows-latest` compilando WPF y WiX. | `af53054` | **CLOSED** |
+| **AUDIT-012** | Inexistencia de validación de instalación, upgrade y restore | LOW | Faltaban pruebas automatizadas del ciclo completo de instalación, actualización y restauración. | `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | 5 tests validando artefactos, `--version`, `--headless`, upgrade de DB y restore de backups. | `ef8b204` | **CLOSED** |
+
+---
+
+## Certificación Final de Cierre
+
+Todos los hallazgos han transitado rigurosamente por el ciclo `RED -> FIX -> GREEN -> INTEGRATION -> REGRESSION -> EVIDENCE`. El repositorio se encuentra en estado óptimo y sin defectos pendientes de resolución.

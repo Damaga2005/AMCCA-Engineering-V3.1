@@ -16,17 +16,18 @@ def run():
         return 1
 
     target = os.path.join(ROOT, "SPEC", "13_STATE_TRANSITION_MATRIX.md")
-    original = open(target, encoding="utf-8").read()
+    with open(target, "rb") as f:
+        original = f.read()
     try:
-        with open(target, "a", encoding="utf-8") as f:
-            f.write("\nTAMPERED\n")
+        with open(target, "ab") as f:
+            f.write(b"\nTAMPERED\n")
         ok2, diffs2 = ga.check_all(ROOT)
         if ok2:
             print("FAIL  tampering SPEC/13 was not detected by --check (V31-01 regression)")
             return 1
         print("PASS  tampering SPEC/13 was detected:", diffs2[0])
     finally:
-        with open(target, "w", encoding="utf-8") as f:
+        with open(target, "wb") as f:
             f.write(original)
 
     ok3, diffs3 = ga.check_all(ROOT)

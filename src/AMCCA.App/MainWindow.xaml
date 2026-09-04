@@ -1,0 +1,67 @@
+﻿<Window x:Class="AMCCA.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AMCCA.App.ViewModels"
+        xmlns:views="clr-namespace:AMCCA.App.Views"
+        mc:Ignorable="d"
+        Title="AMCCA Engineering V3.1 — Production Operations" Height="720" Width="1100"
+        Background="#181825" WindowStartupLocation="CenterScreen">
+    
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ProductionsViewModel}">
+            <views:ProductionsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ApprovalQueueViewModel}">
+            <views:ApprovalQueueView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AuditLogViewModel}">
+            <views:AuditLogView/>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar Navigation -->
+        <Border Grid.Column="0" Background="#11111B" Padding="15">
+            <DockPanel>
+                <!-- Header -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,25">
+                    <TextBlock Text="AMCCA" FontSize="24" FontWeight="Bold" Foreground="#89B4FA"/>
+                    <TextBlock Text="Engineering V3.1" FontSize="12" Foreground="#A6ADC8"/>
+                </StackPanel>
+
+                <!-- Footer / Status -->
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Separator Background="#313244" Margin="0,15"/>
+                    <TextBlock Text="{Binding StatusText}" Foreground="#6C7086" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <!-- Nav Buttons -->
+                <StackPanel>
+                    <Button Content="Dashboard" Command="{Binding NavigateDashboardCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Productions" Command="{Binding NavigateProductionsCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Approval Queue" Command="{Binding NavigateApprovalQueueCommand}" Background="Transparent" Foreground="#F9E2AF" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Audit Log" Command="{Binding NavigateAuditLogCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Settings" Command="{Binding NavigateSettingsCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Content Area -->
+        <Grid Grid.Column="1">
+            <ContentControl Content="{Binding CurrentView}"/>
+        </Grid>
+    </Grid>
+</Window>

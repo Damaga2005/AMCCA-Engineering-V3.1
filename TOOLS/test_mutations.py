@@ -592,6 +592,83 @@ def mutation_14_reference_to_nonexistent_decision_id():
     return ok
 
 
+# ===================================================================
+# Mutation 15: oversensitive SCM metadata filter in walk_files() ->
+# if walk_files() erroneously skips files by prefix (e.g. fn.startswith(".git"))
+# instead of exact ".git", real files like .gitignore are dropped, which must
+# make manifest.matches_tree and hygiene.all_tracked_files_in_manifest go red.
+# ===================================================================
+
+def mutation_15_walk_files_oversensitive_filter():
+    import validate_package as vp
+
+    # 1. Baseline: valid manifest against canonical CERTIFIED_REPOSITORY_FILES
+    saved_results = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_manifest()
+    baseline = {r["check"]: r for r in vp.RESULTS}
+    baseline_ok = baseline.get("manifest.matches_tree", {}).get("ok", False)
+    baseline_detail = baseline.get("manifest.matches_tree", {}).get("detail", "")
+    vp.RESULTS = saved_results
+    ok = record("mutation15.baseline_manifest_matches_tree", baseline_ok, baseline_detail)
+
+    # 2. Missing real file: simulate dropping a real certified file (.gitignore)
+    real_walk = vp.walk_files
+
+    def walk_omitting_gitignore():
+        for rel in real_walk():
+            if rel == ".gitignore" or os.path.basename(rel) == ".gitignore":
+                continue
+            yield rel
+
+    try:
+        vp.walk_files = walk_omitting_gitignore
+        vp.RESULTS = []
+        vp.check_manifest()
+        mutated = {r["check"]: r for r in vp.RESULTS}
+        mutated_ok = mutated.get("manifest.matches_tree", {}).get("ok", False)
+        ok = record("mutation15.manifest_matches_tree_goes_red_when_real_file_omitted",
+                    baseline_ok and not mutated_ok,
+                    mutated.get("manifest.matches_tree", {}).get("detail", "")) and ok
+    finally:
+        vp.walk_files = real_walk
+        vp.RESULTS = saved_results
+
+    # 3. Restore: restoring the omitted file restores PASS
+    vp.RESULTS = []
+    vp.check_manifest()
+    restored = {r["check"]: r for r in vp.RESULTS}
+    restored_ok = restored.get("manifest.matches_tree", {}).get("ok", False)
+    vp.RESULTS = saved_results
+    ok = record("mutation15.manifest_matches_tree_restored_after_omission", restored_ok) and ok
+
+    # 4. Stale file: introducing an unexpected/unmanifested file causes FAIL
+    stale_temp = os.path.join(ROOT, "TOOLS", "_tmp_stale_test_mutation15.py")
+    try:
+        with open(stale_temp, "w", encoding="utf-8") as f:
+            f.write("# ephemeral test mutation 15 file\n")
+        vp.RESULTS = []
+        vp.check_manifest()
+        stale_res = {r["check"]: r for r in vp.RESULTS}
+        stale_ok = stale_res.get("manifest.matches_tree", {}).get("ok", False)
+        ok = record("mutation15.manifest_matches_tree_goes_red_when_stale_file_introduced",
+                    baseline_ok and not stale_ok,
+                    stale_res.get("manifest.matches_tree", {}).get("detail", "")) and ok
+    finally:
+        if os.path.exists(stale_temp):
+            os.remove(stale_temp)
+        vp.RESULTS = saved_results
+
+    # 5. Prove reversion: real package walk_files is restored and green
+    vp.RESULTS = []
+    vp.check_manifest()
+    reverted = {r["check"]: r for r in vp.RESULTS}
+    reverted_ok = reverted.get("manifest.matches_tree", {}).get("ok", False)
+    vp.RESULTS = saved_results
+    ok = record("mutation15.real_package_unaffected_by_mutation", reverted_ok) and ok
+    return ok
+
+
 def read_decisions_declared_and_check():
     import re
     dec_path = os.path.join(ROOT, "DECISIONS.md")
@@ -616,6 +693,7 @@ def run():
         mutation_12_money_field_typed_as_number,
         mutation_13_nonnegative_money_accepts_negative,
         mutation_14_reference_to_nonexistent_decision_id,
+        mutation_15_walk_files_oversensitive_filter,
     ]
     results = []
     for m in mutations:
