@@ -6,12 +6,12 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 338
-**Total bytes:** 1692888
+**Files:** 339
+**Total bytes:** 1699459
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
-| `.github/workflows/validation.yml` | `ab0aa904b44319d9cee7d13fc187050f5b4003be67d7e3152c8f0e35f538fa52` | 3298 |
+| `.github/workflows/validation.yml` | `b5396be18c127d952a9c8c47ef69c9984f86514d184754bb9c0a79a1946bbb87` | 3551 |
 | `.gitignore` | `2da4418f1e39c4240bbca85311ef63c4050cf9ca03d92f421db20e6ce247d504` | 140 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
@@ -169,6 +169,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conditional_coverage.json` | `54d8f4774c379bd09e7f4ead7b42413025897d58cdce00829ed69b9cc9c7e11a` | 1595 |
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
+| `TOOLS/release_certification.ps1` | `cf9c7b1f73b0ccd000d09dd97b1995d75dda61ed1fca648945b8b7a85f273b09` | 6318 |
 | `TOOLS/release_gate.py` | `bf5085fffa3daeb5267f32f16d0d7e8a7ad3de87b95cf2cb6914f3b20f19923c` | 14171 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
 | `TOOLS/requirements.txt` | `aba0afee65ef1b35fb6b176fc77817efcd11c301eeac32f303f7f600b2130b78` | 1211 |
