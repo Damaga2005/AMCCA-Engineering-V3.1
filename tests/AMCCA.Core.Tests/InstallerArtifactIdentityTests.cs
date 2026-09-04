@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using AMCCA.Core.Packaging;
 using FluentAssertions;
 using Xunit;
 
@@ -10,8 +11,6 @@ namespace AMCCA.Core.Tests;
 public class InstallerArtifactIdentityTests
 {
     private static readonly byte[] MsiHeaderMagic = new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 };
-    private static readonly byte[] PeMzMagic = new byte[] { 0x4D, 0x5A };
-    private static readonly byte[] PeSignature = new byte[] { 0x50, 0x45, 0x00, 0x00 };
 
     private static string GetInstallerDir()
     {
@@ -87,6 +86,33 @@ public class InstallerArtifactIdentityTests
         }
     }
 
+    private static byte[] CreateSkeletonPe(ushort machine, ushort magic)
+    {
+        var bytes = new byte[512];
+        bytes[0] = 0x4D; bytes[1] = 0x5A; // MZ
+        int e_lfanew = 128;
+        BitConverter.GetBytes(e_lfanew).CopyTo(bytes, 0x3C);
+
+        // PE signature
+        bytes[e_lfanew] = 0x50; bytes[e_lfanew + 1] = 0x45;
+
+        // COFF header (e_lfanew + 4)
+        int coff = e_lfanew + 4;
+        BitConverter.GetBytes(machine).CopyTo(bytes, coff); // Machine
+        BitConverter.GetBytes((ushort)3).CopyTo(bytes, coff + 2); // NumberOfSections = 3
+        BitConverter.GetBytes((ushort)240).CopyTo(bytes, coff + 16); // SizeOfOptionalHeader = 240
+
+        // Optional header (coff + 20)
+        int opt = coff + 20;
+        BitConverter.GetBytes(magic).CopyTo(bytes, opt); // Magic
+        BitConverter.GetBytes((ulong)0x00400000).CopyTo(bytes, opt + 24); // ImageBase
+        BitConverter.GetBytes((uint)4096).CopyTo(bytes, opt + 32); // SectionAlignment
+        BitConverter.GetBytes((uint)512).CopyTo(bytes, opt + 36); // FileAlignment
+        BitConverter.GetBytes((uint)65536).CopyTo(bytes, opt + 56); // SizeOfImage
+
+        return bytes;
+    }
+
     [Fact]
     public void IdentityVerification_DemonstratesDistinctFormatsAndHashes()
     {
@@ -114,30 +140,126 @@ public class InstallerArtifactIdentityTests
             msiBytes[i].Should().Be(MsiHeaderMagic[i], "MSI must be a valid Windows Installer / OLE compound file");
         }
 
-        // 3. EXE format verification (PE executable)
-        exeBytes.Length.Should().BeGreaterThan(1024);
-        exeBytes[0].Should().Be(PeMzMagic[0]);
-        exeBytes[1].Should().Be(PeMzMagic[1]);
-
-        var peOffset = BitConverter.ToInt32(exeBytes, 0x3C);
-        peOffset.Should().BeGreaterThan(0);
-        peOffset.Should().BeLessThan(exeBytes.Length - 4);
-        for (int i = 0; i < PeSignature.Length; i++)
-        {
-            exeBytes[peOffset + i].Should().Be(PeSignature[i], "EXE must contain a valid PE signature");
-        }
+        // 3. EXE format verification using PeBinaryValidator
+        var peResult = PeBinaryValidator.Validate(exeBytes);
+        peResult.IsValid.Should().BeTrue(peResult.FailureReason);
+        peResult.Machine.Should().Be(0x8664);
+        peResult.Magic.Should().Be(0x020B);
 
         // 4. Burn Bootstrapper Payload verification
-        // A WiX burn bundle embeds or bundles packages in its overlay/engine payload
         exeBytes.Length.Should().BeGreaterThan(msiBytes.Length, "WiX Burn bundle embeds the MSI payload and engine");
     }
 
+    // --- DEF-CERT-001: 10 MANDATORY ADVERSARIAL TESTS (Section 5.2) ---
+
     [Fact]
-    public void RejectionOfTrivialExtensionCheck_WithoutBinaryValidation()
+    public void Test01_MsiRenamedAsExe_IsRejected()
     {
-        // Prove that trusting extension == ".exe" without PE validation is insecure and rejected by our validation
-        var nonPeContent = System.Text.Encoding.UTF8.GetBytes("Fake executable script or copied MSI");
-        var isRealPe = nonPeContent.Length >= 2 && nonPeContent[0] == 0x4D && nonPeContent[1] == 0x5A;
-        isRealPe.Should().BeFalse("Pure extension without MZ/PE signature must never pass as valid PE");
+        var dir = GetInstallerDir();
+        var msiBytes = File.ReadAllBytes(Path.Combine(dir, "AMCCA-Setup.msi"));
+        var result = PeBinaryValidator.Validate(msiBytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("Invalid DOS header");
+    }
+
+    [Fact]
+    public void Test02_EmptyFile_IsRejected()
+    {
+        var result = PeBinaryValidator.Validate(Array.Empty<byte>());
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("File too small");
+    }
+
+    [Fact]
+    public void Test03_FileWithMz_ButNoPe_IsRejected()
+    {
+        var bytes = new byte[128];
+        bytes[0] = 0x4D; bytes[1] = 0x5A; // MZ
+        BitConverter.GetBytes(64).CopyTo(bytes, 0x3C);
+        var result = PeBinaryValidator.Validate(bytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("Invalid PE signature");
+    }
+
+    [Fact]
+    public void Test04_MzAndCorruptPeSignature_IsRejected()
+    {
+        var bytes = new byte[128];
+        bytes[0] = 0x4D; bytes[1] = 0x5A; // MZ
+        BitConverter.GetBytes(64).CopyTo(bytes, 0x3C);
+        bytes[64] = (byte)'X'; bytes[65] = (byte)'X'; bytes[66] = (byte)'X'; bytes[67] = (byte)'X';
+        var result = PeBinaryValidator.Validate(bytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("Invalid PE signature");
+    }
+
+    [Fact]
+    public void Test05_Pe32InsteadOfPe32Plus_IsRejected()
+    {
+        var bytes = CreateSkeletonPe(machine: 0x8664, magic: 0x010B); // PE32
+        var result = PeBinaryValidator.Validate(bytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("PE32 standard is rejected");
+    }
+
+    [Fact]
+    public void Test06_PeArm64InsteadOfAmd64_IsRejected()
+    {
+        var bytes = CreateSkeletonPe(machine: 0xAA64, magic: 0x020B); // ARM64
+        var result = PeBinaryValidator.Validate(bytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("0xAA64");
+    }
+
+    [Fact]
+    public void Test07_ELfanewOutsideFile_IsRejected()
+    {
+        var bytes = new byte[128];
+        bytes[0] = 0x4D; bytes[1] = 0x5A;
+        BitConverter.GetBytes(10000).CopyTo(bytes, 0x3C);
+        var result = PeBinaryValidator.Validate(bytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("outside file boundaries");
+    }
+
+    [Fact]
+    public void Test08_PeSignatureDisplacedIncorrectly_IsRejected()
+    {
+        var bytes = new byte[256];
+        bytes[0] = 0x4D; bytes[1] = 0x5A;
+        BitConverter.GetBytes(100).CopyTo(bytes, 0x3C); // points to 100
+        bytes[120] = 0x50; bytes[121] = 0x45; // placed at 120 instead
+        var result = PeBinaryValidator.Validate(bytes);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("Invalid PE signature");
+    }
+
+    [Fact]
+    public void Test09_TruncatedOptionalHeader_IsRejected()
+    {
+        var fullSkeleton = CreateSkeletonPe(machine: 0x8664, magic: 0x020B);
+        // e_lfanew = 128, coffOffset = 132, optOffset = 152. Truncate at optOffset + 50 (< 112 required)
+        var truncated = new byte[152 + 50];
+        Array.Copy(fullSkeleton, truncated, truncated.Length);
+        var result = PeBinaryValidator.Validate(truncated);
+        result.IsValid.Should().BeFalse();
+        result.FailureReason.Should().Contain("Truncated");
+    }
+
+    [Fact]
+    public void Test10_RealWixBurnArtifact_IsValidAmd64Pe32Plus()
+    {
+        var dir = GetInstallerDir();
+        var exePath = Path.Combine(dir, "AMCCA-Setup.exe");
+        var exeBytes = File.ReadAllBytes(exePath);
+
+        var result = PeBinaryValidator.Validate(exeBytes);
+        result.IsValid.Should().BeTrue(result.FailureReason);
+        result.Machine.Should().Be(0x8664, "Must be AMD64");
+        result.Magic.Should().Be(0x020B, "Must be PE32+ (64-bit)");
+        result.NumberOfSections.Should().BeGreaterThan(0);
+        result.ImageBase.Should().BeGreaterThan(0);
+        result.SectionAlignment.Should().BeGreaterThan(0);
+        result.SizeOfImage.Should().BeGreaterThan(0);
     }
 }

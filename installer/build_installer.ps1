@@ -46,13 +46,43 @@ Write-Host "[4/5] Compiling WiX Burn Bootstrapper Bundle EXE..."
 if ($LASTEXITCODE -ne 0) { throw "WiX Bootstrapper build failed with exit code $LASTEXITCODE" }
 
 # 5. Verify Artifact Identity & Generate SHA256 Checksums
-Write-Host "[5/5] Verifying installer PE integrity & generating checksums..."
+Write-Host "[5/5] Verifying installer PE structural integrity & generating checksums..."
 $msiBytes = [System.IO.File]::ReadAllBytes($msiOut)
 $exeBytes = [System.IO.File]::ReadAllBytes($exeOut)
 
-# Verify MZ header for EXE
-if ($exeBytes.Length -lt 2 -or $exeBytes[0] -ne 0x4D -or $exeBytes[1] -ne 0x5A) {
-    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe is not a valid Windows PE binary (missing MZ signature)."
+# Structural PE32+ Validation (DEF-CERT-001)
+if ($exeBytes.Length -lt 64) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe too small for DOS header ($($exeBytes.Length) bytes)."
+}
+if ($exeBytes[0] -ne 0x4D -or $exeBytes[1] -ne 0x5A) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe missing 'MZ' DOS signature."
+}
+$e_lfanew = [System.BitConverter]::ToInt32($exeBytes, 0x3C)
+if ($e_lfanew -lt 64 -or $e_lfanew -gt ($exeBytes.Length - 4)) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe has invalid e_lfanew offset ($e_lfanew)."
+}
+if ($exeBytes[$e_lfanew] -ne 0x50 -or $exeBytes[$e_lfanew + 1] -ne 0x45 -or $exeBytes[$e_lfanew + 2] -ne 0 -or $exeBytes[$e_lfanew + 3] -ne 0) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe missing 'PE\0\0' signature at offset 0x$($e_lfanew.ToString('X'))."
+}
+$coffOffset = $e_lfanew + 4
+if ($coffOffset + 20 -gt $exeBytes.Length) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe COFF header truncated."
+}
+$machine = [System.BitConverter]::ToUInt16($exeBytes, $coffOffset)
+if ($machine -ne 0x8664) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe machine architecture is 0x$($machine.ToString('X4')) (expected 0x8664 AMD64)."
+}
+$sections = [System.BitConverter]::ToUInt16($exeBytes, $coffOffset + 2)
+if ($sections -le 0) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe has 0 sections in COFF header."
+}
+$optOffset = $coffOffset + 20
+if ($optOffset + 112 -gt $exeBytes.Length) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe Optional Header truncated."
+}
+$magic = [System.BitConverter]::ToUInt16($exeBytes, $optOffset)
+if ($magic -ne 0x020B) {
+    throw "DEF-CERT-001 VIOLATION: AMCCA-Setup.exe Optional Header Magic is 0x$($magic.ToString('X4')) (expected 0x020B PE32+)."
 }
 
 $msiHash = (Get-FileHash -Path $msiOut -Algorithm SHA256).Hash.ToLowerInvariant()

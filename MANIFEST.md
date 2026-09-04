@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 341
-**Total bytes:** 1716352
+**Files:** 343
+**Total bytes:** 1731976
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -171,6 +171,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conditional_coverage.json` | `54d8f4774c379bd09e7f4ead7b42413025897d58cdce00829ed69b9cc9c7e11a` | 1595 |
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
+| `TOOLS/pe_validator.py` | `fb6c34a5d06667419c4afed793ed583e67adf91a562a0cd388b855850e38a38b` | 4391 |
 | `TOOLS/release_certification.ps1` | `2ba1967482dbaf2ff90f5dc2dc36ad571359f782f5ae54ce7b6ed6d2fac6c1f8` | 7042 |
 | `TOOLS/release_gate.py` | `bf5085fffa3daeb5267f32f16d0d7e8a7ad3de87b95cf2cb6914f3b20f19923c` | 14171 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
@@ -193,7 +194,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/validate_package.py` | `369ed81e2f0fa3de10397ff6e91e252392002665ede38ed60b6f537bfe2e0879` | 24486 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
-| `installer/build_installer.ps1` | `43edf614dd05e7f9b431884c5ef1d60a636d5d9633e14d00fff4fb8480b68bcc` | 3591 |
+| `installer/build_installer.ps1` | `d52ab2c79846c0ad3cba113c18d3e6993effc2cf610a54bd5eeb510fde3803f5` | 5121 |
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
@@ -257,6 +258,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `d3640f37fb11a6131859a7367d4daa79d964160d54e3045a26e3325e6fa06686` | 5397 |
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `2cd38f31143823693c50f04cdbc94c647948f97767ad2e7695f4276f5aaa3f90` | 3914 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
+| `src/AMCCA.Core/Packaging/PeBinaryValidator.cs` | `8044d308f0f0e0e86566ce5885b57c45028eb6a7d8e03b1f2688e57cd6817d17` | 5204 |
 | `src/AMCCA.Core/Policy/ApprovalManager.cs` | `8b710a394030bba83a9dcdcb219422bffc27e83b92a615096bb7cf3cdff09d05` | 7510 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `09d8fdd116101605750dd819363c1dbafdeead63bc80fa06a7371ac50b2f8915` | 9282 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `5f9bfae618e0805f451aaec48fe341e3fae1288024a8512cfffea13eb60df90c` | 5750 |
@@ -323,7 +325,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `28311223dea6af3e94ae4d7696c400ce81ac8b29e248cab97c757f318ff63dcf` | 7563 |
 | `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `22e0342e871b74b94866cae6203fa95c9b02523eedead8585fbf6ff61690f2b7` | 7532 |
 | `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `64a062f8fa8696ed4adf52c03639e479067622e2698a09d36ddd8871d0063431` | 12159 |
-| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `02ca18eef563b32694b243943ca3b1ebcc3cd403a249325a6526a1180502084b` | 6240 |
+| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `b330ad40f3b83fafee83d8b73ef2055a937cfc09f8a7887b19803c6f0b730bb5` | 10739 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `ad294304f44fca7026cc043cbf275f06e428b056f7854b771771349a3de27401` | 4620 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `4b70e718bddc284f79334ca9250c8c4a95dc6ea62e19c31323d6f2c95ffe72f5` | 8991 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
