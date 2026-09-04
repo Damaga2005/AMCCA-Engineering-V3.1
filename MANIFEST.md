@@ -6,14 +6,16 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 167
-**Total bytes:** 837228
+**Files:** 169
+**Total bytes:** 863561
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
 | `.github/workflows/validation.yml` | `6f8dcf5615e7ff4fe23c583ea7c86f0c75dce744c5998496fdaaea7bdaeaca80` | 1827 |
 | `.gitignore` | `de97b115f0af91700bf08cef31ccf66fde5c74c95d42463a772ca44d7034db29` | 81 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
+| `ANTIGRAVITY_AUTONOMOUS_IMPLEMENTATION.md` | `e53d4c7c24186e38adcdca0eea86afcbd42f1dbd1546c4789bc1bbe74e14742a` | 16242 |
+| `ANTIGRAVITY_LOOP.md` | `62f749d07cf49d728d828530df82c7c1f18ba4560e3c6007b330b105172c0f45` | 10091 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/V2_DEFECTS_CLOSED.md` | `8f6771bc4fc6bf48f28ed668af806fb86f575e89a724288ad6903f331679d02b` | 12519 |
