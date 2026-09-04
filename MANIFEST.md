@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 344
-**Total bytes:** 1763607
+**Total bytes:** 1764108
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -172,8 +172,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
 | `TOOLS/pe_validator.py` | `fb6c34a5d06667419c4afed793ed583e67adf91a562a0cd388b855850e38a38b` | 4391 |
-| `TOOLS/release_certification.ps1` | `2ef168b928d9004c4ea2a19d8f84c89461f852d1313910f7a79e4e995358d2a1` | 12014 |
-| `TOOLS/release_gate.py` | `3e3fb44f6b5ce3afdabf978bf7cb661e79eb5b63a3d8ea320fb3bce254c421a3` | 26579 |
+| `TOOLS/release_certification.ps1` | `7ba7424c5ac00c3f879cd3391514cb5148f9d91917976189e8e69469cbf4eae1` | 12108 |
+| `TOOLS/release_gate.py` | `ed3c5fdc7a23490840a914bf22a9ecf7293c48b18a1c4eae0fdd8a07db9dd8fe` | 26910 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
 | `TOOLS/requirements.txt` | `aba0afee65ef1b35fb6b176fc77817efcd11c301eeac32f303f7f600b2130b78` | 1211 |
 | `TOOLS/test_certification_mutations.py` | `5fdfd11ed7367651d1ca1042c728588e6a0cb3536d87bd135e42f48f5b934b27` | 13895 |
@@ -195,7 +195,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/validate_package.py` | `369ed81e2f0fa3de10397ff6e91e252392002665ede38ed60b6f537bfe2e0879` | 24486 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
-| `installer/build_installer.ps1` | `d52ab2c79846c0ad3cba113c18d3e6993effc2cf610a54bd5eeb510fde3803f5` | 5121 |
+| `installer/build_installer.ps1` | `278172cf412c60b94179cd1e6535c7bf5e5af67e6b25ed0b7bd839ffcb728f62` | 5197 |
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
