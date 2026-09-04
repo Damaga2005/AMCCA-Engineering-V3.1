@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
@@ -55,7 +56,15 @@ public partial class App : Application
         var config = _serviceProvider.GetRequiredService<AmccaConfig>();
         var secretStore = _serviceProvider.GetRequiredService<ISecretStore>();
         var preflightService = _serviceProvider.GetRequiredService<IPreflightService>();
-        var report = preflightService.RunSystemStartupPreflightAsync(config, secretStore).GetAwaiter().GetResult();
+
+        // Run it on the thread pool rather than awaiting it inline on the UI thread. OnStartup runs under
+        // a DispatcherSynchronizationContext, so blocking here on a preflight whose continuations post
+        // back to that dispatcher would deadlock: gate 8 awaits Process.WaitForExitAsync, which really
+        // does suspend (the SQLite awaits happen to complete synchronously, which is why the migration
+        // call this replaced got away with the same shape). Inside Task.Run there is no captured context,
+        // so every continuation lands on the pool and the UI thread only waits on a completed task.
+        var report = Task.Run(() => preflightService.RunSystemStartupPreflightAsync(config, secretStore))
+            .GetAwaiter().GetResult();
 
         if (!report.IsStartupPermitted)
         {

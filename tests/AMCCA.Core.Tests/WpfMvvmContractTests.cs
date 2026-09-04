@@ -172,12 +172,19 @@ public class WpfMvvmContractTests : IDisposable
                 INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, external_id, evidence_source, evidence_retrieved_at, schema_version, created_at, updated_at)
                 VALUES ('pub-d1', 'prod-d1', 'youtube', 'acc-1', 'cv-1', 'VERIFIED', 'idem-d1', 'ext-123', 'OFFICIAL_API', datetime('now'), '3.1.0', datetime('now'), datetime('now'));
             ");
+
+            // A production in a terminal state is not active (SPEC/13). ARCHIVED used to be counted here
+            // because the filter excluded 'PUBLISHED', which is not a state in the canonical machine.
+            await conn.ExecuteAsync(@"
+                INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
+                VALUES ('prod-d2', 'ARCHIVED', 'Done and filed', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+            ");
         }
 
         var nav = CreateNavigationService(out var dash, out _, out _, out _, out _);
         await dash.RefreshAsync();
 
-        dash.ActiveProductionsCount.Should().Be(1);
+        dash.ActiveProductionsCount.Should().Be(1, "the ARCHIVED production is terminal and must not count as active");
         dash.PendingApprovalsCount.Should().Be(1);
         dash.VerifiedPublicationsCount.Should().Be(1);
     }

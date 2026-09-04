@@ -50,6 +50,10 @@ public class ProductionInspectorViewModel : ViewModelBase
     // twice in quick succession cannot leave the tabs showing a mixture of both.
     private int _loadRequestToken;
 
+    // The picker list has its own token: it is refilled by a different pair of callers (the constructor
+    // and Refresh) and must not invalidate an inspection load, nor be invalidated by one.
+    private int _pickerRequestToken;
+
     public ObservableCollection<InspectorProductionSummary> AvailableProductions { get; } = new();
     public ObservableCollection<InspectorTransitionItem> StateTransitions { get; } = new();
     public ObservableCollection<InspectorArtifactItem> Artifacts { get; } = new();
@@ -102,12 +106,19 @@ public class ProductionInspectorViewModel : ViewModelBase
 
     public async Task LoadAvailableProductionsAsync()
     {
+        var token = ++_pickerRequestToken;
         try
         {
             var previouslySelectedId = SelectedProduction?.Id;
-            AvailableProductions.Clear();
 
             var recent = await _productionService.ListRecentAsync(50);
+
+            if (token != _pickerRequestToken)
+            {
+                return; // a newer picker load has started; its results are the ones that count
+            }
+
+            AvailableProductions.Clear();
             foreach (var p in recent)
             {
                 AvailableProductions.Add(new InspectorProductionSummary(p.Id, p.Title ?? p.Id, p.State));

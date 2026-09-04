@@ -62,8 +62,12 @@ public class DashboardViewModel : ViewModelBase
         try
         {
             using var conn = await _connectionFactory.CreateOpenConnectionAsync();
+            // The terminal states are ARCHIVED, FAILED and CANCELLED (SPEC/13). This used to exclude
+            // 'PUBLISHED', which is not a state in the canonical machine at all, and to count ARCHIVED
+            // productions as active -- so this number disagreed with the one OperatorControlService
+            // computes for the same concept.
             ActiveProductionsCount = await conn.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM productions WHERE state NOT IN ('PUBLISHED', 'FAILED', 'CANCELLED');");
+                "SELECT COUNT(*) FROM productions WHERE state NOT IN ('CANCELLED', 'ARCHIVED', 'FAILED');");
 
             PendingApprovalsCount = await conn.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM approvals WHERE state = 'PENDING';");

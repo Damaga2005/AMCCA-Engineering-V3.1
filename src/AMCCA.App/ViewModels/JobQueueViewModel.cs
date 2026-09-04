@@ -90,6 +90,13 @@ public class JobQueueViewModel : ViewModelBase
         {
             if (value > 0 && SetProperty(ref _pageSize, value))
             {
+                // TotalPages and everything derived from it change with the page size even when the row
+                // count does not, and TotalCount's setter will not fire if the count is unchanged.
+                OnPropertyChanged(nameof(TotalPages));
+                OnPropertyChanged(nameof(PageSummary));
+                OnPropertyChanged(nameof(CanGoToPreviousPage));
+                OnPropertyChanged(nameof(CanGoToNextPage));
+
                 PageIndex = 0;
                 _ = LoadJobsAsync();
             }
