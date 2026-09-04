@@ -10,8 +10,11 @@
 
 - **Repository:** `Damaga2005/AMCCA-Engineering-V3.1`
 - **Branch:** `add_amcca_engineering_repo`
-- **CERTIFIED SOURCE COMMIT:** `782dd9b7f98c637cc92cffd9dcbad9059acf6f39`
-- **CERTIFICATION DOCUMENT COMMIT:** `db762a36fc4f494508c533715d2825da2bfb9904`
+- **Source SHA certified:** `782dd9b7f98c637cc92cffd9dcbad9059acf6f39`
+- **Documentary commit:** `db762a36fc4f494508c533715d2825da2bfb9904`
+- **CI run:** GitHub Actions Run `33860326908`
+- **CI commit SHA:** `782dd9b7f98c637cc92cffd9dcbad9059acf6f39`
+- **Source SHA == CI Commit SHA:** PASS
 - **Certification model:** the release SHA is the immutable source/artifact commit tested by CI. This document is evidence committed afterwards; it is not the source/artifact identity and must not be described as CI-certified itself.
 - **Build:** `net8.0-windows` / `Release` (Self-Contained `win-x64`)
 - **Tests:** `522 passed, 0 failed, 0 skipped`
@@ -27,6 +30,7 @@
   - `TOOLS/validate_package.py`: 57 / 57 PASS
   - `TOOLS/conformance_tests.py`: 65 / 65 PASS
   - `TOOLS/test_repository_hygiene.py`: PASS
+  - `TOOLS/test_mutations.py`: 15 / 15 PASS
   - `TOOLS/test_certification_mutations.py`: 15 / 15 PASS
   - `TOOLS/release_gate.py --release`: 15 / 15 RELEASE INVARIANTS PASS
   - `TOOLS/release_certification.ps1`: deterministic certification pipeline PASS
