@@ -608,8 +608,9 @@ def mutation_15_walk_files_oversensitive_filter():
     vp.check_manifest()
     baseline = {r["check"]: r for r in vp.RESULTS}
     baseline_ok = baseline.get("manifest.matches_tree", {}).get("ok", False)
+    baseline_detail = baseline.get("manifest.matches_tree", {}).get("detail", "")
     vp.RESULTS = saved_results
-    ok = record("mutation15.baseline_manifest_matches_tree", baseline_ok)
+    ok = record("mutation15.baseline_manifest_matches_tree", baseline_ok, baseline_detail)
 
     # 2. Missing real file: simulate dropping a real certified file (.gitignore)
     real_walk = vp.walk_files

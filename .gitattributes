@@ -1,0 +1,2 @@
+# Strict repository byte preservation: never alter line endings on checkout (DEF-CERT-008)
+* -text

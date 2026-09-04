@@ -489,10 +489,12 @@ def check_manifest():
           and "  MANIFEST.md\n" not in sha_body and "  MANIFEST.sha256\n" not in sha_body)
     listed = dict((m[0], m[1]) for m in re.findall(r"\| `([^`]+)` \| `([a-f0-9]{64})` \|", body))
     actual = {r: h for r, h, _ in compute_manifest()}
+    mismatched = [r for r in set(listed) & set(actual) if listed[r] != actual[r]]
     check("manifest.matches_tree", listed == actual,
           f"listed {len(listed)} actual {len(actual)}; "
           f"missing {sorted(set(actual) - set(listed))[:3]}; "
-          f"stale {sorted(set(listed) - set(actual))[:3]}")
+          f"stale {sorted(set(listed) - set(actual))[:3]}; "
+          f"mismatched {sorted(mismatched)[:3]}")
 
 
 def check_drift():

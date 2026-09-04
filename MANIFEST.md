@@ -6,11 +6,12 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 344
-**Total bytes:** 1776319
+**Files:** 345
+**Total bytes:** 1776626
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
+| `.gitattributes` | `8bad5caf15994b1f760e8f8c6e21387a70a1ffa1d0382c9490b7825f553dfa04` | 99 |
 | `.github/workflows/validation.yml` | `e275121bff55a278b4a8193dfb0a1a1a2ffad838428a899e522957e823563d05` | 4063 |
 | `.gitignore` | `2da4418f1e39c4240bbca85311ef63c4050cf9ca03d92f421db20e6ce247d504` | 140 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
@@ -180,9 +181,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_conditional_coverage.py` | `60a2d84d0677adf913110978bc4655ad4784d23ea4e665da2610dc05fd7271aa` | 8017 |
 | `TOOLS/test_database_contract_source.py` | `aff142f3457d2a115a272b690a1e8b5d6567f2465a02a4c64e3bb724cf171d22` | 6267 |
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
-| `TOOLS/test_generation.py` | `3c49483f8df4796c76c6ac507513ef49508a7734b5e7a246b1f3b53991c72a45` | 1395 |
+| `TOOLS/test_generation.py` | `8a9074633c8f3fc284e35c4f3ebcc9a50188802d1ffecdc21fce656bb3246193` | 1371 |
 | `TOOLS/test_money_precision.py` | `902fa1490e7bea2881774a9c0be863686e5f1595e39acab2575c2a9541669d91` | 1289 |
-| `TOOLS/test_mutations.py` | `e6861c7424efcad5d7111ee1ba954841079de58df82d705ba643900e74839ecf` | 34800 |
+| `TOOLS/test_mutations.py` | `4ad5761a02971f59e2c90f9ccb0c7dc93ea7d861890076a214f3d682ee168f45` | 34899 |
 | `TOOLS/test_no_contract_duplication.py` | `1b0c10d42b296ea84d19d4f4089b1bd13e40f33f784cc50e6cd685dfee7883d4` | 3090 |
 | `TOOLS/test_no_duplicated_version_constants.py` | `82af520ef60a0a0f41c2d80a164f83879febd93356d513de8f54fb10a4e13632` | 3933 |
 | `TOOLS/test_platform_evidence.py` | `6f4964998994dbd9015c40a74db509ed3b2684e9867414bac4fcff7bd1284280` | 2135 |
@@ -192,7 +193,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
-| `TOOLS/validate_package.py` | `dcd0aff4d94b016b4b48dbec2809c2f621e978ee5c52286c99fb92d122d73908` | 25450 |
+| `TOOLS/validate_package.py` | `0bc235d4e663db0f1c718c37e682f5aa60f10ae3360a07d4f287f97746ff7410` | 25583 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
 | `installer/build_installer.ps1` | `278172cf412c60b94179cd1e6535c7bf5e5af67e6b25ed0b7bd839ffcb728f62` | 5197 |
