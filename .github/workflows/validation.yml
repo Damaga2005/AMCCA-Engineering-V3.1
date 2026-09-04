@@ -27,7 +27,10 @@ jobs:
       - name: Repository hygiene check
         run: python TOOLS/test_repository_hygiene.py
 
-      - name: Adversarial certification mutation tests
+      - name: Specification mutation tests (15/15)
+        run: python TOOLS/test_mutations.py
+
+      - name: Adversarial certification mutation tests (15/15)
         run: python TOOLS/test_certification_mutations.py
 
       - name: Generated-artifact drift check (--check only, never --regen)
@@ -49,16 +52,17 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r TOOLS/requirements.txt
 
-      - name: Validate package, conformance and hygiene on Windows
+      - name: Validate package, conformance, hygiene and mutations on Windows
         run: |
           python TOOLS/validate_package.py
           python TOOLS/conformance_tests.py
           python TOOLS/test_repository_hygiene.py
+          python TOOLS/test_mutations.py
           python TOOLS/test_certification_mutations.py
           python TOOLS/release_gate.py
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@3951f3cc7a0a0d198613357f8a27d400bd404643 # v4.3.0
+        uses: actions/setup-dotnet@3951f0dfe7a07e2313ec93c75700083e2005cbab # v4.3.0
         with:
           dotnet-version: "8.0.x"
 

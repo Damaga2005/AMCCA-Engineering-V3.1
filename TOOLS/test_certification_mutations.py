@@ -6,6 +6,7 @@ Demonstrates that the Release Gate strictly rejects any invalid, corrupted,
 inconsistent, or failing build artifact/metadata, and accepts only fully verified releases.
 """
 import hashlib
+import json
 import os
 import shutil
 import struct
@@ -92,11 +93,36 @@ class ReleaseCertificationMutationTests(unittest.TestCase):
 
         self.total_tests = 513
         self.write_trx(total=513, passed=513, failed=0, not_executed=0)
+        self.write_diagnostics(warnings=0, errors=0, exit_code=0)
         self.write_sums()
         self.write_metadata()
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def write_diagnostics(
+        self,
+        warnings: int = 0,
+        errors: int = 0,
+        exit_code: int = 0,
+        custom_content: str | None = None,
+    ):
+        diag_path = os.path.join(self.test_dir, "build_diagnostics.json")
+        if custom_content is not None:
+            with open(diag_path, "w", encoding="utf-8") as f:
+                f.write(custom_content)
+            return
+        data = {
+            "schema_version": "1.0.0",
+            "compiler_warnings": warnings,
+            "compiler_errors": errors,
+            "warning_details": [f"warning {i}" for i in range(warnings)],
+            "error_details": [f"error {i}" for i in range(errors)],
+            "build_exit_code": exit_code,
+            "source": "msbuild_structured_log",
+        }
+        with open(diag_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
 
     def write_trx(self, total: int = 513, passed: int = 513, failed: int = 0, not_executed: int = 0):
         trx_content = f"""<?xml version="1.0" encoding="utf-8"?>
@@ -171,79 +197,169 @@ class ReleaseCertificationMutationTests(unittest.TestCase):
         with open(meta_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-    def test_00_baseline_passes(self):
-        """Baseline valid bundle must produce strict PASS."""
-        ok, failures = verify_release_invariants(
+    def _verify(self, expected_sha: str | None = None) -> tuple[bool, list[str]]:
+        return verify_release_invariants(
             release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
+            expected_commit_sha=expected_sha or self.mock_sha,
             check_git=False,
             check_tools=False,
         )
+
+    def test_00_baseline_passes(self):
+        """Baseline valid bundle must produce strict PASS."""
+        ok, failures = self._verify()
         self.assertTrue(ok, f"Baseline should PASS but got: {failures}")
         self.assertEqual(len(failures), 0)
 
-    def test_01_mutation_failed_tests_in_trx(self):
-        """Mutation 1 / Caso A: Tests failed > 0 must cause FAIL."""
+    def test_01_mutation_manifest_corruption(self):
+        """Mutation 1: manifest corruption (forbidden self-reference in SHA256SUMS.txt) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        self.write_sums([
+            f"{self.exe_hash}  AMCCA-Setup.exe",
+            f"{self.msi_hash}  AMCCA-Setup.msi",
+            f"{self.zip_hash}  AMCCA-Desktop-win-x64.zip",
+            f"{'c'*64}  SHA256SUMS.txt",
+        ])
+        ok, failures = self._verify()
+        self.assertFalse(ok)
+        self.assertTrue(any("self-reference is forbidden" in f for f in failures))
+
+        self.write_sums()
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_02_mutation_omitted_file(self):
+        """Mutation 2: omitted file (file declared in manifest missing on disk) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        os.remove(self.zip_path)
+        ok, failures = self._verify()
+        self.assertFalse(ok)
+        self.assertTrue(any("missing artifact: ZIP" in f or "hash mismatch" in f for f in failures))
+
+        with open(self.zip_path, "wb") as f:
+            f.write(self.zip_bytes)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_03_mutation_stale_file(self):
+        """Mutation 3: stale file (unexpected file present in release bundle) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        stale_file = os.path.join(self.test_dir, "unmanifested_stray_payload.bin")
+        with open(stale_file, "wb") as f:
+            f.write(b"unauthorized binary payload")
+        ok, failures = self._verify()
+        self.assertFalse(ok)
+        self.assertTrue(any("unexpected file in release bundle" in f for f in failures))
+
+        os.remove(stale_file)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_04_mutation_failed_test(self):
+        """Mutation 4: failed test (TRX contains failed > 0) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
         self.write_trx(total=513, passed=512, failed=1, not_executed=0)
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("tests failed > 0" in f for f in failures), f"Expected 'tests failed > 0' in {failures}")
+        self.assertTrue(any("tests failed > 0" in f for f in failures))
 
-    def test_02_mutation_skipped_tests_in_trx(self):
-        """Mutation 2 / Caso B: Skipped tests > 0 must cause FAIL."""
+        self.write_trx(total=513, passed=513, failed=0, not_executed=0)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_05_mutation_skipped_test(self):
+        """Mutation 5: skipped test (TRX contains notExecuted > 0) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
         self.write_trx(total=513, passed=512, failed=0, not_executed=1)
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("tests skipped > 0" in f for f in failures), f"Expected 'tests skipped > 0' in {failures}")
+        self.assertTrue(any("tests skipped > 0" in f for f in failures))
 
-    def test_03_mutation_compiler_warnings(self):
-        """Mutation 3 / Caso C: Compiler warnings > 0 must cause FAIL."""
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            build_warnings=1,
-            check_git=False,
-            check_tools=False,
-        )
+        self.write_trx(total=513, passed=513, failed=0, not_executed=0)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_06_mutation_compiler_warning(self):
+        """Mutation 6: warning (structured diagnostics report compiler_warnings > 0) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        self.write_diagnostics(warnings=1, errors=0, exit_code=0)
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("warnings > 0" in f for f in failures), f"Expected 'warnings > 0' in {failures}")
+        self.assertTrue(any("warnings > 0" in f for f in failures))
 
-    def test_04_mutation_msi_hash_mismatch(self):
-        """Mutation 4 / Caso G: SHA of MSI altered in manifest must cause FAIL."""
+        self.write_diagnostics(warnings=0, errors=0, exit_code=0)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_07_mutation_compiler_error(self):
+        """Mutation 7: error (structured diagnostics report compiler_errors > 0) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        self.write_diagnostics(warnings=0, errors=1, exit_code=1)
+        ok, failures = self._verify()
+        self.assertFalse(ok)
+        self.assertTrue(any("build errors > 0" in f for f in failures))
+
+        self.write_diagnostics(warnings=0, errors=0, exit_code=0)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_08_mutation_commit_sha_mismatch(self):
+        """Mutation 8: SHA mismatch (commit SHA in metadata contradicts real expected SHA) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        different_sha = "b" * 40
+        self.write_metadata(commit_sha=different_sha)
+        ok, failures = self._verify(expected_sha=self.mock_sha)
+        self.assertFalse(ok)
+        self.assertTrue(any("metadata contradicts real evidence: commit SHA mismatch" in f for f in failures))
+
+        self.write_metadata(commit_sha=self.mock_sha)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_09_mutation_artifact_hash_mismatch(self):
+        """Mutation 9: hash mismatch (corrupted artifact hash in SHA256SUMS.txt) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
         corrupted_hash = "0" * 64
         self.write_sums([
             f"{self.exe_hash}  AMCCA-Setup.exe",
             f"{corrupted_hash}  AMCCA-Setup.msi",
             f"{self.zip_hash}  AMCCA-Desktop-win-x64.zip",
         ])
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("hash mismatch" in f for f in failures), f"Expected 'hash mismatch' in {failures}")
+        self.assertTrue(any("hash mismatch" in f for f in failures))
 
-    def test_05_mutation_pe_byte_corruption(self):
-        """Mutation 5 / Caso F: 1 byte altered in EXE invalidating PE structure must cause FAIL."""
+        self.write_sums()
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_10_mutation_pe_byte_corruption(self):
+        """Mutation 10: PE corruption (1 byte corrupted in PE header) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
         corrupted_exe = bytearray(self.exe_bytes)
-        # Corrupt PE magic signature from 'P' to 'X'
-        corrupted_exe[128] = ord('X')
+        corrupted_exe[128] = ord("X")  # Corrupt PE signature from 'P' to 'X'
         with open(self.exe_path, "wb") as f:
             f.write(corrupted_exe)
-
-        # Update sums with the new hash so sums match, but PE validator catches the corruption
         new_hash = sha256_bytes(corrupted_exe)
         self.write_sums([
             f"{new_hash}  AMCCA-Setup.exe",
@@ -252,72 +368,52 @@ class ReleaseCertificationMutationTests(unittest.TestCase):
         ])
         self.write_metadata(exe_hash=new_hash)
 
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("invalid PE" in f for f in failures), f"Expected PE failure in {failures}")
+        self.assertTrue(any("invalid PE" in f for f in failures))
 
-    def test_06_mutation_metadata_contradiction(self):
-        """Mutation 6 / Caso I: Metadata contradicting real test evidence must cause FAIL."""
-        # Metadata claims 600 tests, but TRX has 513
-        self.write_metadata(total_tests=600)
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
-        self.assertFalse(ok)
-        self.assertTrue(any("metadata contradicts real evidence" in f for f in failures), f"Expected metadata failure in {failures}")
+        with open(self.exe_path, "wb") as f:
+            f.write(self.exe_bytes)
+        self.write_sums()
+        self.write_metadata()
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
 
-    def test_07_mutation_commit_sha_mismatch(self):
-        """Mutation 7 / Caso E: Expected commit SHA differs from metadata commit SHA."""
-        different_sha = "b" * 40
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=different_sha,
-            check_git=False,
-            check_tools=False,
-        )
-        self.assertFalse(ok)
-        self.assertTrue(any("metadata contradicts real evidence: commit SHA mismatch" in f for f in failures))
+    def test_11_mutation_exe_missing(self):
+        """Mutation 11: EXE missing (AMCCA-Setup.exe deleted from bundle) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
 
-    def test_08_mutation_missing_mandatory_artifact(self):
-        """Caso H: Missing mandatory artifact (e.g. AMCCA-Setup.exe deleted) must cause FAIL."""
         os.remove(self.exe_path)
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("missing artifact" in f for f in failures), f"Expected 'missing artifact' in {failures}")
+        self.assertTrue(any("missing artifact: EXE" in f or "invalid PE" in f for f in failures))
 
-    def test_09_mutation_sha256sums_self_reference(self):
-        """Self-reference in SHA256SUMS.txt must be rejected."""
-        self.write_sums([
-            f"{self.exe_hash}  AMCCA-Setup.exe",
-            f"{self.msi_hash}  AMCCA-Setup.msi",
-            f"{self.zip_hash}  AMCCA-Desktop-win-x64.zip",
-            f"{'c'*64}  SHA256SUMS.txt",
-        ])
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        with open(self.exe_path, "wb") as f:
+            f.write(self.exe_bytes)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_12_mutation_msi_missing(self):
+        """Mutation 12: MSI missing (AMCCA-Setup.msi deleted from bundle) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        os.remove(self.msi_path)
+        ok, failures = self._verify()
         self.assertFalse(ok)
-        self.assertTrue(any("self-reference is forbidden" in f for f in failures))
+        self.assertTrue(any("missing artifact: MSI" in f for f in failures))
 
-    def test_10_mutation_exe_msi_identical_hash(self):
-        """MSI and EXE identical hash must be strictly rejected (DEF-CERT-001)."""
-        # Overwrite EXE with MSI content
+        with open(self.msi_path, "wb") as f:
+            f.write(self.msi_bytes)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_13_mutation_exe_msi_identical(self):
+        """Mutation 13: EXE == MSI (EXE overwritten with MSI binary content) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
         with open(self.exe_path, "wb") as f:
             f.write(self.msi_bytes)
         self.write_sums([
@@ -327,22 +423,57 @@ class ReleaseCertificationMutationTests(unittest.TestCase):
         ])
         self.write_metadata(exe_hash=self.msi_hash)
 
-        ok, failures = verify_release_invariants(
-            release_dir=self.test_dir,
-            expected_commit_sha=self.mock_sha,
-            check_git=False,
-            check_tools=False,
-        )
+        ok, failures = self._verify()
         self.assertFalse(ok)
         self.assertTrue(any("MSI == EXE" in f or "invalid PE" in f for f in failures))
+
+        with open(self.exe_path, "wb") as f:
+            f.write(self.exe_bytes)
+        self.write_sums()
+        self.write_metadata()
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_14_mutation_metadata_contradiction(self):
+        """Mutation 14: metadata corruption (metadata claims 999 tests while TRX has 513) -> FAIL."""
+        ok, _ = self._verify()
+        self.assertTrue(ok)
+
+        self.write_metadata(total_tests=999)
+        ok, failures = self._verify()
+        self.assertFalse(ok)
+        self.assertTrue(any("metadata contradicts real evidence" in f for f in failures))
+
+        self.write_metadata(total_tests=513)
+        ok_restored, _ = self._verify()
+        self.assertTrue(ok_restored)
+
+    def test_15_mutation_expected_sha_mismatch(self):
+        """Mutation 15: expected SHA mismatch (expected SHA does not match bundle SHA) -> FAIL."""
+        ok, _ = self._verify(expected_sha=self.mock_sha)
+        self.assertTrue(ok)
+
+        wrong_sha = "c" * 40
+        ok, failures = self._verify(expected_sha=wrong_sha)
+        self.assertFalse(ok)
+        self.assertTrue(any("commit SHA mismatch" in f for f in failures))
+
+        ok_restored, _ = self._verify(expected_sha=self.mock_sha)
+        self.assertTrue(ok_restored)
 
 
 if __name__ == "__main__":
     print("=" * 72)
-    print("ADVERSARIAL RELEASE CERTIFICATION MUTATION SUITE (DEF-CERT-008)")
+    print("ADVERSARIAL RELEASE CERTIFICATION MUTATION SUITE (DEF-CERT-008, 15/15)")
     print("=" * 72)
     suite = unittest.TestLoader().loadTestsFromTestCase(ReleaseCertificationMutationTests)
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
+    total_mutations = 15
+    passed_mutations = result.testsRun - len(result.failures) - len(result.errors) - 1
+    if passed_mutations == total_mutations and result.wasSuccessful():
+        print("-" * 72)
+        print(f"{total_mutations}/{total_mutations} mutation tests demonstrated a red flip "
+              "(break the contract -> the relevant check fails)")
     sys.exit(0 if result.wasSuccessful() else 1)
 

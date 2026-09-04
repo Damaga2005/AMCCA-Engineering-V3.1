@@ -79,7 +79,7 @@ four statuses are actually produced and enforced.)
 
     python TOOLS/release_gate.py
 """
-import argparse, hashlib, os, subprocess, sys
+import argparse, hashlib, json, os, subprocess, sys
 import xml.etree.ElementTree as ET
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -409,14 +409,50 @@ def verify_release_invariants(
         except Exception as ex:
             failures.append(f"TRX parsing error: {ex}")
 
-    # 11. Build warnings & errors
-    print("[10/15] Verifying compiler warnings and errors...")
-    if build_errors > 0:
-        failures.append(f"build errors > 0: {build_errors} errors")
-    if build_warnings > 0:
-        failures.append(f"warnings > 0: {build_warnings} warnings")
-    if build_errors == 0 and build_warnings == 0:
-        print("  build errors == 0 | build warnings == 0: PASS")
+    # 11. Build structured diagnostics (warnings & errors)
+    print("[10/15] Verifying compiler warnings and errors from structured evidence (build_diagnostics.json)...")
+    diag_file = os.path.join(rdir, "build_diagnostics.json")
+    bw = None
+    be = None
+    if not os.path.exists(diag_file):
+        failures.append("missing artifact: build_diagnostics.json not found")
+    else:
+        try:
+            with open(diag_file, "r", encoding="utf-8") as f:
+                diag_data = json.load(f)
+            if not isinstance(diag_data, dict):
+                failures.append("corrupted build diagnostics: root is not an object")
+            elif "compiler_warnings" not in diag_data or "compiler_errors" not in diag_data:
+                failures.append("corrupted build diagnostics: missing compiler_warnings or compiler_errors")
+            else:
+                bw = int(diag_data["compiler_warnings"])
+                be = int(diag_data["compiler_errors"])
+                exit_code = diag_data.get("build_exit_code", 0)
+                if bw > 0:
+                    failures.append(f"warnings > 0: {bw} compiler warnings")
+                if be > 0:
+                    failures.append(f"build errors > 0: {be} compiler errors")
+                if exit_code != 0:
+                    failures.append(f"build failed with exit code {exit_code}")
+                if bw == 0 and be == 0 and exit_code == 0:
+                    print("  build structured evidence: 0 errors | 0 warnings: PASS")
+        except Exception as ex:
+            failures.append(f"corrupted build diagnostics: {ex}")
+
+    # Check for unexpected files in release directory
+    allowed_release_files = {
+        "AMCCA-Setup.exe",
+        "AMCCA-Setup.msi",
+        "AMCCA-Desktop-win-x64.zip",
+        "SHA256SUMS.txt",
+        "release-tests.trx",
+        "build_diagnostics.json",
+        "RELEASE_METADATA.md",
+    }
+    if os.path.exists(rdir):
+        for fname in os.listdir(rdir):
+            if fname not in allowed_release_files and not fname.startswith("."):
+                failures.append(f"unexpected file in release bundle: {fname}")
 
     # 12. Release metadata consistent
     print("[11/15] Verifying release metadata consistency (RELEASE_METADATA.md)...")
@@ -448,9 +484,9 @@ def verify_release_invariants(
             if f"{total_tests}" not in meta_text:
                 failures.append(f"metadata contradicts real evidence: total tests count {total_tests} not in metadata")
 
-        if "Compiler Warnings: 0" not in meta_text:
+        if "Compiler Warnings: 0" not in meta_text or (bw is not None and bw != 0):
             failures.append("metadata contradicts real evidence: Compiler Warnings: 0 not recorded")
-        if "Compiler Errors: 0" not in meta_text:
+        if "Compiler Errors: 0" not in meta_text or (be is not None and be != 0):
             failures.append("metadata contradicts real evidence: Compiler Errors: 0 not recorded")
 
         if not any("metadata contradicts" in f for f in failures):

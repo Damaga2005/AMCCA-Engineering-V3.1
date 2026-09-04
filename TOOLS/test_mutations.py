@@ -602,7 +602,7 @@ def mutation_14_reference_to_nonexistent_decision_id():
 def mutation_15_walk_files_oversensitive_filter():
     import validate_package as vp
 
-    # Baseline: real walk_files() matches the manifest
+    # 1. Baseline: valid manifest against canonical CERTIFIED_REPOSITORY_FILES
     saved_results = vp.RESULTS
     vp.RESULTS = []
     vp.check_manifest()
@@ -611,18 +611,17 @@ def mutation_15_walk_files_oversensitive_filter():
     vp.RESULTS = saved_results
     ok = record("mutation15.baseline_manifest_matches_tree", baseline_ok)
 
-    # Mutate walk_files to simulate an oversensitive filter that skips anything starting with ".git"
+    # 2. Missing real file: simulate dropping a real certified file (.gitignore)
     real_walk = vp.walk_files
 
-    def mutated_walk():
+    def walk_omitting_gitignore():
         for rel in real_walk():
-            # If the filter incorrectly drops anything starting with .git (like .gitignore)
-            if os.path.basename(rel).startswith(".git"):
+            if rel == ".gitignore" or os.path.basename(rel) == ".gitignore":
                 continue
             yield rel
 
     try:
-        vp.walk_files = mutated_walk
+        vp.walk_files = walk_omitting_gitignore
         vp.RESULTS = []
         vp.check_manifest()
         mutated = {r["check"]: r for r in vp.RESULTS}
@@ -634,7 +633,32 @@ def mutation_15_walk_files_oversensitive_filter():
         vp.walk_files = real_walk
         vp.RESULTS = saved_results
 
-    # Prove reversion: real package walk_files is restored and green
+    # 3. Restore: restoring the omitted file restores PASS
+    vp.RESULTS = []
+    vp.check_manifest()
+    restored = {r["check"]: r for r in vp.RESULTS}
+    restored_ok = restored.get("manifest.matches_tree", {}).get("ok", False)
+    vp.RESULTS = saved_results
+    ok = record("mutation15.manifest_matches_tree_restored_after_omission", restored_ok) and ok
+
+    # 4. Stale file: introducing an unexpected/unmanifested file causes FAIL
+    stale_temp = os.path.join(ROOT, "TOOLS", "_tmp_stale_test_mutation15.py")
+    try:
+        with open(stale_temp, "w", encoding="utf-8") as f:
+            f.write("# ephemeral test mutation 15 file\n")
+        vp.RESULTS = []
+        vp.check_manifest()
+        stale_res = {r["check"]: r for r in vp.RESULTS}
+        stale_ok = stale_res.get("manifest.matches_tree", {}).get("ok", False)
+        ok = record("mutation15.manifest_matches_tree_goes_red_when_stale_file_introduced",
+                    baseline_ok and not stale_ok,
+                    stale_res.get("manifest.matches_tree", {}).get("detail", "")) and ok
+    finally:
+        if os.path.exists(stale_temp):
+            os.remove(stale_temp)
+        vp.RESULTS = saved_results
+
+    # 5. Prove reversion: real package walk_files is restored and green
     vp.RESULTS = []
     vp.check_manifest()
     reverted = {r["check"]: r for r in vp.RESULTS}

@@ -21,7 +21,8 @@ $gitStatus = if ($gitStatusRaw) { ($gitStatusRaw -join "`n").Trim() } else { "" 
 if (-not [string]::IsNullOrWhiteSpace($gitStatus)) {
     throw "DEF-CERT-007 VIOLATION: Working tree is dirty. Clean working tree is strictly required for release certification.`nDirty items:`n$gitStatus"
 }
-Write-Host "  Working tree: CLEAN" -ForegroundColor Green
+$treeStatus = if ([string]::IsNullOrWhiteSpace($gitStatus)) { "CLEAN" } else { "DIRTY" }
+Write-Host "  Working tree: $treeStatus" -ForegroundColor Green
 
 $gitSha = (git rev-parse HEAD).Trim()
 if ([string]::IsNullOrWhiteSpace($gitSha) -or $gitSha.Length -ne 40) {
@@ -53,14 +54,30 @@ New-Item -ItemType Directory -Force -Path $outPath | Out-Null
 Write-Host "[3/8] Executing specification, schema and hygiene validators..."
 $python = if (Test-Path ".\.venv\Scripts\python.exe") { ".\.venv\Scripts\python.exe" } else { "python" }
 
-& $python TOOLS/validate_package.py
+$pkgJsonRaw = & $python TOOLS/validate_package.py --json
 if ($LASTEXITCODE -ne 0) { throw "validate_package.py failed with exit code $LASTEXITCODE" }
+$pkgJson = $pkgJsonRaw | ConvertFrom-Json
+$schemaPassed = $pkgJson.checks - $pkgJson.failed
+$schemaTotal = $pkgJson.checks
+$schemaResultStr = "$schemaPassed/$schemaTotal PASS"
+Write-Host "  Specification validation: $schemaResultStr" -ForegroundColor Green
 
-& $python TOOLS/conformance_tests.py
+$conformanceOutput = & $python TOOLS/conformance_tests.py 2>&1
 if ($LASTEXITCODE -ne 0) { throw "conformance_tests.py failed with exit code $LASTEXITCODE" }
+$conformanceText = $conformanceOutput -join "`n"
+$conformanceMatch = [regex]::Match($conformanceText, "(\d+)/(\d+) conformance cases passed")
+if (-not $conformanceMatch.Success) { throw "DEF-CERT-007 VIOLATION: Unable to extract conformance case count from output." }
+$conformanceResultStr = "$($conformanceMatch.Groups[1].Value)/$($conformanceMatch.Groups[2].Value) PASS"
+Write-Host "  Conformance validation: $conformanceResultStr" -ForegroundColor Green
 
 & $python TOOLS/test_repository_hygiene.py
 if ($LASTEXITCODE -ne 0) { throw "test_repository_hygiene.py failed with exit code $LASTEXITCODE" }
+
+& $python TOOLS/test_mutations.py
+if ($LASTEXITCODE -ne 0) { throw "test_mutations.py failed with exit code $LASTEXITCODE" }
+
+& $python TOOLS/test_certification_mutations.py
+if ($LASTEXITCODE -ne 0) { throw "test_certification_mutations.py failed with exit code $LASTEXITCODE" }
 
 # 4. Restore Dependencies
 Write-Host "[4/8] Restoring .NET dependencies..."
@@ -68,22 +85,61 @@ $dotnet = if (Test-Path "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe") { "$env
 & $dotnet restore AMCCA.sln
 if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed" }
 
-# 5. Build Solution (0 Errors, 0 Warnings Strict)
-Write-Host "[5/8] Compiling AMCCA.sln ($Configuration) with zero warnings tolerance..."
-$buildOutput = & $dotnet build AMCCA.sln -c $Configuration --no-restore 2>&1
+# 5. Build Solution with Structured MSBuild Diagnostics (0 Errors, 0 Warnings Strict)
+Write-Host "[5/8] Compiling AMCCA.sln ($Configuration) with structured diagnostics..."
+$artifactsDir = Join-Path $root "artifacts"
+if (-not (Test-Path $artifactsDir)) { New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null }
+
+$errLog = Join-Path $artifactsDir "msbuild_errors.log"
+$warnLog = Join-Path $artifactsDir "msbuild_warnings.log"
+$diagJsonPath = Join-Path $artifactsDir "build_diagnostics.json"
+
+if (Test-Path $errLog) { Remove-Item -Force $errLog }
+if (Test-Path $warnLog) { Remove-Item -Force $warnLog }
+
+$buildOutput = & $dotnet build AMCCA.sln -c $Configuration --no-restore "/flp1:logfile=$errLog;errorsonly" "/flp2:logfile=$warnLog;warningsonly" 2>&1
 $buildExitCode = $LASTEXITCODE
-$buildText = $buildOutput -join "`n"
 
-if ($buildExitCode -ne 0) {
-    throw "dotnet build failed with exit code $buildExitCode`n$buildText"
+if (-not (Test-Path $errLog) -or -not (Test-Path $warnLog)) {
+    throw "DEF-CERT-007 VIOLATION: MSBuild structured log files were not emitted ($errLog, $warnLog)."
 }
 
-# Strict warning check: any line matching ': warning ' or ': Advertencia '
-$warningLines = $buildOutput | Where-Object { $_ -match ":\s*(?:warning|advertencia)\s+[A-Za-z0-9]+" }
-if ($warningLines) {
-    throw "DEF-CERT-007 VIOLATION: Compiler warnings detected (Zero Tolerance):`n$($warningLines -join "`n")"
+$errRaw = Get-Content $errLog -ErrorAction SilentlyContinue
+$warnRaw = Get-Content $warnLog -ErrorAction SilentlyContinue
+
+$errLines = @($errRaw | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$warnLines = @($warnRaw | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+
+$errorCount = $errLines.Count
+$warningCount = $warnLines.Count
+
+if ($buildExitCode -ne 0 -and $errorCount -eq 0) {
+    $errorCount = 1
+    $errLines = @("Build failed with exit code $buildExitCode")
 }
-Write-Host "  Build succeeded with 0 errors and 0 warnings." -ForegroundColor Green
+
+$diagObj = [PSCustomObject]@{
+    schema_version = "1.0.0"
+    compiler_warnings = $warningCount
+    compiler_errors = $errorCount
+    warning_details = $warnLines
+    error_details = $errLines
+    build_exit_code = $buildExitCode
+    source = "msbuild_structured_log"
+}
+
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$diagJson = $diagObj | ConvertTo-Json -Depth 5
+[System.IO.File]::WriteAllText($diagJsonPath, $diagJson, $utf8NoBom)
+[System.IO.File]::WriteAllText((Join-Path $outPath "build_diagnostics.json"), $diagJson, $utf8NoBom)
+
+if ($errorCount -gt 0) {
+    throw "DEF-CERT-007 VIOLATION: Compiler errors detected ($errorCount errors):`n$($errLines -join "`n")"
+}
+if ($warningCount -gt 0) {
+    throw "DEF-CERT-007 VIOLATION: Compiler warnings detected (Zero Tolerance - $warningCount warnings):`n$($warnLines -join "`n")"
+}
+Write-Host "  Build succeeded with 0 errors and 0 warnings (Structured Evidence Verified)." -ForegroundColor Green
 
 # 6. WiX Bootstrapper Installer Build
 Write-Host "[6/8] Building WiX Bootstrapper Installer (AMCCA-Setup.msi and AMCCA-Setup.exe)..."
@@ -213,16 +269,16 @@ $sw = New-Object System.IO.StreamWriter($metaFile, $false, [System.Text.Encoding
 $sw.WriteLine("# AMCCA Engineering V3.1 -- Deterministic Release Certification Metadata")
 $sw.WriteLine("")
 $sw.WriteLine("- Git Commit SHA: " + $gitSha)
-$sw.WriteLine("- Working Tree: CLEAN")
+$sw.WriteLine("- Working Tree: " + $treeStatus)
 $sw.WriteLine("- Build Configuration: " + $Configuration)
 $sw.WriteLine("- Target Runtime: " + $Runtime)
 $sw.WriteLine("- Operating System: " + $osDesc)
 $sw.WriteLine("- Total Tests Executed: " + $totalTests)
 $sw.WriteLine("- Total Tests Passed: " + $passedTests)
-$sw.WriteLine("- Total Tests Failed: 0")
-$sw.WriteLine("- Total Tests Skipped: 0")
-$sw.WriteLine("- Compiler Warnings: 0")
-$sw.WriteLine("- Compiler Errors: 0")
+$sw.WriteLine("- Total Tests Failed: " + $failedTests)
+$sw.WriteLine("- Total Tests Skipped: " + $skippedTests)
+$sw.WriteLine("- Compiler Warnings: " + $warningCount)
+$sw.WriteLine("- Compiler Errors: " + $errorCount)
 $sw.WriteLine("- Release Verification Status: VERIFIED")
 $sw.WriteLine("")
 $sw.WriteLine("## Cryptographic Artifact Hashes (SHA-256)")
@@ -234,8 +290,8 @@ $sw.WriteLine("| AMCCA-Setup.msi | Windows Installer Package (MSI) | " + $msiHas
 $sw.WriteLine("| AMCCA-Desktop-" + $Runtime + ".zip | Standalone Publish Package | " + $zipHash + " |")
 $sw.WriteLine("")
 $sw.WriteLine("## Validation Results")
-$sw.WriteLine("- Schemas and Invariants: 57/57 PASS")
-$sw.WriteLine("- Conformance and Conditionals: 65/65 PASS")
+$sw.WriteLine("- Schemas and Invariants: " + $schemaResultStr)
+$sw.WriteLine("- Conformance and Conditionals: " + $conformanceResultStr)
 $sw.WriteLine("- Automated Tests: " + $passedTests + "/" + $totalTests + " PASS (0 failed, 0 skipped)")
 $sw.WriteLine("- PE Header Verification: Structural PE32+ AMD64 confirmed, distinct from MSI")
 $sw.WriteLine("- SSRF Enforcement: Invariant confirmed via ConnectCallback and SafeRedirectHandler")
