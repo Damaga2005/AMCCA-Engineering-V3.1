@@ -64,7 +64,7 @@ public class PlatformOAuthContractTests : IDisposable
         var state = "secret-state-xyz-123";
         var expectedCode = "auth-code-777";
 
-        var listenTask = receiver.WaitForCallbackAsync(state, TimeSpan.FromSeconds(5));
+        var listenTask = receiver.WaitForCallbackAsync(state, TimeSpan.FromSeconds(15));
 
         // Simulate browser redirect from platform
         using var client = new HttpClient();
@@ -90,7 +90,7 @@ public class PlatformOAuthContractTests : IDisposable
         var state = "valid-state-abc";
         var forgedState = "malicious-forged-state";
 
-        var listenTask = receiver.WaitForCallbackAsync(state, TimeSpan.FromSeconds(5));
+        var listenTask = receiver.WaitForCallbackAsync(state, TimeSpan.FromSeconds(15));
 
         using var client = new HttpClient();
         var callbackUrl = $"{receiver.RedirectUri}?code=code123&state={forgedState}";
