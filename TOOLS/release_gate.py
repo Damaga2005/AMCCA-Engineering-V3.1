@@ -82,6 +82,17 @@ four statuses are actually produced and enforced.)
 import argparse, hashlib, os, subprocess, sys
 import xml.etree.ElementTree as ET
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "TOOLS")
 sys.path.insert(0, TOOLS)

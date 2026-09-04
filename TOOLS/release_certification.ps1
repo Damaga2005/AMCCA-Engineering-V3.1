@@ -89,6 +89,7 @@ Write-Host "  Build succeeded with 0 errors and 0 warnings." -ForegroundColor Gr
 Write-Host "[6/8] Building WiX Bootstrapper Installer (AMCCA-Setup.msi and AMCCA-Setup.exe)..."
 & powershell -ExecutionPolicy Bypass -File installer/build_installer.ps1 -Configuration $Configuration -Runtime $Runtime -OutputDir "dist/installer"
 if ($LASTEXITCODE -ne 0) { throw "build_installer.ps1 failed with exit code $LASTEXITCODE" }
+Remove-Item -Force (Join-Path $root "installer/Components.wxs") -ErrorAction SilentlyContinue
 
 $msiFile = Join-Path $root "dist/installer/AMCCA-Setup.msi"
 $exeFile = Join-Path $root "dist/installer/AMCCA-Setup.exe"

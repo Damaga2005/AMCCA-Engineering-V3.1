@@ -101,4 +101,5 @@ Set-Content -Path (Join-Path $outFullPath "SHA256SUMS.txt") -Value $checksums -E
 
 Write-Host "  AMCCA-Setup.exe: $exeHash (PE Executable verified)" -ForegroundColor Green
 Write-Host "  AMCCA-Setup.msi: $msiHash (Windows Installer verified)" -ForegroundColor Green
+Remove-Item -Force "installer/Components.wxs" -ErrorAction SilentlyContinue
 Write-Host "=== AMCCA Installer Pipeline Complete ===" -ForegroundColor Green
