@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 344
-**Total bytes:** 1764200
+**Total bytes:** 1764202
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -338,7 +338,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` | `258b9a3832da651fa86f22772d6365ca1598b270629947001c74673cc95d0e4a` | 5447 |
 | `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` | `929f5355858ce242cd4306d8d49b35160e21b5ed84942820cb363b8384e33f73` | 1964 |
 | `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` | `14397a80221e364fd787ecbc4d4665c025bd2aa810ff2cac278ed46997c24f19` | 5999 |
-| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `20d03bf7fab1e63b3d7f0835d8450fef8d4ff84acd36cb91479fc20d99c34b21` | 13590 |
+| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `21b44e3eafc07df7608bc8c327aa39655ca85d64797225c9541a5fb46a39dbf7` | 13592 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `c2f3444fa79c502b43497b015de1bd3050a155e1204bf3fae981795cb6d8a028` | 5020 |
 | `tests/AMCCA.Core.Tests/PolicyEngineFailClosedRegressionTests.cs` | `e46a810e6abd6fa3b7299603917aa44467499991484c2a8a7b1f72e736a14e74` | 4236 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
