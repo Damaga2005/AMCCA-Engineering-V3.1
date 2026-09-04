@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Bundled so a packaged install can validate config.yaml (SPEC/49 gates 1-2) without a repo checkout. -->
+    <EmbeddedResource Include="../../SCHEMAS/config.schema.json" LogicalName="AMCCA.Core.config.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="JsonSchema.Net" Version="7.2.3" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />

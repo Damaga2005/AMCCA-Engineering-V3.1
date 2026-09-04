@@ -44,6 +44,18 @@ public class ConfigurationContractTests
     }
 
     [Fact]
+    public void CreateWithBundledSchema_ValidatesCanonicalExampleConfig()
+    {
+        // The App startup path (SPEC/49 gates 1-2) has no repo checkout to read SCHEMAS/config.schema.json
+        // from, so it validates against the schema embedded into the assembly instead.
+        var configService = ConfigService.CreateWithBundledSchema();
+        var config = configService.LoadFromYaml(_exampleYaml);
+
+        config.Should().NotBeNull();
+        config.SchemaVersion.Should().Be("3.1.0");
+    }
+
+    [Fact]
     public void MissingRequiredField_AbortsWithCfg001()
     {
         var configService = new ConfigService(_schemaJson);
