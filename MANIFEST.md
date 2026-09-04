@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 344
-**Total bytes:** 1763528
+**Total bytes:** 1763531
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -172,7 +172,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
 | `TOOLS/pe_validator.py` | `fb6c34a5d06667419c4afed793ed583e67adf91a562a0cd388b855850e38a38b` | 4391 |
-| `TOOLS/release_certification.ps1` | `8bae75b4b7aa5e9beaf6d58ff30cb3b0668af93888bab3dccd045dc18c3ccd60` | 11935 |
+| `TOOLS/release_certification.ps1` | `7adf46abea4e6989b436bd31057691bee4acb5690d4752ca366afe3f2a33303b` | 11938 |
 | `TOOLS/release_gate.py` | `3e3fb44f6b5ce3afdabf978bf7cb661e79eb5b63a3d8ea320fb3bce254c421a3` | 26579 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
 | `TOOLS/requirements.txt` | `aba0afee65ef1b35fb6b176fc77817efcd11c301eeac32f303f7f600b2130b78` | 1211 |
