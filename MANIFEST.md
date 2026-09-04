@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 339
-**Total bytes:** 1699459
+**Files:** 341
+**Total bytes:** 1711328
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,6 +17,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
+| `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `89402541a44e55c0540d11f91cde3d00114aee29c66d46f8963b578e63ad33fc` | 5725 |
+| `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `f66b8ae1b916fe80b9bc6b69aa92089c2686596fb209d1715a1721f13f60c19f` | 4259 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -169,7 +171,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conditional_coverage.json` | `54d8f4774c379bd09e7f4ead7b42413025897d58cdce00829ed69b9cc9c7e11a` | 1595 |
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
-| `TOOLS/release_certification.ps1` | `cf9c7b1f73b0ccd000d09dd97b1995d75dda61ed1fca648945b8b7a85f273b09` | 6318 |
+| `TOOLS/release_certification.ps1` | `7f695df34dafb89a1ac1c3608c38c13b996c45ea26f028a7b49f1b5d0a189af3` | 6793 |
 | `TOOLS/release_gate.py` | `bf5085fffa3daeb5267f32f16d0d7e8a7ad3de87b95cf2cb6914f3b20f19923c` | 14171 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
 | `TOOLS/requirements.txt` | `aba0afee65ef1b35fb6b176fc77817efcd11c301eeac32f303f7f600b2130b78` | 1211 |
@@ -320,7 +322,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
 | `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `dc9932b3c720a60feb988704add4a87599f2e638b28a49142a88a1c71d9772f1` | 5993 |
 | `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `2bd6108e52697ceb7dc984a6317d0e063cd2a1770f20494e585ae313e506c134` | 7504 |
-| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `abb49f175584ea71210b26370e8833be93320b9c421cc0b708abe3bb46c0a074` | 9271 |
+| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `41bd93ec7b3fe217f9ee3bb5d1d7c38d308825c3ffd52d902af75f68144b573e` | 10620 |
 | `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `55372798d2bdb94abe3ce8b56c2667728930fac6a18901a1d598c72f7248e394` | 4670 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `ad294304f44fca7026cc043cbf275f06e428b056f7854b771771349a3de27401` | 4620 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `4b70e718bddc284f79334ca9250c8c4a95dc6ea62e19c31323d6f2c95ffe72f5` | 8991 |
@@ -346,7 +348,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/SecurityHardeningSpec72ContractTests.cs` | `80356f4e82057cbdd9a1bd81550deff3a0eb17207733700b90a691aa93a339b4` | 4044 |
 | `tests/AMCCA.Core.Tests/SsrfAndDnsRebindingRegressionTests.cs` | `3bbb7a02a62897747d93bf75bc9918a4c7dfdcfd29dcccff40a628e580d43d00` | 3723 |
 | `tests/AMCCA.Core.Tests/SsrfPipelineEnforcementContractTests.cs` | `17412e1c1251b1ba7c3db9ebe8a2ed47f56eb110122c2afbd69d4990085e4649` | 4287 |
-| `tests/AMCCA.Core.Tests/SsrfProductionPathTests.cs` | `be569bd9ca5a77e499648a3072f2847fefd4e159efbab059ee26abbbde2515d0` | 8697 |
+| `tests/AMCCA.Core.Tests/SsrfProductionPathTests.cs` | `73acef763eb69a330026982ee63437c6987e1db14a09a736f46f49f98fbb1e5d` | 8758 |
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
 | `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `aa7f5de6ff6ce88241e9b52b2882e1e5520b7bcd52af5e026f0fcd080c8ef64d` | 10807 |
