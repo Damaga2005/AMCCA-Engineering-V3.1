@@ -31,24 +31,8 @@ public class AgentRuntime
         AgentRunSession? session = null,
         CancellationToken ct = default)
     {
-        // 0. Enforce MaxCost budget (DEF-004)
-        if (session != null)
-        {
-            if (!session.TryReserveCost(toolCost))
-            {
-                throw new AmccaException(
-                    AmccaErrors.Cst002,
-                    ErrorCategory.Validation,
-                    $"Agent '{contract.AgentId}' call cost {toolCost:F2} exceeds remaining budget of {contract.MaxCost - session.AccumulatedCost:F2} (DEF-004).");
-            }
-        }
-        else if (toolCost > contract.MaxCost)
-        {
-            throw new AmccaException(
-                AmccaErrors.Cst002,
-                ErrorCategory.Validation,
-                $"Agent '{contract.AgentId}' call cost {toolCost:F2} exceeds contract MaxCost {contract.MaxCost:F2} (DEF-004).");
-        }
+        // SEC-06: cost is reserved only after every check that can reject the call (authorization,
+        // tool existence, side-effect gate, intent). A blocked operation must consume no budget.
 
         // 1. Enforce TimeoutSeconds (DEF-005)
         using var linkedCts = contract.TimeoutSeconds > 0
@@ -108,8 +92,40 @@ public class AgentRuntime
                 $"EXTERNAL_UNSAFE tool '{toolId}' cannot be executed without a committed intent (SPEC/07, SPEC/15).");
         }
 
-        // 5. Execute tool with effective cancellation token
-        return await tool.ExecuteAsync(inputJson, context, effectiveCt);
+        // 5. Reserve cost — every rejecting check has now passed (SEC-06, DEF-004)
+        bool costReserved = false;
+        if (session != null)
+        {
+            if (!session.TryReserveCost(toolCost))
+            {
+                throw new AmccaException(
+                    AmccaErrors.Cst002,
+                    ErrorCategory.Validation,
+                    $"Agent '{contract.AgentId}' call cost {toolCost:F2} exceeds remaining budget of {contract.MaxCost - session.AccumulatedCost:F2} (DEF-004).");
+            }
+            costReserved = true;
+        }
+        else if (toolCost > contract.MaxCost)
+        {
+            throw new AmccaException(
+                AmccaErrors.Cst002,
+                ErrorCategory.Validation,
+                $"Agent '{contract.AgentId}' call cost {toolCost:F2} exceeds contract MaxCost {contract.MaxCost:F2} (DEF-004).");
+        }
+
+        // 6. Execute tool; roll back the reservation if it does not run to completion
+        try
+        {
+            return await tool.ExecuteAsync(inputJson, context, effectiveCt);
+        }
+        catch
+        {
+            if (costReserved)
+            {
+                session!.ReleaseCost(toolCost);
+            }
+            throw;
+        }
     }
 
     public void ValidateAgentOutput(AgentContract contract, string outputJson)
