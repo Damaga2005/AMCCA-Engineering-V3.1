@@ -147,6 +147,7 @@ public partial class App : Application
         services.AddSingleton<MainViewModel>();
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<ProductionsViewModel>();
+        services.AddTransient<ProductionInspectorViewModel>();
         services.AddTransient<ApprovalQueueViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AuditLogViewModel>();

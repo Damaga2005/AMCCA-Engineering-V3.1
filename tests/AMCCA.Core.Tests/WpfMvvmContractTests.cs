@@ -255,6 +255,70 @@ public class WpfMvvmContractTests : IDisposable
     }
 
     [Fact]
+    public async Task ProductionInspectorViewModel_LoadsFullAggregateForSelectedProduction()
+    {
+        var correlationId = Guid.NewGuid().ToString("N");
+        var prod = await _productionService.CreateProductionAsync("Inspector Target", "en", "COLLABORATIVE", correlationId, nicheId: "tech");
+        await _productionService.TransitionAsync(prod.Id, "RESEARCHING", "ORCHESTRATOR", correlationId);
+
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            await conn.ExecuteAsync(@"
+                INSERT INTO artifacts (id, production_id, kind, current_version_id, created_at, updated_at)
+                VALUES ('art-1', @ProductionId, 'SCRIPT', 'artv-1', datetime('now'), datetime('now'));
+            ", new { ProductionId = prod.Id });
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO artifact_versions (id, artifact_id, version_no, sha256, bytes, rel_path, state, created_at)
+                VALUES ('artv-1', 'art-1', 1, @Sha256, 10, 'script.txt', 'CURRENT', datetime('now'));
+            ", new { Sha256 = new string('a', 64) });
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO qa_reports (report_id, production_id, artifact_version_id, stage, overall_score, critical_scores_json, verdict, threshold_profile_id, schema_version, evaluated_at)
+                VALUES ('qa-1', @ProductionId, 'artv-1', 'SCRIPT_QA', 0.95, '{}', 'PASS', 'default', '3.1.0', datetime('now'));
+            ", new { ProductionId = prod.Id });
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO approvals (id, production_id, action, scope_json, state, expires_at, created_at)
+                VALUES ('appr-1', @ProductionId, 'PUBLISH', '{}', 'PENDING', datetime('now', '+1 day'), datetime('now'));
+            ", new { ProductionId = prod.Id });
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO jobs (id, production_id, type, state, priority, attempt, max_attempts, payload_json, created_at, updated_at)
+                VALUES ('job-1', @ProductionId, 'RENDER', 'RUNNING', 3, 1, 3, '{}', datetime('now'), datetime('now'));
+            ", new { ProductionId = prod.Id });
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO cost_events (id, production_id, kind, amount, currency, provider, occurred_at, created_at)
+                VALUES ('cost-1', @ProductionId, 'RESERVATION', '1.500000', 'EUR', 'omnirouters', datetime('now'), datetime('now'));
+            ", new { ProductionId = prod.Id });
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
+                VALUES ('pub-insp-1', @ProductionId, 'youtube', 'acc-1', 'artv-1', 'QUEUED', 'idem-insp-1', '3.1.0', datetime('now'), datetime('now'));
+            ", new { ProductionId = prod.Id });
+        }
+
+        var inspectorVm = new ProductionInspectorViewModel(_productionService, _factory, _notificationService);
+        await inspectorVm.LoadAvailableProductionsAsync();
+        inspectorVm.AvailableProductions.Should().Contain(p => p.Id == prod.Id);
+
+        inspectorVm.SelectedProduction = inspectorVm.AvailableProductions.First(p => p.Id == prod.Id);
+        await inspectorVm.LoadInspectionAsync();
+
+        inspectorVm.ProductionDetail.Should().NotBeNull();
+        inspectorVm.ProductionDetail!.State.Should().Be("RESEARCHING");
+        inspectorVm.StateTransitions.Should().Contain(t => t.ToState == "RESEARCHING");
+        inspectorVm.Artifacts.Should().Contain(a => a.Id == "art-1");
+        inspectorVm.ArtifactVersions.Should().Contain(v => v.Id == "artv-1");
+        inspectorVm.QaReports.Should().Contain(q => q.ReportId == "qa-1" && q.Verdict == "PASS");
+        inspectorVm.Approvals.Should().Contain(a => a.Id == "appr-1");
+        inspectorVm.Jobs.Should().Contain(j => j.Id == "job-1");
+        inspectorVm.CostEvents.Should().Contain(c => c.Id == "cost-1");
+        inspectorVm.Publications.Should().Contain(p => p.Id == "pub-insp-1");
+    }
+
+    [Fact]
     public async Task AuditLogViewModel_LoadsAndFiltersEntries()
     {
         using (var conn = await _factory.CreateOpenConnectionAsync())
