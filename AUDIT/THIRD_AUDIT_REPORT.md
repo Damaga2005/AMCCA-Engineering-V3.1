@@ -1,4 +1,4 @@
-﻿# AMCCA Engineering V3.1 — Third Independent Forensic Audit Report
+# AMCCA Engineering V3.1 — Third Independent Forensic Audit Report
 
 > **MODO:** RED TEAM / RELEASE VERIFICATION / ZERO TRUST  
 > **FECHA DE AUDITORÍA:** 2026-09-03  
@@ -50,7 +50,7 @@ El sistema **AMCCA Engineering V3.1 es PLENAMENTE APTO PARA RELEASE**.
 | 5 | Jobs, leases, idempotency, recovery | **PASS** | Fence tokens verificados en fallo/completado; leases atómicas; protección ante estados `UNKNOWN`. |
 | 6 | Tool registry and agent runtime | **PASS** | Validación estricta de herramientas permitidas, timeouts, aislamiento de memoria y presupuestos por ejecución. |
 | 7 | Provider gateway & adapters | **PASS** | Streaming SSE implementado en `DirectOpenAiCompatibleGatewayAdapter`, failover resiliente en `FailoverProviderGateway`, y suite `ProviderLoopbackIntegrationTests` ejecutada contra sockets loopback reales con `HttpListener`. |
-| 8 | Research, claims, sources | **PASS** | `ResearchScraper` y `ResearchPipeline` conectados obligatoriamente a `SafeHttpClientFactory` con `SocketsHttpHandler` validando DNS anti-SSRF previo a la conexión. |
+| 8 | Research, claims, sources | **PASS** | `ResearchService` y `ResearchScraper` conectados obligatoriamente a `SafeHttpClientFactory` (`ISafeHttpClientFactory`) con `SocketsHttpHandler.ConnectCallback` y `SafeRedirectHandler` validando DNS y destino anti-SSRF. |
 | 9 | Script, storyboard, assets, render | **PASS** | Confinamiento estricto de rutas de renderizado, hashing criptográfico de artefactos y trazabilidad inmutable. |
 | 10 | Deterministic QA, rights, duplicates | **PASS** | Cumplimiento estricto de I-19 y D-024: veredicto PASS inalcanzable con hallazgos de IA únicamente (`AMCCA-QA-002`). |
 | 11 | Rework and DAG invalidation | **PASS** | `DagReworkResolver` implementa recorrido BFS con invalidación de nodos dependientes aguas abajo, reseteo a `PENDING` y persistencia en base de datos (`fix(audit-007)`). |

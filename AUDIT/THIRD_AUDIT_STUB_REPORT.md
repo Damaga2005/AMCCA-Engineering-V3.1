@@ -1,4 +1,4 @@
-﻿# AMCCA Engineering V3.1 — Third Audit Stub & Mock Analysis Report
+# AMCCA Engineering V3.1 — Third Audit Stub & Mock Analysis Report
 
 > **MODO:** ZERO-TRUST STATIC CODE & RUNTIME FORENSICS  
 > **FECHA DE AUDITORÍA:** 2026-09-03  
@@ -30,8 +30,9 @@ El análisis estático de código fuente y binarios compilados en `src/AMCCA.Cor
 - **Dictamen:** **AUTHENTIC IMPLEMENTATION — NO STUB.**
 
 ### 2. `SafeHttpClientFactory` & Pipeline de Scraping (Previo: SSRF Desconectado)
-- **Estado Previo (Segundo Ciclo):** `CreateSafeSocketsHttpHandler` validaba IPs pero no estaba conectado a `ResearchScraper`.
-- **Remediación Verificada:** `ResearchScraper` ahora inyecta `SafeHttpClientFactory` y ejecuta solicitudes HTTP salientes exclusivamente a través de `SocketsHttpHandler.ConnectCallback`, validando todas las direcciones IP resueltas contra rangos privados, loopback, link-local y CGNAT (`SPEC/06`).
+- **Estado Previo (Segundo Ciclo):** `CreateSafeSocketsHttpHandler` validaba IPs pero no estaba conectado a `ResearchService`/`ResearchScraper`.
+- **Remediación Verificada:** `ResearchService` y `ResearchScraper` ahora inyectan `SafeHttpClientFactory` (`ISafeHttpClientFactory`) y ejecutan solicitudes HTTP salientes exclusivamente a través de `SocketsHttpHandler.ConnectCallback` y `SafeRedirectHandler`, validando todas las direcciones IP resueltas y los saltos de redirección contra rangos privados, loopback, link-local y CGNAT (`SPEC/06`).
+- **Tests Asociados:** `tests/AMCCA.Core.Tests/SsrfProductionPathTests.cs` (21 tests en verde).
 - **Dictamen:** **ENFORCED — NO STUB.**
 
 ### 3. Adaptadores de Plataforma y OAuth (Previo: Inexistentes / Solo Inserción DB)
