@@ -6,12 +6,12 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 343
-**Total bytes:** 1731976
+**Files:** 344
+**Total bytes:** 1763528
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
-| `.github/workflows/validation.yml` | `b5396be18c127d952a9c8c47ef69c9984f86514d184754bb9c0a79a1946bbb87` | 3551 |
+| `.github/workflows/validation.yml` | `8a0a8a5e09e78b2f30cf4d97f8d45be9840d744502d4cc415a4dec7c962d68d7` | 3907 |
 | `.gitignore` | `2da4418f1e39c4240bbca85311ef63c4050cf9ca03d92f421db20e6ce247d504` | 140 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
@@ -172,10 +172,11 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
 | `TOOLS/pe_validator.py` | `fb6c34a5d06667419c4afed793ed583e67adf91a562a0cd388b855850e38a38b` | 4391 |
-| `TOOLS/release_certification.ps1` | `2ba1967482dbaf2ff90f5dc2dc36ad571359f782f5ae54ce7b6ed6d2fac6c1f8` | 7042 |
-| `TOOLS/release_gate.py` | `bf5085fffa3daeb5267f32f16d0d7e8a7ad3de87b95cf2cb6914f3b20f19923c` | 14171 |
+| `TOOLS/release_certification.ps1` | `8bae75b4b7aa5e9beaf6d58ff30cb3b0668af93888bab3dccd045dc18c3ccd60` | 11935 |
+| `TOOLS/release_gate.py` | `3e3fb44f6b5ce3afdabf978bf7cb661e79eb5b63a3d8ea320fb3bce254c421a3` | 26579 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
 | `TOOLS/requirements.txt` | `aba0afee65ef1b35fb6b176fc77817efcd11c301eeac32f303f7f600b2130b78` | 1211 |
+| `TOOLS/test_certification_mutations.py` | `5fdfd11ed7367651d1ca1042c728588e6a0cb3536d87bd135e42f48f5b934b27` | 13895 |
 | `TOOLS/test_conditional_coverage.py` | `60a2d84d0677adf913110978bc4655ad4784d23ea4e665da2610dc05fd7271aa` | 8017 |
 | `TOOLS/test_database_contract_source.py` | `aff142f3457d2a115a272b690a1e8b5d6567f2465a02a4c64e3bb724cf171d22` | 6267 |
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
