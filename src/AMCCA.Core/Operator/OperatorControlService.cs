@@ -17,7 +17,6 @@ public class OperatorControlService
     private readonly PolicyEngine _policyEngine;
     private readonly ApprovalManager _approvalManager;
 
-    private volatile bool _killSwitchActive;
     private volatile string _autonomyMode = "ASSISTED";
 
     public OperatorControlService(
@@ -39,8 +38,32 @@ public class OperatorControlService
         string correlationId,
         CancellationToken ct = default)
     {
-        _killSwitchActive = active;
         _policyEngine.SetGlobalKillSwitch(active);
+
+        // Persist so SPEC/49 preflight gate 10 (kill_switch_state) sees this across restarts, not just
+        // the in-memory PolicyEngine flag reset on every process start.
+        using (var connection = await _connectionFactory.CreateOpenConnectionAsync(ct))
+        {
+            var now = DateTimeOffset.UtcNow.ToString("O");
+            if (active)
+            {
+                await connection.ExecuteAsync(@"
+                    INSERT INTO kill_switch_state (id, mode, engaged_at, engaged_by, reason)
+                    VALUES (1, 'EMERGENCY_STOP', @Now, @OperatorId, @Reason)
+                    ON CONFLICT(id) DO UPDATE SET
+                        mode = 'EMERGENCY_STOP', engaged_at = @Now, engaged_by = @OperatorId, reason = @Reason,
+                        cleared_at = NULL, cleared_by = NULL;
+                ", new { Now = now, OperatorId = operatorId, Reason = reason });
+            }
+            else
+            {
+                await connection.ExecuteAsync(@"
+                    INSERT INTO kill_switch_state (id, mode, cleared_at, cleared_by)
+                    VALUES (1, 'NORMAL', @Now, @OperatorId)
+                    ON CONFLICT(id) DO UPDATE SET mode = 'NORMAL', cleared_at = @Now, cleared_by = @OperatorId;
+                ", new { Now = now, OperatorId = operatorId });
+            }
+        }
 
         // SPEC/60, AGENTS.md: Every action taken from UI leaves a full audit trail
         var audit = new AuditRecord(
@@ -116,10 +139,21 @@ public class OperatorControlService
         const string pendingApprovalsSql = "SELECT COUNT(*) FROM approvals WHERE state = 'PENDING';";
         int pendingCount = await connection.ExecuteScalarAsync<int>(pendingApprovalsSql);
 
+        // DEF-005: read from the persisted kill_switch_state (SPEC/49 gate 10's own source of truth)
+        // rather than an in-memory flag that resets on every process start.
+        var mode = await connection.ExecuteScalarAsync<string?>("SELECT mode FROM kill_switch_state WHERE id = 1;");
+        var killSwitchActive = string.Equals(mode, "EMERGENCY_STOP", StringComparison.OrdinalIgnoreCase);
+
+        // DEF-005: count productions not in a terminal state (SPEC/13 terminal_states), instead of the
+        // hardcoded 0 this used to return.
+        const string activeProductionsSql =
+            "SELECT COUNT(*) FROM productions WHERE state NOT IN ('CANCELLED', 'ARCHIVED', 'FAILED');";
+        int activeProductionsCount = await connection.ExecuteScalarAsync<int>(activeProductionsSql);
+
         return new SystemStatusSummary(
-            GlobalKillSwitchActive: _killSwitchActive,
+            GlobalKillSwitchActive: killSwitchActive,
             AutonomyMode: _autonomyMode,
             PendingApprovalsCount: pendingCount,
-            ActiveProductionsCount: 0);
+            ActiveProductionsCount: activeProductionsCount);
     }
 }

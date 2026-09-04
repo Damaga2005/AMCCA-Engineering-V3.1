@@ -8,6 +8,7 @@ using AMCCA.App.ViewModels;
 using AMCCA.Core.Configuration;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
+using AMCCA.Core.Domain;
 using AMCCA.Core.Events;
 using AMCCA.Core.Jobs;
 using AMCCA.Core.Operator;
@@ -120,8 +121,12 @@ public partial class App : Application
         }
         services.AddSingleton(config);
 
-        // Domain / Operator services (SPEC/09, SPEC/59, DEF-002: UI must never write approvals directly)
+        // Domain / Operator services (SPEC/09, SPEC/12, SPEC/59, DEF-001/DEF-002: UI must never write
+        // productions/approvals/settings directly -- every mutation goes through a domain service).
         services.AddSingleton<IAuditStore, AuditStore>();
+        services.AddSingleton<IEventStore, EventStore>();
+        services.AddSingleton(_ => StateMachineRegistry.CreateFromBundledDefinition());
+        services.AddSingleton<ProductionService>();
         services.AddSingleton<BudgetManager>();
         services.AddSingleton<ApprovalManager>();
         services.AddSingleton<PolicyEngine>();

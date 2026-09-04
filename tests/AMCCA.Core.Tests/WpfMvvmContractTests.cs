@@ -6,7 +6,12 @@ using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.App.ViewModels;
 using AMCCA.Core.Database;
+using AMCCA.Core.Domain;
+using AMCCA.Core.Events;
+using AMCCA.Core.Operator;
+using AMCCA.Core.Policy;
 using AMCCA.Core.Security;
+using AMCCA.Core.StateMachine;
 using Dapper;
 using FluentAssertions;
 using Xunit;
@@ -15,6 +20,7 @@ namespace AMCCA.Core.Tests;
 
 public class WpfMvvmContractTests : IDisposable
 {
+    private readonly string _repoRoot;
     private readonly string _testDir;
     private readonly string _dbPath;
     private readonly DatabaseConnectionFactory _factory;
@@ -22,9 +28,24 @@ public class WpfMvvmContractTests : IDisposable
     private readonly INotificationService _notificationService;
     private readonly FakeDialogService _dialogService;
     private readonly ISecretStore _secretStore;
+    private readonly StateMachineRegistry _stateMachine;
+    private readonly IEventStore _eventStore;
+    private readonly ProductionService _productionService;
+    private readonly IAuditStore _auditStore;
+    private readonly BudgetManager _budgetManager;
+    private readonly ApprovalManager _approvalManager;
+    private readonly PolicyEngine _policyEngine;
+    private readonly OperatorControlService _operatorControlService;
 
     public WpfMvvmContractTests()
     {
+        var dir = AppContext.BaseDirectory;
+        while (!string.IsNullOrEmpty(dir) && !File.Exists(Path.Combine(dir, "BUILD_ORDER.md")))
+        {
+            dir = Directory.GetParent(dir)?.FullName;
+        }
+        _repoRoot = dir ?? throw new InvalidOperationException("Could not locate repo root");
+
         _testDir = Path.Combine(Path.GetTempPath(), "AMCCA_WPF_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_testDir);
         _dbPath = Path.Combine(_testDir, "wpf_test.db");
@@ -35,6 +56,17 @@ public class WpfMvvmContractTests : IDisposable
         _notificationService = new NotificationService();
         _dialogService = new FakeDialogService();
         _secretStore = new InMemorySecretStore();
+
+        var stateMachineJson = File.ReadAllText(Path.Combine(_repoRoot, "SCHEMAS", "state-machine.json"));
+        _stateMachine = new StateMachineRegistry(stateMachineJson);
+        _eventStore = new EventStore(_factory);
+        _productionService = new ProductionService(_factory, _stateMachine, _eventStore);
+
+        _auditStore = new AuditStore(_factory);
+        _budgetManager = new BudgetManager(_factory);
+        _approvalManager = new ApprovalManager(_factory);
+        _policyEngine = new PolicyEngine(_factory, _budgetManager, _approvalManager);
+        _operatorControlService = new OperatorControlService(_factory, _auditStore, _policyEngine, _approvalManager);
     }
 
     public void Dispose()
@@ -53,9 +85,9 @@ public class WpfMvvmContractTests : IDisposable
     private NavigationService CreateNavigationService(out DashboardViewModel dash, out ProductionsViewModel prod, out ApprovalQueueViewModel apprv, out SettingsViewModel sett, out AuditLogViewModel audit)
     {
         dash = new DashboardViewModel(_factory, null!);
-        prod = new ProductionsViewModel(_factory, _dialogService, _notificationService, null);
-        apprv = new ApprovalQueueViewModel(_factory, _dialogService, _notificationService);
-        sett = new SettingsViewModel(_factory, _secretStore, _notificationService);
+        prod = new ProductionsViewModel(_productionService, _dialogService, _notificationService);
+        apprv = new ApprovalQueueViewModel(_operatorControlService, _dialogService, _notificationService);
+        sett = new SettingsViewModel(_operatorControlService, _secretStore, _notificationService);
         audit = new AuditLogViewModel(_factory, _notificationService);
 
         var d = dash;
@@ -137,7 +169,7 @@ public class WpfMvvmContractTests : IDisposable
     [Fact]
     public async Task ProductionsViewModel_CreateAndCancelProduction_UpdatesDatabaseAndList()
     {
-        var prodVm = new ProductionsViewModel(_factory, _dialogService, _notificationService, null);
+        var prodVm = new ProductionsViewModel(_productionService, _dialogService, _notificationService);
 
         prodVm.NewTopic = "Autonomous Video Automation";
         prodVm.NewNiche = "tech";
@@ -173,7 +205,7 @@ public class WpfMvvmContractTests : IDisposable
             ");
         }
 
-        var queueVm = new ApprovalQueueViewModel(_factory, _dialogService, _notificationService);
+        var queueVm = new ApprovalQueueViewModel(_operatorControlService, _dialogService, _notificationService);
         await queueVm.LoadApprovalsAsync();
         queueVm.Approvals.Should().HaveCount(2);
 
@@ -202,7 +234,7 @@ public class WpfMvvmContractTests : IDisposable
     [Fact]
     public async Task SettingsViewModel_TogglesKillSwitch_PersistsToDatabase()
     {
-        var settingsVm = new SettingsViewModel(_factory, _secretStore, _notificationService);
+        var settingsVm = new SettingsViewModel(_operatorControlService, _secretStore, _notificationService);
         await settingsVm.LoadSettingsAsync();
 
         settingsVm.GlobalKillSwitch = true;
@@ -210,11 +242,16 @@ public class WpfMvvmContractTests : IDisposable
 
         using (var conn = await _factory.CreateOpenConnectionAsync())
         {
-            var json = await conn.ExecuteScalarAsync<string>("SELECT value_json FROM settings WHERE key = 'kill_switch.global'");
-            json.Should().Contain("\"active\":true");
+            var mode = await conn.ExecuteScalarAsync<string>("SELECT mode FROM kill_switch_state WHERE id = 1");
+            mode.Should().Be("EMERGENCY_STOP");
         }
 
         _notificationService.Notifications.Should().Contain(n => n.Type == "Success");
+
+        // Reloading a fresh view model must reflect the persisted state, not an in-memory default.
+        var reloadedVm = new SettingsViewModel(_operatorControlService, _secretStore, _notificationService);
+        await reloadedVm.LoadSettingsAsync();
+        reloadedVm.GlobalKillSwitch.Should().BeTrue();
     }
 
     [Fact]

@@ -13,6 +13,8 @@
   <ItemGroup>
     <!-- Bundled so a packaged install can validate config.yaml (SPEC/49 gates 1-2) without a repo checkout. -->
     <EmbeddedResource Include="../../SCHEMAS/config.schema.json" LogicalName="AMCCA.Core.config.schema.json" />
+    <!-- Bundled so a packaged install can build the production state machine (SPEC/13) without a repo checkout. -->
+    <EmbeddedResource Include="../../SCHEMAS/state-machine.json" LogicalName="AMCCA.Core.state-machine.json" />
   </ItemGroup>
 
   <ItemGroup>

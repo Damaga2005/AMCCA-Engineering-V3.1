@@ -4,10 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
-using AMCCA.Core.Contracts;
-using AMCCA.Core.Database;
-using AMCCA.Core.StateMachine;
-using Dapper;
+using AMCCA.Core.Domain;
 
 namespace AMCCA.App.ViewModels;
 
@@ -24,8 +21,7 @@ public record ProductionItem(
 
 public class ProductionsViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
-    private readonly StateMachineRegistry? _stateMachine;
+    private readonly ProductionService _productionService;
     private readonly IDialogService _dialogService;
     private readonly INotificationService _notificationService;
 
@@ -58,13 +54,11 @@ public class ProductionsViewModel : ViewModelBase
     public ICommand CancelProductionCommand { get; }
 
     public ProductionsViewModel(
-        DatabaseConnectionFactory connectionFactory,
+        ProductionService productionService,
         IDialogService dialogService,
-        INotificationService notificationService,
-        StateMachineRegistry? stateMachine = null)
+        INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
-        _stateMachine = stateMachine;
+        _productionService = productionService;
         _dialogService = dialogService;
         _notificationService = notificationService;
 
@@ -80,13 +74,10 @@ public class ProductionsViewModel : ViewModelBase
         Productions.Clear();
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            var rows = await conn.QueryAsync<ProductionItem>(
-                "SELECT id AS Id, title AS Title, niche_id AS NicheId, state AS State, created_at AS CreatedAt, updated_at AS UpdatedAt FROM productions ORDER BY created_at DESC LIMIT 50;");
-
-            foreach (var r in rows)
+            var rows = await _productionService.ListRecentAsync(50);
+            foreach (var p in rows)
             {
-                Productions.Add(r);
+                Productions.Add(new ProductionItem(p.Id, p.Title ?? string.Empty, p.NicheId ?? string.Empty, p.State, p.CreatedAt, p.UpdatedAt));
             }
         }
         catch (Exception ex)
@@ -101,15 +92,15 @@ public class ProductionsViewModel : ViewModelBase
 
         try
         {
-            var id = UlidGenerator.NewUlid();
-            var now = DateTimeOffset.UtcNow.ToString("O");
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES (@Id, 'INIT', @Title, 'en', @NicheId, 'COLLABORATIVE', '3.1.0', @Now, @Now);
-            ", new { Id = id, Title = NewTopic, NicheId = NewNiche, Now = now });
+            var correlationId = Guid.NewGuid().ToString("N");
+            var prod = await _productionService.CreateProductionAsync(
+                title: NewTopic,
+                language: "en",
+                autonomyMode: "COLLABORATIVE",
+                correlationId: correlationId,
+                nicheId: NewNiche);
 
-            _notificationService.AddNotification($"Created production {id} ({NewTopic})", "Success");
+            _notificationService.AddNotification($"Created production {prod.Id} ({NewTopic})", "Success");
             NewTopic = string.Empty;
             await LoadProductionsAsync();
         }
@@ -128,12 +119,12 @@ public class ProductionsViewModel : ViewModelBase
 
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                UPDATE productions
-                SET state = 'CANCELLED', updated_at = datetime('now')
-                WHERE id = @Id;
-            ", new { Id = SelectedProduction.Id });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _productionService.TransitionAsync(
+                productionId: SelectedProduction.Id,
+                toState: "CANCELLED",
+                actorType: "OPERATOR",
+                correlationId: correlationId);
 
             _notificationService.AddNotification($"Cancelled production {SelectedProduction.Id}", "Info");
             await LoadProductionsAsync();
