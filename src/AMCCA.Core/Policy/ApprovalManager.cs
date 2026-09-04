@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,13 @@ using Dapper;
 
 namespace AMCCA.Core.Policy;
 
+public record PendingApproval(
+    string Id,
+    string ProductionId,
+    string Action,
+    string State,
+    string CreatedAt);
+
 public class ApprovalManager
 {
     private readonly DatabaseConnectionFactory _connectionFactory;
@@ -15,6 +23,19 @@ public class ApprovalManager
     public ApprovalManager(DatabaseConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
+    }
+
+    public async Task<IReadOnlyList<PendingApproval>> GetPendingApprovalsAsync(CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        const string sql = @"
+            SELECT id AS Id, production_id AS ProductionId, action AS Action, state AS State, created_at AS CreatedAt
+            FROM approvals
+            WHERE state = 'PENDING'
+            ORDER BY created_at ASC;
+        ";
+        var rows = await connection.QueryAsync<PendingApproval>(sql);
+        return new List<PendingApproval>(rows);
     }
 
     public async Task<string> CreateApprovalRequestAsync(
@@ -57,7 +78,35 @@ public class ApprovalManager
                 decided_at = @Now
             WHERE id = @Id AND state = 'PENDING';
         ";
-        await connection.ExecuteAsync(sql, new { Id = approvalId, DecidedBy = decidedBy, Now = now });
+        var rows = await connection.ExecuteAsync(sql, new { Id = approvalId, DecidedBy = decidedBy, Now = now });
+        if (rows == 0)
+        {
+            throw new AmccaException(
+                AmccaErrors.Pol004,
+                ErrorCategory.Security,
+                $"Approval '{approvalId}' is not PENDING and cannot be approved (SPEC/09, DEF-002).");
+        }
+    }
+
+    public async Task RejectRequestAsync(string approvalId, string decidedBy, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        const string sql = @"
+            UPDATE approvals
+            SET state = 'REJECTED',
+                decided_by = @DecidedBy,
+                decided_at = @Now
+            WHERE id = @Id AND state = 'PENDING';
+        ";
+        var rows = await connection.ExecuteAsync(sql, new { Id = approvalId, DecidedBy = decidedBy, Now = now });
+        if (rows == 0)
+        {
+            throw new AmccaException(
+                AmccaErrors.Pol004,
+                ErrorCategory.Security,
+                $"Approval '{approvalId}' is not PENDING and cannot be rejected (SPEC/09, DEF-002).");
+        }
     }
 
     private static readonly SemaphoreSlim WriteLock = new(1, 1);

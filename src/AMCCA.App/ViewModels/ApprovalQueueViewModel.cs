@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
-using AMCCA.Core.Database;
-using Dapper;
+using AMCCA.Core.Operator;
 
 namespace AMCCA.App.ViewModels;
 
@@ -18,7 +17,7 @@ public record ApprovalItem(
 
 public class ApprovalQueueViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly OperatorControlService _operatorControlService;
     private readonly IDialogService _dialogService;
     private readonly INotificationService _notificationService;
 
@@ -44,11 +43,11 @@ public class ApprovalQueueViewModel : ViewModelBase
     public ICommand RejectCommand { get; }
 
     public ApprovalQueueViewModel(
-        DatabaseConnectionFactory connectionFactory,
+        OperatorControlService operatorControlService,
         IDialogService dialogService,
         INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
+        _operatorControlService = operatorControlService;
         _dialogService = dialogService;
         _notificationService = notificationService;
 
@@ -64,13 +63,10 @@ public class ApprovalQueueViewModel : ViewModelBase
         Approvals.Clear();
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            var rows = await conn.QueryAsync<ApprovalItem>(
-                "SELECT id AS Id, production_id AS ProductionId, action AS Action, state AS State, created_at AS CreatedAt FROM approvals WHERE state = 'PENDING' ORDER BY created_at ASC;");
-
-            foreach (var r in rows)
+            var pending = await _operatorControlService.GetPendingApprovalsAsync();
+            foreach (var p in pending)
             {
-                Approvals.Add(r);
+                Approvals.Add(new ApprovalItem(p.Id, p.ProductionId, p.Action, p.State, p.CreatedAt));
             }
         }
         catch (Exception ex)
@@ -85,12 +81,13 @@ public class ApprovalQueueViewModel : ViewModelBase
 
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                UPDATE approvals
-                SET state = 'APPROVED', decided_by = 'operator', decided_at = datetime('now')
-                WHERE id = @Id;
-            ", new { Id = SelectedApproval.Id });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _operatorControlService.SubmitApprovalDecisionAsync(
+                operatorId: "operator",
+                approvalId: SelectedApproval.Id,
+                approved: true,
+                reason: ApprovalReason,
+                correlationId: correlationId);
 
             _notificationService.AddNotification($"Approval {SelectedApproval.Id} approved.", "Success");
             await LoadApprovalsAsync();
@@ -107,12 +104,13 @@ public class ApprovalQueueViewModel : ViewModelBase
 
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                UPDATE approvals
-                SET state = 'REJECTED', decided_by = 'operator', decided_at = datetime('now')
-                WHERE id = @Id;
-            ", new { Id = SelectedApproval.Id });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _operatorControlService.SubmitApprovalDecisionAsync(
+                operatorId: "operator",
+                approvalId: SelectedApproval.Id,
+                approved: false,
+                reason: ApprovalReason,
+                correlationId: correlationId);
 
             _notificationService.AddNotification($"Approval {SelectedApproval.Id} rejected.", "Warning");
             await LoadApprovalsAsync();

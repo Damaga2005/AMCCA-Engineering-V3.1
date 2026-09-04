@@ -73,6 +73,10 @@ public class OperatorControlService
         {
             await _approvalManager.ApproveRequestAsync(approvalId, operatorId, ct);
         }
+        else
+        {
+            await _approvalManager.RejectRequestAsync(approvalId, operatorId, ct);
+        }
 
         var audit = new AuditRecord(
             AuditId: UlidGenerator.NewUlid(),
@@ -90,6 +94,11 @@ public class OperatorControlService
             OccurredAt: DateTimeOffset.UtcNow.ToString("O"));
 
         await _auditStore.AppendAuditAsync(audit, ct);
+    }
+
+    public Task<IReadOnlyList<PendingApproval>> GetPendingApprovalsAsync(CancellationToken ct = default)
+    {
+        return _approvalManager.GetPendingApprovalsAsync(ct);
     }
 
     public async Task<IReadOnlyList<AuditRecord>> QueryAuditTrailAsync(

@@ -5,7 +5,10 @@ using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.App.ViewModels;
 using AMCCA.Core.Database;
+using AMCCA.Core.Events;
 using AMCCA.Core.Jobs;
+using AMCCA.Core.Operator;
+using AMCCA.Core.Policy;
 using AMCCA.Core.Security;
 using AMCCA.Core.StateMachine;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,6 +56,13 @@ public partial class App : Application
         services.AddSingleton(connectionFactory);
         services.AddSingleton<MigrationService>();
         services.AddSingleton<ISecretStore, WindowsDpapiSecretStore>();
+
+        // Domain / Operator services (SPEC/09, SPEC/59, DEF-002: UI must never write approvals directly)
+        services.AddSingleton<IAuditStore, AuditStore>();
+        services.AddSingleton<BudgetManager>();
+        services.AddSingleton<ApprovalManager>();
+        services.AddSingleton<PolicyEngine>();
+        services.AddSingleton<OperatorControlService>();
 
         // UI Services
         services.AddSingleton<IDialogService, DialogService>();

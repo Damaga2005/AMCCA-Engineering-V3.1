@@ -129,4 +129,66 @@ public class OperatorControlAndAuditContractTests : IDisposable
         status.GlobalKillSwitchActive.Should().BeFalse();
         status.AutonomyMode.Should().Be("ASSISTED");
     }
+
+    [Fact]
+    public async Task RejectionDecision_FromOperatorUI_TransitionsApprovalAndLeavesAuditTrail()
+    {
+        // DEF-002: rejection must go through the domain (ApprovalManager), not raw SQL from the UI.
+        var approvalId = await _approvalManager.CreateApprovalRequestAsync(
+            productionId: "prod-ui-2",
+            action: "publish",
+            scopeJson: "{\"target\":\"youtube\"}",
+            validFor: TimeSpan.FromHours(1));
+
+        var corrId = "corr-op-appr-reject-1";
+        await _controlService.SubmitApprovalDecisionAsync(
+            operatorId: "admin@amcca.local",
+            approvalId: approvalId,
+            approved: false,
+            reason: "Claims not verifiable",
+            correlationId: corrId);
+
+        var pending = await _controlService.GetPendingApprovalsAsync();
+        pending.Should().NotContain(p => p.Id == approvalId);
+
+        var auditLogs = await _controlService.QueryAuditTrailAsync(correlationId: corrId);
+        auditLogs.Should().ContainSingle();
+
+        var log = auditLogs.First();
+        log.Action.Should().Be("operator.approval_decided");
+        log.ReasonCode.Should().Be("REJECTED");
+        log.SubjectId.Should().Be(approvalId);
+
+        // A rejected (no longer PENDING) approval cannot be rejected again.
+        var repeat = async () => await _controlService.SubmitApprovalDecisionAsync(
+            operatorId: "admin@amcca.local",
+            approvalId: approvalId,
+            approved: false,
+            reason: "duplicate submit",
+            correlationId: "corr-op-appr-reject-2");
+
+        await repeat.Should().ThrowAsync<AmccaException>();
+    }
+
+    [Fact]
+    public async Task GetPendingApprovalsAsync_OnlyReturnsPendingApprovals()
+    {
+        var pendingId = await _approvalManager.CreateApprovalRequestAsync(
+            productionId: "prod-ui-3",
+            action: "publish",
+            scopeJson: "{}",
+            validFor: TimeSpan.FromHours(1));
+
+        var approvedId = await _approvalManager.CreateApprovalRequestAsync(
+            productionId: "prod-ui-4",
+            action: "publish",
+            scopeJson: "{}",
+            validFor: TimeSpan.FromHours(1));
+        await _approvalManager.ApproveRequestAsync(approvedId, "operator@amcca.local");
+
+        var pending = await _controlService.GetPendingApprovalsAsync();
+
+        pending.Should().Contain(p => p.Id == pendingId);
+        pending.Should().NotContain(p => p.Id == approvedId);
+    }
 }
