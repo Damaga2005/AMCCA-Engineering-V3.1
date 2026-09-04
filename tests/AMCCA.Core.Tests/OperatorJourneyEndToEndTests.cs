@@ -151,7 +151,7 @@ public class OperatorJourneyEndToEndTests : IDisposable
 
         var productionId = listed.Id;
 
-        // ------------------------------------------------- 3. Evidence plane: sources and claims (SPEC/30)
+        // ------------------------------------------------- 3. Evidence plane: sources and claims (SPEC/26-27)
         var source = new Source
         {
             Id = UlidGenerator.NewUlid(),
@@ -176,7 +176,7 @@ public class OperatorJourneyEndToEndTests : IDisposable
         await _researchService.InsertClaimWithSourceAsync(claim, source.Id, "SUPPORTS");
         (await _researchService.GetClaimAsync(claim.Id))!.Status.Should().Be("VERIFIED");
 
-        // ------------------------------------------------------------- 4. Budget for the run (SPEC/22)
+        // ------------------------------------------------------------- 4. Budget for the run (SPEC/20)
         await _budgetManager.CreateBudgetAsync("journey-budget", "MONTHLY", productionId, 100.00m, "EUR");
         (await _budgetManager.TryReserveBudgetAsync("journey-budget", 15.50m, "corr-journey-budget"))
             .Should().BeTrue();
@@ -271,7 +271,7 @@ public class OperatorJourneyEndToEndTests : IDisposable
         profit.SettledCost.Should().Be(12.00m);
         profit.NetProfit.Should().Be(24.00m);
 
-        // ------------------------------- 9. The operator inspects what actually happened (SPEC/61)
+        // ------------------------------- 9. The operator inspects what actually happened (SPEC/60)
         var inspectorVm = new ProductionInspectorViewModel(_productionService, _factory, _notifications);
         await inspectorVm.LoadAvailableProductionsAsync();
         inspectorVm.SelectedProduction = inspectorVm.AvailableProductions.Single(p => p.Id == productionId);

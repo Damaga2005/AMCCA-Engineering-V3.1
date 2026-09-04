@@ -129,7 +129,7 @@ public class WpfMvvmContractTests : IDisposable
         mainVm.NavigateProductionsCommand.Execute(null);
         mainVm.CurrentView.Should().BeOfType<ProductionsViewModel>();
 
-        // Navigate to Production Inspector (SPEC/61)
+        // Navigate to Production Inspector (SPEC/60)
         mainVm.NavigateProductionInspectorCommand.Execute(null);
         mainVm.CurrentView.Should().BeOfType<ProductionInspectorViewModel>();
 

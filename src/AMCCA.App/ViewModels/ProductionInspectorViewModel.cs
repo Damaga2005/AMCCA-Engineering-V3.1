@@ -30,7 +30,7 @@ public record InspectorCostEventItem(string Id, string Kind, string Amount, stri
 public record InspectorPublicationItem(string Id, string Platform, string State, string? ExternalUrl, string UpdatedAt);
 
 /// <summary>
-/// SPEC/61 Production Inspector: a read-only aggregate view across production state, versions,
+/// SPEC/60 Production Inspector: a read-only aggregate view across production state, versions,
 /// artifacts, QA, approvals, jobs, costs and publications for one production. Reads only -- it never
 /// mutates, so unlike the DEF-001 fix in Productions/Settings there is no domain service to bypass;
 /// this follows the same read-only-SQL precedent already used by Dashboard and Audit Log.

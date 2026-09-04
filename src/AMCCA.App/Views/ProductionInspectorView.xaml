@@ -33,7 +33,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <TextBlock Text="Production Inspector (SPEC/61)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
+        <TextBlock Text="Production Inspector (SPEC/60)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
 
         <!-- Picker + Summary -->
         <Border Grid.Row="1" Background="#313244" CornerRadius="8" Padding="15" Margin="0,0,0,15">

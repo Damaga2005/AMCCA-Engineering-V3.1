@@ -47,6 +47,7 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-DB-003` | TRANSIENT | Yes | SQLite busy beyond `busy_timeout` |
 | `AMCCA-STM-001` | INTERNAL | No | Attempted a transition absent from `SPEC/13` |
 | `AMCCA-STM-002` | INTERNAL | No | Resume attempted to a state other than `blocked_from` |
+| `AMCCA-STM-003` | INTERNAL | No | Outbound transition attempted from a terminal state |
 | `AMCCA-JOB-001` | TRANSIENT | Yes | Lease expired mid-execution; fence token stale, work abandoned |
 | `AMCCA-JOB-002` | INTERNAL | No | Duplicate idempotency key |
 | `AMCCA-JOB-003` | USER_ACTION_REQUIRED | No | Job dead-lettered after max attempts |
@@ -57,10 +58,12 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-AI-005` | BUDGET | No | Agent cost ceiling exceeded |
 | `AMCCA-RES-001` | VALIDATION | No | Material claim lacks sufficient independent sources |
 | `AMCCA-RES-002` | TRANSIENT | Yes | Research source unavailable |
+| `AMCCA-RES-003` | SECURITY | No | Source domain not allowed by policy or failed the SSRF check |
 | `AMCCA-MED-001` | MEDIA | Yes if bounded | Render failed; re-render |
 | `AMCCA-MED-002` | MEDIA | No | FFmpeg timeout or output ceiling exceeded |
 | `AMCCA-QA-001` | VALIDATION | No | QA failure; rework |
 | `AMCCA-QA-002` | INTERNAL | No | AI-assisted finding attempted to set a verdict |
+| `AMCCA-QA-003` | INTERNAL | No | QA threshold profile unknown or invalid |
 | `AMCCA-RGT-001` | RIGHTS | No | Asset not GREEN; review rights |
 | `AMCCA-CMP-001` | COMPLIANCE | No | Required synthetic-content label not applied |
 | `AMCCA-CMP-002` | COMPLIANCE | No | Required affiliate disclosure missing |
@@ -70,6 +73,9 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-PUB-001` | PLATFORM | Conditional | Publication attempt failed |
 | `AMCCA-PUB-007` | UNKNOWN_EXTERNAL_STATE | No | Publication outcome unknown; reconcile |
 | `AMCCA-PUB-008` | POLICY | No | Duplicate publication prevented by unique constraint |
+| `AMCCA-POL-001` | POLICY | No | Policy evaluation rejected or failed; required decision data is missing |
+| `AMCCA-POL-003` | POLICY | No | Refused: global or per-platform kill switch is active; clear it to proceed |
+| `AMCCA-POL-004` | SECURITY | No | Human approval required before the protected action; request and grant one |
 | `AMCCA-BUD-001` | BUDGET | No | Budget threshold reached |
 | `AMCCA-BUD-002` | BUDGET | No | Reservation refused; insufficient remaining budget |
 | `AMCCA-STO-001` | STORAGE | Yes if bounded | Insufficient free space |
