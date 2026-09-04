@@ -10,15 +10,15 @@
 
 - **Repository:** `Damaga2005/AMCCA-Engineering-V3.1`
 - **Branch:** `add_amcca_engineering_repo`
-- **HEAD Reference:** `add_amcca_engineering_repo` (Synchronized HEAD)
+- **HEAD Reference:** `add_amcca_engineering_repo` (Commit SHA: `782dd9b7f98c637cc92cffd9dcbad9059acf6f39`)
 - **Build:** `net8.0-windows` / `Release` (Self-Contained `win-x64`)
 - **Tests:** `522 passed, 0 failed, 0 skipped` (Duración: ~1m 30s)
 - **Warnings:** `0 errors, 0 warnings` (`dotnet build AMCCA.sln -c Release`)
 - **Installer:** WiX Toolset v5.0.0 Bootstrapper Bundle PE Executable (PE32+ AMD64)
-- **MSI Hash (SHA-256):** `f5c38908d87064305a5b441cc5f2d9badeec2d104ecb3b0cfc84e3f4db3d582e`
-- **EXE Hash (SHA-256):** `23102449249024c0f4d26f16f532f2d496be0e3a4530ae41b485d480daebbb5e`
-- **ZIP Hash (SHA-256):** `b84fd80c38edc11f9999dcc33c776e1b3d81f009380793b4b855f394f7228d5a`
-- **CI:** GitHub Actions Workflow (`.github/workflows/validation.yml`) ejecutando `validate-spec` (Linux) y `windows-desktop-validation` (Windows) sobre el HEAD exacto (`-ExpectedCommitSha $GITHUB_SHA`).
+- **MSI Hash (SHA-256):** `0e7541df434dbb382b5cdff99bf9271fa9760abc18448d6343c85f052578bf39`
+- **EXE Hash (SHA-256):** `5532d717c469cd2cda4a5d88d2964a48a57ed90e98fb705f4b76e6958e86a83d`
+- **ZIP Hash (SHA-256):** `46e304a620f82efd11985108fe9542c46504bc3ef9d7cab3bb75f6aff9878426`
+- **CI:** GitHub Actions Run `33860326908` (`.github/workflows/validation.yml`) ejecutando `validate-spec` (Linux: SUCCESS) y `Windows Desktop & WPF Solution Validation` (Windows: SUCCESS) sobre el HEAD exacto (`-ExpectedCommitSha 782dd9b7f98c637cc92cffd9dcbad9059acf6f39`).
 - **SSRF:** Arquitectura obligatoria mediante `ISafeHttpClientFactory`, `SafeHttpClientFactory`, `SafeRedirectHandler` y `SocketsHttpHandler.ConnectCallback`.
 - **Research Path:** `ResearchService` y `ResearchScraper` conectados con validación estricta de destino antes de conexión y tras cada redirección 301/302/307/308.
 - **Release Validation:**
