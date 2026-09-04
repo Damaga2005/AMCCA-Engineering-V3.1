@@ -72,9 +72,6 @@ jobs:
       - name: Build .NET solution (Release)
         run: dotnet build AMCCA.sln --no-restore --configuration Release
 
-      - name: Run .NET test suites (Core, Concurrency, Chaos, OAuth, WPF MVVM)
-        run: dotnet test AMCCA.sln --no-build --configuration Release --verbosity normal
-
       - name: Verify AMCCA.exe binary generated and functional
         shell: pwsh
         run: |
@@ -104,6 +101,9 @@ jobs:
             throw "dist/installer/AMCCA-Setup.exe not found"
           }
           Write-Host "WiX Installer verified successfully."
+
+      - name: Run .NET test suites (Core, Concurrency, Chaos, OAuth, WPF MVVM)
+        run: dotnet test AMCCA.sln --no-build --configuration Release --verbosity normal
 
       - name: Run Deterministic Release Certification Pipeline
         shell: pwsh

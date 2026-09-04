@@ -12,7 +12,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | File | SHA-256 | Bytes |
 |---|---|--:|
 | `.gitattributes` | `8bad5caf15994b1f760e8f8c6e21387a70a1ffa1d0382c9490b7825f553dfa04` | 99 |
-| `.github/workflows/validation.yml` | `e275121bff55a278b4a8193dfb0a1a1a2ffad838428a899e522957e823563d05` | 4063 |
+| `.github/workflows/validation.yml` | `d60573b990cded908f1f6bba922309518efba75263c94b2d6fa72306c4434923` | 4063 |
 | `.gitignore` | `2da4418f1e39c4240bbca85311ef63c4050cf9ca03d92f421db20e6ce247d504` | 140 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
