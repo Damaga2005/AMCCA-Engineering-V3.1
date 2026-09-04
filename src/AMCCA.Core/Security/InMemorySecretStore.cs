@@ -5,7 +5,13 @@ using System.Threading.Tasks;
 
 namespace AMCCA.Core.Security;
 
-public class InMemorySecretStore : ISecretStore
+/// <summary>
+/// TEST / DEVELOPMENT ONLY. Keeps secrets in a process-memory dictionary — they do not persist,
+/// are not OS-protected, and are visible in a memory dump. Marked <see cref="IEphemeralSecretStore"/>
+/// so <see cref="SecretStoreGuard.EnsureProductionGrade"/> refuses it in a production runtime (SEC-05).
+/// Production uses <see cref="WindowsDpapiSecretStore"/>.
+/// </summary>
+public class InMemorySecretStore : ISecretStore, IEphemeralSecretStore
 {
     private readonly ConcurrentDictionary<string, string> _secrets = new(StringComparer.Ordinal);
     private readonly bool _isReachable;

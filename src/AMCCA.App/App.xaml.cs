@@ -28,6 +28,9 @@ public partial class App : Application
         _serviceProvider = services.BuildServiceProvider();
         ServiceProvider = _serviceProvider;
 
+        // SEC-05: fail closed if the resolved secret store is not production-grade.
+        SecretStoreGuard.EnsureProductionGrade(_serviceProvider.GetService<ISecretStore>());
+
         // Ensure database exists and schema migrated
         var migrationService = _serviceProvider.GetRequiredService<MigrationService>();
         migrationService.UpgradeAsync().GetAwaiter().GetResult();
