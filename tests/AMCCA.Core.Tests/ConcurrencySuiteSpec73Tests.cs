@@ -158,7 +158,7 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
 
         using var conn = await _factory.CreateOpenConnectionAsync();
         var reserved = await conn.ExecuteScalarAsync<string>("SELECT reserved FROM budgets WHERE scope_id = @ScopeId", new { ScopeId = scopeId });
-        Money.Parse(reserved).Should().Be(4.000000m);
+        Money.Parse(reserved!).Should().Be(4.000000m);
     }
 
     [Fact]

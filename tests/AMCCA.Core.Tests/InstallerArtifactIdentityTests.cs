@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using FluentAssertions;
@@ -20,7 +20,38 @@ public class InstallerArtifactIdentityTests
             current = current.Parent;
         }
         var root = current?.FullName ?? Directory.GetCurrentDirectory();
-        return Path.Combine(root, "dist", "installer");
+        var dir = Path.Combine(root, "dist", "installer");
+        EnsureInstallerBuilt(dir, root);
+        return dir;
+    }
+
+    private static void EnsureInstallerBuilt(string installerDir, string repoRoot)
+    {
+        var msiPath = Path.Combine(installerDir, "AMCCA-Setup.msi");
+        var exePath = Path.Combine(installerDir, "AMCCA-Setup.exe");
+        if (!File.Exists(msiPath) || !File.Exists(exePath))
+        {
+            var scriptPath = Path.Combine(repoRoot, "installer", "build_installer.ps1");
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\"",
+                WorkingDirectory = repoRoot,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            var envRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+            if (string.IsNullOrEmpty(envRoot))
+            {
+                var localDotnet = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "dotnet");
+                if (Directory.Exists(localDotnet))
+                {
+                    psi.EnvironmentVariables["DOTNET_ROOT"] = localDotnet;
+                }
+            }
+            using var p = System.Diagnostics.Process.Start(psi);
+            p?.WaitForExit(120000);
+        }
     }
 
     [Fact]

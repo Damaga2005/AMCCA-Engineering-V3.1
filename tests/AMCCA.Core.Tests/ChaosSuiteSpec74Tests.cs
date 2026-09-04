@@ -267,7 +267,7 @@ public class ChaosSuiteSpec74Tests : IDisposable
         using (var conn = await _factory.CreateOpenConnectionAsync())
         {
             var reserved = await conn.ExecuteScalarAsync<string>("SELECT reserved FROM budgets WHERE scope_id = 'scope-x09'");
-            Money.Parse(reserved).Should().Be(2.500000m);
+            Money.Parse(reserved!).Should().Be(2.500000m);
         }
 
         // Replay settlement
@@ -277,8 +277,8 @@ public class ChaosSuiteSpec74Tests : IDisposable
         {
             var spent = await conn.ExecuteScalarAsync<string>("SELECT spent FROM budgets WHERE scope_id = 'scope-x09'");
             var reserved = await conn.ExecuteScalarAsync<string>("SELECT reserved FROM budgets WHERE scope_id = 'scope-x09'");
-            Money.Parse(spent).Should().Be(2.500000m);
-            Money.Parse(reserved).Should().Be(0.000000m);
+            Money.Parse(spent!).Should().Be(2.500000m);
+            Money.Parse(reserved!).Should().Be(0.000000m);
         }
     }
 
@@ -364,7 +364,7 @@ public class ChaosSuiteSpec74Tests : IDisposable
     }
 
     [Fact]
-    public async Task X15_MissingCleanShutdownMarker_FullRecoverySweepRuns()
+    public void X15_MissingCleanShutdownMarker_FullRecoverySweepRuns()
     {
         var markerPath = Path.Combine(_testDir, ".clean_shutdown");
         // Ensure clean shutdown marker does NOT exist (abrupt kill)
