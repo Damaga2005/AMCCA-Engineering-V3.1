@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -16,13 +18,62 @@ public class OAuthManager
 {
     private readonly DatabaseConnectionFactory _factory;
     private readonly ISecretStore _secretStore;
-    private readonly HttpClient _httpClient;
+    private readonly ISafeHttpClientFactory _httpClientFactory;
 
-    public OAuthManager(DatabaseConnectionFactory factory, ISecretStore secretStore, HttpClient? httpClient = null)
+    // SEC-02 / SEC-11: OAuth traffic MUST go through the SSRF-safe HTTP pipeline
+    // (SsrfValidator + SafeRedirectHandler). An arbitrary HttpClient can no longer be injected;
+    // tests supply a fake ISafeHttpClientFactory instead.
+    public OAuthManager(DatabaseConnectionFactory factory, ISecretStore secretStore, ISafeHttpClientFactory? httpClientFactory = null)
     {
         _factory = factory;
         _secretStore = secretStore;
-        _httpClient = httpClient ?? new HttpClient();
+        _httpClientFactory = httpClientFactory ?? SafeHttpClientFactory.Default;
+    }
+
+    // SEC-03: every OAuth endpoint is validated against the SSRF policy before any connection.
+    private static void ValidateOAuthEndpoint(string endpoint, string role)
+    {
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
+        {
+            throw new AmccaException(
+                AmccaErrors.Sec003,
+                ErrorCategory.Security,
+                $"OAuth {role} endpoint is not a valid absolute URI.");
+        }
+        SsrfValidator.ValidateDestinationUri(uri);
+    }
+
+    // SEC-10: never surface the raw remote body. Only a whitelisted standard OAuth2 'error'
+    // code (short, alphanumeric) is echoed, alongside status and provider.
+    private static string SafeOAuthError(string operation, string platform, HttpStatusCode status, string? body)
+    {
+        string? code = null;
+        if (!string.IsNullOrWhiteSpace(body) && body.TrimStart().StartsWith("{"))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String)
+                {
+                    var raw = e.GetString();
+                    if (!string.IsNullOrWhiteSpace(raw) && raw!.Length <= 64 &&
+                        raw.All(c => char.IsLetterOrDigit(c) || c == '_' || c == '-'))
+                    {
+                        code = raw;
+                    }
+                }
+            }
+            catch (JsonException) { /* malformed body: disclose nothing */ }
+        }
+
+        return $"{operation} failed. HTTP status: {(int)status}. Provider: {platform}."
+             + (code != null ? $" Error code: {code}." : string.Empty);
+    }
+
+    private static async Task<string?> SafeReadBodyAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        try { return await response.Content.ReadAsStringAsync(ct); }
+        catch { return null; }
     }
 
     public OAuthAuthorizationRequest InitiateAuthorization(
@@ -32,6 +83,8 @@ public class OAuthManager
         string redirectUri,
         IReadOnlyList<string> scopes)
     {
+        ValidateOAuthEndpoint(authorizationEndpoint, "authorization");
+
         // 1. Generate cryptographically random state & PKCE verifier + challenge (SPEC/43)
         var state = GenerateRandomString(32);
         var verifier = GenerateRandomString(64);
@@ -59,6 +112,8 @@ public class OAuthManager
         string redirectUri,
         CancellationToken ct = default)
     {
+        ValidateOAuthEndpoint(tokenEndpoint, "token");
+
         var parameters = new Dictionary<string, string>
         {
             ["grant_type"] = "authorization_code",
@@ -68,11 +123,12 @@ public class OAuthManager
             ["redirect_uri"] = redirectUri
         };
 
-        var response = await _httpClient.PostAsync(tokenEndpoint, new FormUrlEncodedContent(parameters), ct);
+        using var http = _httpClientFactory.CreateClient();
+        var response = await http.PostAsync(tokenEndpoint, new FormUrlEncodedContent(parameters), ct);
         if (!response.IsSuccessStatusCode)
         {
-            var err = await response.Content.ReadAsStringAsync(ct);
-            throw new AmccaException(AmccaErrors.Plt002, ErrorCategory.Auth, $"Token exchange failed with {response.StatusCode}: {err}");
+            var body = await SafeReadBodyAsync(response, ct);
+            throw new AmccaException(AmccaErrors.Plt002, ErrorCategory.Auth, SafeOAuthError("Token exchange", platform, response.StatusCode, body));
         }
 
         var json = await response.Content.ReadAsStringAsync(ct);
@@ -90,6 +146,8 @@ public class OAuthManager
         string clientId,
         CancellationToken ct = default)
     {
+        ValidateOAuthEndpoint(tokenEndpoint, "token");
+
         var currentBundle = await GetStoredTokensAsync(platform, accountId, ct);
         if (currentBundle == null || string.IsNullOrEmpty(currentBundle.RefreshToken))
         {
@@ -104,7 +162,8 @@ public class OAuthManager
             ["refresh_token"] = currentBundle.RefreshToken
         };
 
-        var response = await _httpClient.PostAsync(tokenEndpoint, new FormUrlEncodedContent(parameters), ct);
+        using var http = _httpClientFactory.CreateClient();
+        var response = await http.PostAsync(tokenEndpoint, new FormUrlEncodedContent(parameters), ct);
         if (!response.IsSuccessStatusCode)
         {
             // SPEC/43: A refresh failure moves the account to REAUTH_REQUIRED, blocks autonomous publication, and audits
@@ -126,6 +185,8 @@ public class OAuthManager
         string clientId,
         CancellationToken ct = default)
     {
+        ValidateOAuthEndpoint(revocationEndpoint, "revocation");
+
         var currentBundle = await GetStoredTokensAsync(platform, accountId, ct);
         if (currentBundle != null)
         {
@@ -136,7 +197,8 @@ public class OAuthManager
                     ["client_id"] = clientId,
                     ["token"] = currentBundle.AccessToken
                 };
-                await _httpClient.PostAsync(revocationEndpoint, new FormUrlEncodedContent(parameters), ct);
+                using var http = _httpClientFactory.CreateClient();
+                await http.PostAsync(revocationEndpoint, new FormUrlEncodedContent(parameters), ct);
             }
             catch { }
         }

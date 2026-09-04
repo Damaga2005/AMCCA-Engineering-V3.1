@@ -147,7 +147,7 @@ public class PlatformOAuthContractTests : IDisposable
             };
         });
 
-        var oauthWithMock = new OAuthManager(_factory, _secretStore, new HttpClient(mockHttp));
+        var oauthWithMock = new OAuthManager(_factory, _secretStore, new FakeSafeHttpClientFactory(mockHttp));
         var result = await oauthWithMock.RefreshTokenAsync("youtube", accountId, "https://oauth.platform.com/token", "client-id");
 
         result.Should().BeNull();
@@ -181,7 +181,7 @@ public class PlatformOAuthContractTests : IDisposable
         await _oauthManager.StoreTokensAsync("tiktok", accountId, new OAuthTokenBundle("tok_to_revoke", "ref_to_revoke", DateTimeOffset.UtcNow.AddHours(1)));
 
         var mockHttp = new MockHttpHandler(req => new HttpResponseMessage(HttpStatusCode.OK));
-        var oauth = new OAuthManager(_factory, _secretStore, new HttpClient(mockHttp));
+        var oauth = new OAuthManager(_factory, _secretStore, new FakeSafeHttpClientFactory(mockHttp));
 
         await oauth.RevokeTokenAsync("tiktok", accountId, "https://open.tiktokapis.com/v2/oauth/revoke/", "client-id");
 
