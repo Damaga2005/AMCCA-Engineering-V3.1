@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 341
-**Total bytes:** 1711328
+**Total bytes:** 1716103
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -193,7 +193,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/validate_package.py` | `369ed81e2f0fa3de10397ff6e91e252392002665ede38ed60b6f537bfe2e0879` | 24486 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
-| `installer/build_installer.ps1` | `c1de6b85a6d60faeb963877b50670e440da4288cf6d8b0e205a5e434445a7d6f` | 3523 |
+| `installer/build_installer.ps1` | `43edf614dd05e7f9b431884c5ef1d60a636d5d9633e14d00fff4fb8480b68bcc` | 3591 |
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
@@ -320,10 +320,10 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
-| `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `dc9932b3c720a60feb988704add4a87599f2e638b28a49142a88a1c71d9772f1` | 5993 |
-| `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `2bd6108e52697ceb7dc984a6317d0e063cd2a1770f20494e585ae313e506c134` | 7504 |
-| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `41bd93ec7b3fe217f9ee3bb5d1d7c38d308825c3ffd52d902af75f68144b573e` | 10620 |
-| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `55372798d2bdb94abe3ce8b56c2667728930fac6a18901a1d598c72f7248e394` | 4670 |
+| `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `28311223dea6af3e94ae4d7696c400ce81ac8b29e248cab97c757f318ff63dcf` | 7563 |
+| `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `22e0342e871b74b94866cae6203fa95c9b02523eedead8585fbf6ff61690f2b7` | 7532 |
+| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `64a062f8fa8696ed4adf52c03639e479067622e2698a09d36ddd8871d0063431` | 12159 |
+| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `02ca18eef563b32694b243943ca3b1ebcc3cd403a249325a6526a1180502084b` | 6240 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `ad294304f44fca7026cc043cbf275f06e428b056f7854b771771349a3de27401` | 4620 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `4b70e718bddc284f79334ca9250c8c4a95dc6ea62e19c31323d6f2c95ffe72f5` | 8991 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |

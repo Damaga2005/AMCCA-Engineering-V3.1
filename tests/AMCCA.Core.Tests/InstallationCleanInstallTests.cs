@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -10,6 +10,7 @@ using Xunit;
 
 namespace AMCCA.Core.Tests;
 
+[Collection("InstallerTests")]
 public class InstallationCleanInstallTests : IDisposable
 {
     private readonly string _testRoot;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -39,6 +39,7 @@ public class SsrfProductionPathTests : IDisposable
     {
         _service.Dispose();
         _scraper.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         try
         {
             if (Directory.Exists(_testDir))

@@ -1,4 +1,4 @@
-﻿# AMCCA Engineering V3.1 — Installer Build Pipeline (SPEC/76, DEF-CERT-001)
+# AMCCA Engineering V3.1 — Installer Build Pipeline (SPEC/76, DEF-CERT-001)
 param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
@@ -28,6 +28,9 @@ $python = if (Test-Path ".\.venv\Scripts\python.exe") { ".\.venv\Scripts\python.
 Write-Host "[3/5] Compiling WiX MSI installer package..."
 if (-not $env:DOTNET_ROOT -and (Test-Path "$env:LOCALAPPDATA\Microsoft\dotnet")) {
     $env:DOTNET_ROOT = "$env:LOCALAPPDATA\Microsoft\dotnet"
+}
+if ($env:DOTNET_ROOT) {
+    $env:PATH = "$env:DOTNET_ROOT;$env:PATH"
 }
 $wix = if (Test-Path "$env:USERPROFILE\.dotnet\tools\wix.exe") { "$env:USERPROFILE\.dotnet\tools\wix.exe" } else { "wix" }
 

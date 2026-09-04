@@ -34,6 +34,67 @@ public class InstallationUpgradeRestoreValidationTests : IDisposable
         catch { }
     }
 
+    private static bool CheckInstallerReady(string installerDir)
+    {
+        var msiPath = Path.Combine(installerDir, "AMCCA-Setup.msi");
+        var exePath = Path.Combine(installerDir, "AMCCA-Setup.exe");
+        var shaPath = Path.Combine(installerDir, "SHA256SUMS");
+        if (!File.Exists(msiPath) || !File.Exists(exePath) || !File.Exists(shaPath))
+            return false;
+
+        var exeInfo = new FileInfo(exePath);
+        var msiInfo = new FileInfo(msiPath);
+        if (exeInfo.Length <= msiInfo.Length)
+            return false;
+
+        var checksums = File.ReadAllText(shaPath);
+        using var sha256 = SHA256.Create();
+        var msiHash = Convert.ToHexString(sha256.ComputeHash(File.ReadAllBytes(msiPath))).ToLowerInvariant();
+        var exeHash = Convert.ToHexString(sha256.ComputeHash(File.ReadAllBytes(exePath))).ToLowerInvariant();
+        return checksums.Contains(msiHash) && checksums.Contains(exeHash);
+    }
+
+    private static void EnsureInstallerBuilt(string installerDir, string repoRoot)
+    {
+        if (!CheckInstallerReady(installerDir))
+        {
+            using var mutex = new System.Threading.Mutex(false, "Global\\AMCCA_INSTALLER_BUILD_MUTEX");
+            try
+            {
+                mutex.WaitOne(TimeSpan.FromMinutes(3));
+                if (!CheckInstallerReady(installerDir))
+                {
+                    var scriptPath = Path.Combine(repoRoot, "installer", "build_installer.ps1");
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "powershell",
+                        Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\"",
+                        WorkingDirectory = repoRoot,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+                    var envRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+                    if (string.IsNullOrEmpty(envRoot))
+                    {
+                        var localDotnet = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "dotnet");
+                        if (Directory.Exists(localDotnet))
+                        {
+                            psi.EnvironmentVariables["DOTNET_ROOT"] = localDotnet;
+                            var curPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+                            psi.EnvironmentVariables["PATH"] = localDotnet + ";" + curPath;
+                        }
+                    }
+                    using var p = System.Diagnostics.Process.Start(psi);
+                    p?.WaitForExit(180000);
+                }
+            }
+            finally
+            {
+                try { mutex.ReleaseMutex(); } catch { }
+            }
+        }
+    }
+
     [Fact]
     public void InstallerArtifacts_AndSha256Checksums_AreValid()
     {
@@ -44,6 +105,7 @@ public class InstallationUpgradeRestoreValidationTests : IDisposable
         }
         var root = current?.FullName ?? Directory.GetCurrentDirectory();
         var installerDir = Path.Combine(root, "dist", "installer");
+        EnsureInstallerBuilt(installerDir, root);
 
         if (Directory.Exists(installerDir))
         {
