@@ -195,7 +195,7 @@ foreach ($line in $sumsContent) {
     }
     $actualHash = (Get-FileHash -Path $targetFile -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actualHash -ne $declaredHash) {
-        throw "DEF-CERT-007 VIOLATION: SHA256 mismatch for $fname: declared $declaredHash != actual $actualHash"
+        throw "DEF-CERT-007 VIOLATION: SHA256 mismatch for ${fname} - declared $declaredHash != actual $actualHash"
     }
     $verifiedCount++
 }
