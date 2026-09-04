@@ -66,8 +66,13 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet test failed" }
 
 $testText = $testOutput -join "`n"
 $testPassed = 0
-if ($testText -match "(?:Superado|Passed):\s+(\d+)") {
+if ($testText -match "(?:Superado|Correctas?|Correcto|Passed):\s+(\d+)") {
     $testPassed = [int]$matches[1]
+} elseif ($testText -match "(?:Pruebas totales|Total Tests?):\s+(\d+)") {
+    $testPassed = [int]$matches[1]
+}
+if ($testPassed -eq 0) {
+    throw "DEF-CERT-007 VIOLATION: Test suite passed 0 tests or output could not be parsed."
 }
 Write-Host "  Test Execution: $testPassed passed, 0 failed, 0 skipped." -ForegroundColor Green
 

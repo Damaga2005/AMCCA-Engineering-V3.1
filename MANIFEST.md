@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 341
-**Total bytes:** 1716103
+**Total bytes:** 1716352
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -171,7 +171,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/conditional_coverage.json` | `54d8f4774c379bd09e7f4ead7b42413025897d58cdce00829ed69b9cc9c7e11a` | 1595 |
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
 | `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
-| `TOOLS/release_certification.ps1` | `7f695df34dafb89a1ac1c3608c38c13b996c45ea26f028a7b49f1b5d0a189af3` | 6793 |
+| `TOOLS/release_certification.ps1` | `2ba1967482dbaf2ff90f5dc2dc36ad571359f782f5ae54ce7b6ed6d2fac6c1f8` | 7042 |
 | `TOOLS/release_gate.py` | `bf5085fffa3daeb5267f32f16d0d7e8a7ad3de87b95cf2cb6914f3b20f19923c` | 14171 |
 | `TOOLS/requirements.in` | `c7fe62ee0f791480640a111d1006cd6b2c3e5dfa9660889ee1184391ea28b5b7` | 517 |
 | `TOOLS/requirements.txt` | `aba0afee65ef1b35fb6b176fc77817efcd11c301eeac32f303f7f600b2130b78` | 1211 |
