@@ -6,12 +6,12 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 330
-**Total bytes:** 1658944
+**Files:** 334
+**Total bytes:** 1676362
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
-| `.github/workflows/validation.yml` | `8544970d7bb704039d49c4c69e655fc61df153cf5b15cff2e26a0163029ba38b` | 3206 |
+| `.github/workflows/validation.yml` | `ab0aa904b44319d9cee7d13fc187050f5b4003be67d7e3152c8f0e35f538fa52` | 3298 |
 | `.gitignore` | `2da4418f1e39c4240bbca85311ef63c4050cf9ca03d92f421db20e6ce247d504` | 140 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
@@ -188,8 +188,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
 | `TOOLS/validate_package.py` | `369ed81e2f0fa3de10397ff6e91e252392002665ede38ed60b6f537bfe2e0879` | 24486 |
+| `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
-| `installer/build_installer.ps1` | `a03231170ea9f59dd87a37c81191bb9bf33c1cd2894555b7b7dacceb008e8d3a` | 2302 |
+| `installer/build_installer.ps1` | `c1de6b85a6d60faeb963877b50670e440da4288cf6d8b0e205a5e434445a7d6f` | 3523 |
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
@@ -313,7 +314,10 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
-| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `43bc1246e0ccce4f59da70b4a0486471a7239b3dc37b7bc37e42c3404045666f` | 9212 |
+| `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `b849fd11d1b71f8ababb9c1720dc1d4cf1d5438c1f3d6e124c77f3ed35ac5c73` | 4630 |
+| `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `2bd6108e52697ceb7dc984a6317d0e063cd2a1770f20494e585ae313e506c134` | 7504 |
+| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `abb49f175584ea71210b26370e8833be93320b9c421cc0b708abe3bb46c0a074` | 9271 |
+| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `e92637df1cda717ef64fb7d9bd2fc92d28a45a4d1d975331235a8f42b1302fcf` | 3310 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `ad294304f44fca7026cc043cbf275f06e428b056f7854b771771349a3de27401` | 4620 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `4b70e718bddc284f79334ca9250c8c4a95dc6ea62e19c31323d6f2c95ffe72f5` | 8991 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |

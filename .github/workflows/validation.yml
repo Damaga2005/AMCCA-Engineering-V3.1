@@ -77,7 +77,9 @@ jobs:
           Write-Host "AMCCA.exe binary verified successfully: $versionOutput"
 
       - name: Install WiX Toolset
-        run: dotnet tool install --global wix --version 4.0.5
+        run: |
+          dotnet tool install --global wix --version 5.0.0
+          wix extension add WixToolset.BootstrapperApplications.wixext/5.0.0 -g
 
       - name: Build WiX Installer (AMCCA-Setup.msi and AMCCA-Setup.exe)
         shell: pwsh

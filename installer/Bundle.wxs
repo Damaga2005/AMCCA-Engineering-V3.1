@@ -1,0 +1,14 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle Name="AMCCA Engineering V3.1"
+          Manufacturer="AMCCA Engineering"
+          Version="3.1.0"
+          UpgradeCode="E7F2F2D9-4B52-4F1A-B488-842C48D6C8FA">
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense" LicenseUrl="https://github.com/Damaga2005/AMCCA-Engineering-V3.1" />
+    </BootstrapperApplication>
+    <Chain>
+      <MsiPackage SourceFile="$(var.MsiPath)" Id="AMCCA_MSI" Vital="yes" />
+    </Chain>
+  </Bundle>
+</Wix>
