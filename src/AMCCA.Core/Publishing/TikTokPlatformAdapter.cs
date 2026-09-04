@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using AMCCA.Core.Security;
 
 namespace AMCCA.Core.Publishing;
 
@@ -15,8 +16,8 @@ public class TikTokPlatformAdapter : BasePlatformAdapter
     public override string PlatformId => "tiktok";
     protected override string BaseApiUrl => _baseEndpoint;
 
-    public TikTokPlatformAdapter(HttpClient? httpClient = null, string? baseEndpoint = null)
-        : base(httpClient)
+    public TikTokPlatformAdapter(ISafeHttpClientFactory? httpClientFactory = null, string? baseEndpoint = null)
+        : base(httpClientFactory)
     {
         _baseEndpoint = baseEndpoint ?? "https://open.tiktokapis.com/v2";
     }

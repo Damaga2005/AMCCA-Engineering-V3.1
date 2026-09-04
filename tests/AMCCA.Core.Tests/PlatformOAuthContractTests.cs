@@ -218,10 +218,10 @@ public class PlatformOAuthContractTests : IDisposable
 
         IPlatformAdapter adapter = platform switch
         {
-            "youtube" => new YouTubePlatformAdapter(new HttpClient(mockHttp), "https://mock.yt.com"),
-            "tiktok" => new TikTokPlatformAdapter(new HttpClient(mockHttp), "https://mock.tiktok.com"),
-            "instagram" => new InstagramPlatformAdapter(new HttpClient(mockHttp), "https://mock.ig.com"),
-            "twitter" => new TwitterPlatformAdapter(new HttpClient(mockHttp), "https://mock.x.com"),
+            "youtube" => new YouTubePlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.yt.com"),
+            "tiktok" => new TikTokPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.tiktok.com"),
+            "instagram" => new InstagramPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.ig.com"),
+            "twitter" => new TwitterPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.x.com"),
             _ => throw new ArgumentException()
         };
 
@@ -258,10 +258,10 @@ public class PlatformOAuthContractTests : IDisposable
 
         BasePlatformAdapter adapter = platform switch
         {
-            "youtube" => new YouTubePlatformAdapter(new HttpClient(mockHttp), "https://mock.yt.com"),
-            "tiktok" => new TikTokPlatformAdapter(new HttpClient(mockHttp), "https://mock.tiktok.com"),
-            "instagram" => new InstagramPlatformAdapter(new HttpClient(mockHttp), "https://mock.ig.com"),
-            "twitter" => new TwitterPlatformAdapter(new HttpClient(mockHttp), "https://mock.x.com"),
+            "youtube" => new YouTubePlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.yt.com"),
+            "tiktok" => new TikTokPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.tiktok.com"),
+            "instagram" => new InstagramPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.ig.com"),
+            "twitter" => new TwitterPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.x.com"),
             _ => throw new ArgumentException()
         };
 
@@ -298,10 +298,10 @@ public class PlatformOAuthContractTests : IDisposable
 
         IPlatformAdapter adapter = platform switch
         {
-            "youtube" => new YouTubePlatformAdapter(new HttpClient(mockHttp), "https://mock.yt.com"),
-            "tiktok" => new TikTokPlatformAdapter(new HttpClient(mockHttp), "https://mock.tiktok.com"),
-            "instagram" => new InstagramPlatformAdapter(new HttpClient(mockHttp), "https://mock.ig.com"),
-            "twitter" => new TwitterPlatformAdapter(new HttpClient(mockHttp), "https://mock.x.com"),
+            "youtube" => new YouTubePlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.yt.com"),
+            "tiktok" => new TikTokPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.tiktok.com"),
+            "instagram" => new InstagramPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.ig.com"),
+            "twitter" => new TwitterPlatformAdapter(new FakeSafeHttpClientFactory(mockHttp), "https://mock.x.com"),
             _ => throw new ArgumentException()
         };
 

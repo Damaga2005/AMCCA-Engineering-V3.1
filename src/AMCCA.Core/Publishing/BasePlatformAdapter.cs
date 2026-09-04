@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
+using AMCCA.Core.Security;
 
 namespace AMCCA.Core.Publishing;
 
@@ -19,9 +20,12 @@ public abstract class BasePlatformAdapter : IPlatformAdapter
     public abstract string PlatformId { get; }
     protected abstract string BaseApiUrl { get; }
 
-    protected BasePlatformAdapter(HttpClient? httpClient = null)
+    // SEC-11: platform adapters obtain their transport from the SSRF-safe pipeline
+    // (SsrfValidator + SafeRedirectHandler + coupled-DNS ConnectCallback). Production code
+    // cannot inject an arbitrary HttpClient; tests pass a fake ISafeHttpClientFactory.
+    protected BasePlatformAdapter(ISafeHttpClientFactory? httpClientFactory = null)
     {
-        HttpClient = httpClient ?? new HttpClient();
+        HttpClient = (httpClientFactory ?? SafeHttpClientFactory.Default).CreateClient();
     }
 
     public virtual async Task<PublicationEvidenceResult> PollAuthoritativeEvidenceAsync(string externalId, CancellationToken ct = default)

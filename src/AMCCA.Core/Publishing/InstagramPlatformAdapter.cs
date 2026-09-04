@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using AMCCA.Core.Security;
 
 namespace AMCCA.Core.Publishing;
 
@@ -15,8 +16,8 @@ public class InstagramPlatformAdapter : BasePlatformAdapter
     public override string PlatformId => "instagram";
     protected override string BaseApiUrl => _baseEndpoint;
 
-    public InstagramPlatformAdapter(HttpClient? httpClient = null, string? baseEndpoint = null)
-        : base(httpClient)
+    public InstagramPlatformAdapter(ISafeHttpClientFactory? httpClientFactory = null, string? baseEndpoint = null)
+        : base(httpClientFactory)
     {
         _baseEndpoint = baseEndpoint ?? "https://graph.facebook.com/v19.0";
     }

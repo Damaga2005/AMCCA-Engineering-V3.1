@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 356
-**Total bytes:** 1842379
+**Files:** 357
+**Total bytes:** 1850553
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -275,14 +275,14 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Providers/ModelRegistry.cs` | `354e0550d7d3675c9e277cabc68fc55dda7b3ea3e626e27424ebb346bb030c72` | 4780 |
 | `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `9816539bffdfef2e7e295f5d30af7c5a782f50448a94b9cadedcb95c278b5f54` | 10201 |
 | `src/AMCCA.Core/Providers/ProviderModels.cs` | `cbc1419035fe01df6e4f50a3ca2e031384c92729374c703ded5414031977b0cc` | 2129 |
-| `src/AMCCA.Core/Publishing/BasePlatformAdapter.cs` | `a0cc1e0d0eafb3d4a1c3bd9fec3356d63afd7c09e332d5ebcbc791b153f2c7f0` | 3732 |
+| `src/AMCCA.Core/Publishing/BasePlatformAdapter.cs` | `5a07c8611d426e84239b708701e4685f1d995a82b9e5cdfb110121c049080632` | 4078 |
 | `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `a3f3589624e3e79d061e71321376cf323c7684b5cb4f05c1dbbfa285c518bfc5` | 1530 |
-| `src/AMCCA.Core/Publishing/InstagramPlatformAdapter.cs` | `b33531b94f5b9b53c7c8bda4a46b7db7672b84a85cf17f4154fbafaedf78f410` | 6732 |
+| `src/AMCCA.Core/Publishing/InstagramPlatformAdapter.cs` | `4b057e31912bde11c2331e1c11060f1e284f82ec5db52cc43842569679409deb` | 6784 |
 | `src/AMCCA.Core/Publishing/PlatformHub.cs` | `ffbee01928f785648c781bc8a9de9ef66b44f12658e204a19cbcac0764d89d37` | 5726 |
 | `src/AMCCA.Core/Publishing/PublishingModels.cs` | `5957391f7219fdf15085efb60bb465cdb1b589d407f4736c0ec30e582e05c3ae` | 1537 |
-| `src/AMCCA.Core/Publishing/TikTokPlatformAdapter.cs` | `4bf0f2202f97355500cf719e846d2dc5cea850f433b5d66431a5b9385d789f45` | 6605 |
-| `src/AMCCA.Core/Publishing/TwitterPlatformAdapter.cs` | `8efb2c8a11a01295454a2ca06a89dd489139c77ed51376e4484f058b610eb902` | 5251 |
-| `src/AMCCA.Core/Publishing/YouTubePlatformAdapter.cs` | `3c51e17b36f083531dc1922013b2a502ecd52350f53045c92b8f2a7da2792103` | 6408 |
+| `src/AMCCA.Core/Publishing/TikTokPlatformAdapter.cs` | `63c473777b1579c2de2bc40659a83043c30f519784ee517e3408341bee655ca8` | 6657 |
+| `src/AMCCA.Core/Publishing/TwitterPlatformAdapter.cs` | `6eb82f10fe2c4f23555ce0d2592b8387ea3704e0aae90533d8920bc8ec2bd4f1` | 5303 |
+| `src/AMCCA.Core/Publishing/YouTubePlatformAdapter.cs` | `be290a99b2201b060e06e1cc91e1a4e703a36fddf29e75ff0c8c9f1dc6017240` | 6460 |
 | `src/AMCCA.Core/QA/ArtifactDag.cs` | `3c02d9c265f7ca53837f53f8a63b350ac4702e171305e5ab183b27b4ca395020` | 8025 |
 | `src/AMCCA.Core/QA/QaModels.cs` | `f5210afa9329f5a237558e451f73aca7d5cf4b9380bab9d948e8b023cc53041c` | 958 |
 | `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `4921945956ad5419f57cb662736275ce4b91817d6a8999f46012bcd7c3a0e82a` | 1777 |
@@ -346,7 +346,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` | `258b9a3832da651fa86f22772d6365ca1598b270629947001c74673cc95d0e4a` | 5447 |
 | `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` | `929f5355858ce242cd4306d8d49b35160e21b5ed84942820cb363b8384e33f73` | 1964 |
 | `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` | `14397a80221e364fd787ecbc4d4665c025bd2aa810ff2cac278ed46997c24f19` | 5999 |
-| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `b195ee5ad29db2080c94291572f94adf5ea30c6d3d20f59b435336b36e05e1c0` | 13621 |
+| `tests/AMCCA.Core.Tests/PlatformAdapterSsrfRegressionTests.cs` | `19bc82bdd85316f132be96be49a2161caed87f0e6cf9293b671d6b1a3337b92d` | 7440 |
+| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `a57bffc3f0627e54550c19f6312f9a7ef5ca6d7f214e16b01d00a57fda19e4fb` | 13801 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `c2f3444fa79c502b43497b015de1bd3050a155e1204bf3fae981795cb6d8a028` | 5020 |
 | `tests/AMCCA.Core.Tests/PolicyEngineFailClosedRegressionTests.cs` | `e46a810e6abd6fa3b7299603917aa44467499991484c2a8a7b1f72e736a14e74` | 4236 |
 | `tests/AMCCA.Core.Tests/PreflightContractTests.cs` | `5a25e02dd791ca87902b827753389a9444170c884de7769a191620c216abdfc7` | 2783 |
