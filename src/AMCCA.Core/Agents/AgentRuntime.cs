@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -128,12 +129,34 @@ public class AgentRuntime
         }
     }
 
+    // SEC-07: defensive bounds so a hostile or malformed agent output cannot exhaust memory
+    // during parsing/validation. Constants are internal policy, never agent-controlled.
+    private const int MaxOutputChars = 512 * 1024;
+    private const int MaxJsonDepth = 64;
+    private const int MaxTotalProperties = 10_000;
+    private const int MaxStringLength = 100_000;
+    private const int MaxArrayLength = 10_000;
+
     public void ValidateAgentOutput(AgentContract contract, string outputJson)
     {
+        EnforceOutputResourceLimits(contract.AgentId, outputJson);
+
         if (string.IsNullOrWhiteSpace(contract.OutputSchemaJson)) return;
 
         var schema = JsonSchema.FromText(contract.OutputSchemaJson);
-        var jsonNode = JsonNode.Parse(outputJson);
+
+        JsonNode? jsonNode;
+        try
+        {
+            jsonNode = JsonNode.Parse(outputJson);
+        }
+        catch (JsonException ex)
+        {
+            throw new AmccaException(
+                AmccaErrors.Ai003,
+                ErrorCategory.Validation,
+                $"Agent '{contract.AgentId}' output is not valid JSON: {ex.Message} (AGENTS.md, SPEC/06).");
+        }
 
         var result = schema.Evaluate(jsonNode, new EvaluationOptions
         {
@@ -149,6 +172,80 @@ public class AgentRuntime
                 AmccaErrors.Ai003,
                 ErrorCategory.Validation,
                 $"Agent '{contract.AgentId}' output failed schema validation: {errors}. Validation failed (AGENTS.md, SPEC/06).");
+        }
+    }
+
+    private static void EnforceOutputResourceLimits(string agentId, string outputJson)
+    {
+        if (outputJson is null)
+        {
+            throw new AmccaException(AmccaErrors.Ai003, ErrorCategory.Validation,
+                $"Agent '{agentId}' produced a null output.");
+        }
+
+        if (outputJson.Length > MaxOutputChars)
+        {
+            throw new AmccaException(AmccaErrors.Ai003, ErrorCategory.Validation,
+                $"Agent '{agentId}' output is {outputJson.Length} characters, exceeding the {MaxOutputChars} limit (SEC-07).");
+        }
+
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(outputJson, new JsonDocumentOptions { MaxDepth = MaxJsonDepth });
+        }
+        catch (JsonException ex)
+        {
+            throw new AmccaException(AmccaErrors.Ai003, ErrorCategory.Validation,
+                $"Agent '{agentId}' output could not be parsed within safe limits (SEC-07): {ex.Message}");
+        }
+
+        using (doc)
+        {
+            var stack = new Stack<JsonElement>();
+            stack.Push(doc.RootElement);
+            int totalProperties = 0;
+
+            while (stack.Count > 0)
+            {
+                var element = stack.Pop();
+                switch (element.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                        foreach (var property in element.EnumerateObject())
+                        {
+                            if (++totalProperties > MaxTotalProperties)
+                            {
+                                throw new AmccaException(AmccaErrors.Ai003, ErrorCategory.Validation,
+                                    $"Agent '{agentId}' output has more than {MaxTotalProperties} properties (SEC-07).");
+                            }
+                            stack.Push(property.Value);
+                        }
+                        break;
+
+                    case JsonValueKind.Array:
+                        var length = element.GetArrayLength();
+                        if (length > MaxArrayLength)
+                        {
+                            throw new AmccaException(AmccaErrors.Ai003, ErrorCategory.Validation,
+                                $"Agent '{agentId}' output contains an array of {length} elements, exceeding {MaxArrayLength} (SEC-07).");
+                        }
+                        foreach (var item in element.EnumerateArray())
+                        {
+                            stack.Push(item);
+                        }
+                        break;
+
+                    case JsonValueKind.String:
+                        var value = element.GetString();
+                        if (value != null && value.Length > MaxStringLength)
+                        {
+                            throw new AmccaException(AmccaErrors.Ai003, ErrorCategory.Validation,
+                                $"Agent '{agentId}' output contains a string of {value.Length} characters, exceeding {MaxStringLength} (SEC-07).");
+                        }
+                        break;
+                }
+            }
         }
     }
 }
