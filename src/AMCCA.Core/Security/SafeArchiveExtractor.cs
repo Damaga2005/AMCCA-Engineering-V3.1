@@ -51,6 +51,34 @@ public static class SafeArchiveExtractor
         var fullTargetDir = Path.GetFullPath(targetDirectory);
         Directory.CreateDirectory(fullTargetDir);
 
+        // SEC-08: extract into a private staging directory, validate every entry, and only then
+        // commit into the target. Any failure deletes the staging directory, so a rejected
+        // archive never leaves a partially-extracted tree behind.
+        var stagingDir = Path.Combine(fullTargetDir, "__amcca_staging_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stagingDir);
+
+        try
+        {
+            ExtractIntoStaging(zipStream, stagingDir, fullTargetDir, options);
+            CommitStaging(stagingDir, fullTargetDir);
+        }
+        catch
+        {
+            SafeDeleteDirectory(stagingDir);
+            throw;
+        }
+        finally
+        {
+            SafeDeleteDirectory(stagingDir);
+        }
+    }
+
+    private static void ExtractIntoStaging(
+        Stream zipStream,
+        string stagingDir,
+        string fullTargetDir,
+        SafeArchiveOptions options)
+    {
         using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
 
         if (archive.Entries.Count > options.MaxEntries)
@@ -66,7 +94,9 @@ public static class SafeArchiveExtractor
 
         foreach (var entry in archive.Entries)
         {
+            // Confine against BOTH the real target (security semantics) and the staging directory.
             ValidateEntryPath(entry.FullName, fullTargetDir);
+            PathConfinement.EnsureConfined(Path.Combine(stagingDir, entry.FullName), stagingDir, AmccaErrors.Sec004);
 
             // Check header compression ratio if reported
             if (entry.CompressedLength > 0 && entry.Length > 0)
@@ -81,7 +111,7 @@ public static class SafeArchiveExtractor
                 }
             }
 
-            var destinationPath = Path.Combine(fullTargetDir, entry.FullName);
+            var destinationPath = Path.Combine(stagingDir, entry.FullName);
 
             if (entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\'))
             {
@@ -129,6 +159,46 @@ public static class SafeArchiveExtractor
 
                 outputStream.Write(buffer, 0, bytesRead);
             }
+        }
+    }
+
+    private static void CommitStaging(string stagingDir, string fullTargetDir)
+    {
+        foreach (var dir in Directory.GetDirectories(stagingDir))
+        {
+            MergeInto(dir, Path.Combine(fullTargetDir, Path.GetFileName(dir)));
+        }
+        foreach (var file in Directory.GetFiles(stagingDir))
+        {
+            File.Move(file, Path.Combine(fullTargetDir, Path.GetFileName(file)), overwrite: true);
+        }
+    }
+
+    private static void MergeInto(string sourceDir, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
+        foreach (var dir in Directory.GetDirectories(sourceDir))
+        {
+            MergeInto(dir, Path.Combine(destDir, Path.GetFileName(dir)));
+        }
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            File.Move(file, Path.Combine(destDir, Path.GetFileName(file)), overwrite: true);
+        }
+    }
+
+    private static void SafeDeleteDirectory(string dir)
+    {
+        try
+        {
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+        catch
+        {
+            // Best effort: the staging directory carries a random name and holds no committed state.
         }
     }
 }
