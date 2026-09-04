@@ -39,6 +39,7 @@ public class MainViewModel : ViewModelBase
     public ICommand NavigateDashboardCommand { get; }
     public ICommand NavigateProductionsCommand { get; }
     public ICommand NavigateProductionInspectorCommand { get; }
+    public ICommand NavigateJobQueueCommand { get; }
     public ICommand NavigateApprovalQueueCommand { get; }
     public ICommand NavigateAuditLogCommand { get; }
     public ICommand NavigateSettingsCommand { get; }
@@ -51,6 +52,7 @@ public class MainViewModel : ViewModelBase
         NavigateDashboardCommand = new RelayCommand(() => _navigationService.NavigateTo<DashboardViewModel>());
         NavigateProductionsCommand = new RelayCommand(() => _navigationService.NavigateTo<ProductionsViewModel>());
         NavigateProductionInspectorCommand = new RelayCommand(() => _navigationService.NavigateTo<ProductionInspectorViewModel>());
+        NavigateJobQueueCommand = new RelayCommand(() => _navigationService.NavigateTo<JobQueueViewModel>());
         NavigateApprovalQueueCommand = new RelayCommand(() => _navigationService.NavigateTo<ApprovalQueueViewModel>());
         NavigateAuditLogCommand = new RelayCommand(() => _navigationService.NavigateTo<AuditLogViewModel>());
         NavigateSettingsCommand = new RelayCommand(() => _navigationService.NavigateTo<SettingsViewModel>());

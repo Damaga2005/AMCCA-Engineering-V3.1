@@ -15,6 +15,30 @@ public class JobRecord
     public string UpdatedAt { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// One row of the operator-facing job queue (SPEC/14, SPEC/62): the job plus whatever lease currently
+/// holds it, so leasing, heartbeating and fencing are visible rather than implied.
+/// </summary>
+public class JobQueueEntry
+{
+    public string Id { get; set; } = string.Empty;
+    public string? ProductionId { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public long Priority { get; set; }
+    public long Attempt { get; set; }
+    public long MaxAttempts { get; set; }
+    public string? CorrelationId { get; set; }
+    public string CreatedAt { get; set; } = string.Empty;
+    public string UpdatedAt { get; set; } = string.Empty;
+    public string? LeaseOwnerId { get; set; }
+    public string? LeaseUntil { get; set; }
+    public string? HeartbeatAt { get; set; }
+    public long? FenceToken { get; set; }
+
+    public bool IsDeadLettered => string.Equals(State, "DEAD_LETTER", StringComparison.OrdinalIgnoreCase);
+}
+
 public class JobClaim
 {
     public string JobId { get; set; } = string.Empty;

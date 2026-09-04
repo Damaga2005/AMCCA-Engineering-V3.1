@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.App.ViewModels;
+using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Domain;
 using AMCCA.Core.Events;
+using AMCCA.Core.Jobs;
 using AMCCA.Core.Operator;
 using AMCCA.Core.Policy;
 using AMCCA.Core.Security;
@@ -35,6 +37,7 @@ public class WpfMvvmContractTests : IDisposable
     private readonly BudgetManager _budgetManager;
     private readonly ApprovalManager _approvalManager;
     private readonly PolicyEngine _policyEngine;
+    private readonly JobManager _jobManager;
     private readonly OperatorControlService _operatorControlService;
 
     public WpfMvvmContractTests()
@@ -66,7 +69,8 @@ public class WpfMvvmContractTests : IDisposable
         _budgetManager = new BudgetManager(_factory);
         _approvalManager = new ApprovalManager(_factory);
         _policyEngine = new PolicyEngine(_factory, _budgetManager, _approvalManager);
-        _operatorControlService = new OperatorControlService(_factory, _auditStore, _policyEngine, _approvalManager);
+        _jobManager = new JobManager(_factory);
+        _operatorControlService = new OperatorControlService(_factory, _auditStore, _policyEngine, _approvalManager, _jobManager);
     }
 
     public void Dispose()
@@ -95,11 +99,15 @@ public class WpfMvvmContractTests : IDisposable
         var a = apprv;
         var s = sett;
         var au = audit;
+        var inspector = new ProductionInspectorViewModel(_productionService, _factory, _notificationService);
+        var jobQueue = new JobQueueViewModel(_operatorControlService, _dialogService, _notificationService);
 
         return new NavigationService(type =>
         {
             if (type == typeof(DashboardViewModel)) return d;
             if (type == typeof(ProductionsViewModel)) return p;
+            if (type == typeof(ProductionInspectorViewModel)) return inspector;
+            if (type == typeof(JobQueueViewModel)) return jobQueue;
             if (type == typeof(ApprovalQueueViewModel)) return a;
             if (type == typeof(SettingsViewModel)) return s;
             if (type == typeof(AuditLogViewModel)) return au;
@@ -120,6 +128,14 @@ public class WpfMvvmContractTests : IDisposable
         // Navigate to Productions
         mainVm.NavigateProductionsCommand.Execute(null);
         mainVm.CurrentView.Should().BeOfType<ProductionsViewModel>();
+
+        // Navigate to Production Inspector (SPEC/61)
+        mainVm.NavigateProductionInspectorCommand.Execute(null);
+        mainVm.CurrentView.Should().BeOfType<ProductionInspectorViewModel>();
+
+        // Navigate to Job Queue (SPEC/14)
+        mainVm.NavigateJobQueueCommand.Execute(null);
+        mainVm.CurrentView.Should().BeOfType<JobQueueViewModel>();
 
         // Navigate to Approval Queue
         mainVm.NavigateApprovalQueueCommand.Execute(null);
@@ -316,6 +332,101 @@ public class WpfMvvmContractTests : IDisposable
         inspectorVm.Jobs.Should().Contain(j => j.Id == "job-1");
         inspectorVm.CostEvents.Should().Contain(c => c.Id == "cost-1");
         inspectorVm.Publications.Should().Contain(p => p.Id == "pub-insp-1");
+    }
+
+    private async Task<string> CreateDeadLetteredJobAsync(string idempotencyKey)
+    {
+        var job = await _jobManager.EnqueueJobAsync(
+            type: "RENDER",
+            idempotencyKey: idempotencyKey,
+            correlationId: "corr-vm-dl",
+            payloadJson: "{}",
+            priority: 3,
+            maxAttempts: 1);
+
+        var lease = await _jobManager.AcquireLeaseAsync(job.Id, "worker-vm", TimeSpan.FromMinutes(5));
+        await _jobManager.FailJobAsync(job.Id, "worker-vm", lease!.FenceToken, "render failed");
+
+        return job.Id;
+    }
+
+    [Fact]
+    public async Task JobQueueViewModel_PagesJobsAndFiltersByState()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            await _jobManager.EnqueueJobAsync("RENDER", $"idem-vm-{i}", "corr-vm", "{}");
+        }
+        var deadLetteredId = await CreateDeadLetteredJobAsync("idem-vm-dl");
+
+        var queueVm = new JobQueueViewModel(_operatorControlService, _dialogService, _notificationService)
+        {
+            PageSize = 2
+        };
+        await queueVm.RefreshAsync();
+
+        queueVm.TotalCount.Should().Be(4);
+        queueVm.TotalPages.Should().Be(2);
+        queueVm.Jobs.Should().HaveCount(2);
+        queueVm.CanGoToPreviousPage.Should().BeFalse();
+        queueVm.CanGoToNextPage.Should().BeTrue();
+
+        await queueVm.GoToNextPageAsync();
+        queueVm.PageIndex.Should().Be(1);
+        queueVm.Jobs.Should().HaveCount(2);
+        queueVm.CanGoToNextPage.Should().BeFalse();
+
+        queueVm.AvailableStates.Should().Contain(JobQueueViewModel.AllStatesLabel).And.Contain("DEAD_LETTER");
+
+        queueVm.SelectedState = "DEAD_LETTER";
+        await queueVm.LoadJobsAsync();
+
+        queueVm.TotalCount.Should().Be(1);
+        queueVm.Jobs.Should().ContainSingle(j => j.Id == deadLetteredId);
+        queueVm.PageIndex.Should().Be(0, "changing the filter returns to the first page");
+    }
+
+    [Fact]
+    public async Task JobQueueViewModel_RequeuesDeadLetteredJobThroughOperatorControlService()
+    {
+        var deadLetteredId = await CreateDeadLetteredJobAsync("idem-vm-requeue");
+
+        var queueVm = new JobQueueViewModel(_operatorControlService, _dialogService, _notificationService);
+        await queueVm.RefreshAsync();
+
+        queueVm.SelectedJob = queueVm.Jobs.First(j => j.Id == deadLetteredId);
+        queueVm.CanRequeueSelectedJob.Should().BeTrue();
+
+        await queueVm.RequeueSelectedJobAsync();
+
+        var requeued = await _jobManager.GetJobAsync(deadLetteredId);
+        requeued!.State.Should().Be("QUEUED");
+        _notificationService.Notifications.Should().Contain(n => n.Type == "Success");
+
+        // The mutation must have gone through the domain, so it carries an audit record (DEF-001/DEF-002).
+        var audit = await _operatorControlService.QueryAuditTrailAsync(action: "operator.job_requeued");
+        audit.Should().ContainSingle(a => a.SubjectId == deadLetteredId);
+    }
+
+    [Fact]
+    public async Task JobQueueViewModel_RequeueOfNonDeadLetteredJob_SurfacesErrorCodeAndDoesNotMutate()
+    {
+        var job = await _jobManager.EnqueueJobAsync("RENDER", "idem-vm-queued", "corr-vm", "{}");
+
+        var queueVm = new JobQueueViewModel(_operatorControlService, _dialogService, _notificationService);
+        await queueVm.RefreshAsync();
+
+        // Simulates SPEC/62's "never cache a decision": the row was QUEUED all along, and the domain
+        // refuses at the moment of the action rather than the UI assuming it may proceed.
+        queueVm.SelectedJob = queueVm.Jobs.First(j => j.Id == job.Id);
+        await queueVm.RequeueSelectedJobAsync();
+
+        var unchanged = await _jobManager.GetJobAsync(job.Id);
+        unchanged!.State.Should().Be("QUEUED");
+
+        _notificationService.Notifications.Should().Contain(
+            n => n.Type == "Error" && n.Message.Contains(AmccaErrors.Job003));
+        _notificationService.Notifications.Should().NotContain(n => n.Type == "Success");
     }
 
     [Fact]

@@ -130,6 +130,7 @@ public partial class App : Application
         services.AddSingleton<BudgetManager>();
         services.AddSingleton<ApprovalManager>();
         services.AddSingleton<PolicyEngine>();
+        services.AddSingleton<JobManager>();
         services.AddSingleton<OperatorControlService>();
         services.AddSingleton<IPreflightService, PreflightService>();
 
@@ -148,6 +149,7 @@ public partial class App : Application
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<ProductionsViewModel>();
         services.AddTransient<ProductionInspectorViewModel>();
+        services.AddTransient<JobQueueViewModel>();
         services.AddTransient<ApprovalQueueViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AuditLogViewModel>();

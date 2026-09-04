@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Events;
+using AMCCA.Core.Jobs;
 using AMCCA.Core.Policy;
 using Dapper;
 
@@ -16,6 +17,7 @@ public class OperatorControlService
     private readonly IAuditStore _auditStore;
     private readonly PolicyEngine _policyEngine;
     private readonly ApprovalManager _approvalManager;
+    private readonly JobManager _jobManager;
 
     private volatile string _autonomyMode = "ASSISTED";
 
@@ -23,12 +25,14 @@ public class OperatorControlService
         DatabaseConnectionFactory connectionFactory,
         IAuditStore auditStore,
         PolicyEngine policyEngine,
-        ApprovalManager approvalManager)
+        ApprovalManager approvalManager,
+        JobManager jobManager)
     {
         _connectionFactory = connectionFactory;
         _auditStore = auditStore;
         _policyEngine = policyEngine;
         _approvalManager = approvalManager;
+        _jobManager = jobManager;
     }
 
     public async Task ToggleGlobalKillSwitchAsync(
@@ -122,6 +126,57 @@ public class OperatorControlService
     public Task<IReadOnlyList<PendingApproval>> GetPendingApprovalsAsync(CancellationToken ct = default)
     {
         return _approvalManager.GetPendingApprovalsAsync(ct);
+    }
+
+    public Task<IReadOnlyList<JobQueueEntry>> ListJobsAsync(
+        string? stateFilter = null,
+        int limit = 50,
+        int offset = 0,
+        CancellationToken ct = default)
+    {
+        return _jobManager.ListJobsAsync(stateFilter, limit, offset, ct);
+    }
+
+    public Task<int> CountJobsAsync(string? stateFilter = null, CancellationToken ct = default)
+    {
+        return _jobManager.CountJobsAsync(stateFilter, ct);
+    }
+
+    public Task<IReadOnlyList<string>> ListDistinctJobStatesAsync(CancellationToken ct = default)
+    {
+        return _jobManager.ListDistinctJobStatesAsync(ct);
+    }
+
+    /// <summary>
+    /// SPEC/14: a dead-lettered job waits for an operator. The requeue itself is refused by JobManager
+    /// unless the job really is in DEAD_LETTER, so the audit record below is only ever written for a
+    /// requeue that actually happened.
+    /// </summary>
+    public async Task RequeueDeadLetterJobAsync(
+        string operatorId,
+        string jobId,
+        string reason,
+        string correlationId,
+        CancellationToken ct = default)
+    {
+        await _jobManager.RequeueDeadLetterJobAsync(jobId, ct);
+
+        var audit = new AuditRecord(
+            AuditId: UlidGenerator.NewUlid(),
+            Action: "operator.job_requeued",
+            ActorType: "OPERATOR",
+            ActorId: operatorId,
+            SubjectType: "job",
+            SubjectId: jobId,
+            ProductionId: null,
+            Outcome: "COMMITTED",
+            PolicyDecisionId: null,
+            ReasonCode: AmccaErrors.Job003,
+            CorrelationId: correlationId,
+            SchemaVersion: "3.1.0",
+            OccurredAt: DateTimeOffset.UtcNow.ToString("O"));
+
+        await _auditStore.AppendAuditAsync(audit, ct);
     }
 
     public async Task<IReadOnlyList<AuditRecord>> QueryAuditTrailAsync(

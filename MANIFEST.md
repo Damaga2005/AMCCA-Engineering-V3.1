@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 362
-**Total bytes:** 1926574
+**Files:** 365
+**Total bytes:** 1960622
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -202,10 +202,10 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
-| `src/AMCCA.App/App.xaml.cs` | `6236371fd2059ce0b2b56d0162d9584bfa6ac2be75b22f4ebec4c8a8eac2ab5d` | 6382 |
+| `src/AMCCA.App/App.xaml.cs` | `886f3912dcd1c0ea7a0335086d92e6c06b7fadac853cfd3b17dce8f2e19927ea` | 6479 |
 | `src/AMCCA.App/Common/RelayCommand.cs` | `7cbfae6aaac6658c5cd498d8d322c1b11164440001a42e9492640b7508472071` | 2354 |
 | `src/AMCCA.App/Common/ViewModelBase.cs` | `2446920133a472d99e9ab606a65aa38451d07b9385894823343179d01df16e84` | 689 |
-| `src/AMCCA.App/MainWindow.xaml` | `725bb2369254c15f6e2042a8e81a5674cda4893252f7dd75400de3af3a33ddba` | 4118 |
+| `src/AMCCA.App/MainWindow.xaml` | `b9f918321b39b5cc420fabab17f2843887dc7d960f5f50f2aae9526b802a4c95` | 4476 |
 | `src/AMCCA.App/MainWindow.xaml.cs` | `d4a6f13a7e43f9c71ac06a9ba23bf0a17df3a8661211cbe25bd2e0358c502f50` | 245 |
 | `src/AMCCA.App/Program.cs` | `cf1bd6d02793dc20e509553281a14cd192efe8456e57eb404405b085a6fbecf1` | 604 |
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
@@ -214,7 +214,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `51a19f48332fed4144950974961e7429916b1f33be29450f4200dd9f94820000` | 3874 |
 | `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `f97510d219f3ec9995f38e4c92a7ac90264e6b3ab9cd7d4d52914660ccb83504` | 3027 |
 | `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `5c0802326e12764c52537b6d6517775b4eeb76fa91a2341075e46f9ae9b887df` | 2503 |
-| `src/AMCCA.App/ViewModels/MainViewModel.cs` | `5bf7b1ccc8629175ade179c40cd3077d578019a610b8db5c43d950647aa37011` | 2184 |
+| `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `2b91c0f7ab9d6a09cc22c0716fd95d94d1991858f04a95ca7d045e2ed6399980` | 9631 |
+| `src/AMCCA.App/ViewModels/MainViewModel.cs` | `1648860b52424fb47a3495190d1a51d29c5763d061f7ea43180fcc9258da533e` | 2347 |
 | `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `e9d5f89c6bd5a79494e3ff995cb414723c41cfe6ab5627bc0216fafca0bc3be9` | 9661 |
 | `src/AMCCA.App/ViewModels/ProductionsViewModel.cs` | `1aba9901a4500b5800335fba8e33537012c73f420dffe035126deb7acf431f26` | 4318 |
 | `src/AMCCA.App/ViewModels/SettingsViewModel.cs` | `60f134380f819702339ee41db56e7e0487dbd097e08f1f21ab00a4aec1d6b105` | 2941 |
@@ -224,6 +225,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Views/AuditLogView.xaml.cs` | `80d23509b60de18b9ba8d24aed8f6f472a4f9854e16222b260bb095b63437414` | 185 |
 | `src/AMCCA.App/Views/DashboardView.xaml` | `d3ff5cd728191c778a07daa4338a386c2122573a0a069ebd630f46fe289e0a05` | 3096 |
 | `src/AMCCA.App/Views/DashboardView.xaml.cs` | `943ff250963fecd6d37584a257ce501789c20020203713ad9ec33f22cc29cb0e` | 187 |
+| `src/AMCCA.App/Views/JobQueueView.xaml` | `e8d77d51d5b0e88e5e2c7045b9c66e464cf219fa37311adfa2f6728aa5562aca` | 4535 |
+| `src/AMCCA.App/Views/JobQueueView.xaml.cs` | `8e5e929e1ed2dbd33460165303785714bd5546850d0937b3b17edd5f2287cd09` | 181 |
 | `src/AMCCA.App/Views/ProductionInspectorView.xaml` | `b1dbfacd24e7581ddb4fb02a07e1a89d90b4661328a28f8a2e1ffedcd6860063` | 9628 |
 | `src/AMCCA.App/Views/ProductionInspectorView.xaml.cs` | `08e0fafdd059eab2fc2e0d4cd79fff782c45f60b8e1132919e0434642b936d7b` | 203 |
 | `src/AMCCA.App/Views/ProductionsView.xaml` | `361de49b6864f0a7085cd680b5283809f406bf6f8f4fd09211014906e5526019` | 2907 |
@@ -254,8 +257,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Genome/GenomeMutationService.cs` | `755daea02b4511ec05f995588ce4c23ee38daeece02d5978f98540df6c9d9b7c` | 7483 |
 | `src/AMCCA.Core/Jobs/IntentKeyGenerator.cs` | `1e2e0d0cc64e9ce7af544df84ca87257ecea9f973ca34722f5502d24de8563ca` | 1043 |
 | `src/AMCCA.Core/Jobs/IntentManager.cs` | `645e4a3feb627d35dbc046424f95615ec870fde47b5a29281e3fe280b5aabd16` | 4736 |
-| `src/AMCCA.Core/Jobs/JobManager.cs` | `c08ff77f55435d348476fcecb242dba18bde3ab1549e8efc314dd0d9ffe4832b` | 15448 |
-| `src/AMCCA.Core/Jobs/JobModels.cs` | `b6ab9e72de0671c93868f8f57de871267e712bda2bd716df8f2adc1eb70abb2b` | 1784 |
+| `src/AMCCA.Core/Jobs/JobManager.cs` | `476e71e444f6497f4a8d9e55efce37acd01906f6793cab82c120f4b484fcd864` | 20748 |
+| `src/AMCCA.Core/Jobs/JobModels.cs` | `0d62ebced2ff603d7bd36b5f8d3c9e89658d9b039fc8b06fcc46f5aab149692b` | 2803 |
 | `src/AMCCA.Core/Jobs/RecoveryService.cs` | `efbf6c9ac240f6f4141b54509edec42d4238d9cfcbc9414c285a719819632c5a` | 3598 |
 | `src/AMCCA.Core/Media/MediaModels.cs` | `2575520baf93a372ddce788e068635966d440ec524d87a5fcc391e55a875c07e` | 2149 |
 | `src/AMCCA.Core/Media/MediaRenderer.cs` | `16cc4618957795070712bf8a282e05ca86c9b13df07f6b44b15ca16279a3c524` | 3178 |
@@ -263,7 +266,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Memory/MemoryRetrievalService.cs` | `c73ea418e6a05bccaa60de6eb773ce272c6083d687da1ba1e594422de11cc150` | 7957 |
 | `src/AMCCA.Core/Monetization/MonetizationModels.cs` | `a2b38400d47de09ed9cd018f7553208bba3e8f98ffbd65c7a7b30e9ed989528e` | 1478 |
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `d3640f37fb11a6131859a7367d4daa79d964160d54e3045a26e3325e6fa06686` | 5397 |
-| `src/AMCCA.Core/Operator/OperatorControlService.cs` | `74588a2c6cc7a10e82efba0d69908d87655d0af32f9d73b02ccfcef2bb525f8f` | 6286 |
+| `src/AMCCA.Core/Operator/OperatorControlService.cs` | `db2ccee95a3168e9569f2a6fd568790e1b1012cf4fe4e2edf4a23183de4d3cf8` | 8182 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
 | `src/AMCCA.Core/Packaging/PeBinaryValidator.cs` | `8044d308f0f0e0e86566ce5885b57c45028eb6a7d8e03b1f2688e57cd6817d17` | 5204 |
 | `src/AMCCA.Core/Policy/ApprovalManager.cs` | `1b8fb5c1006a38392cd68c1a39b88cbde8e852e587b66086e343e648a0153629` | 9405 |
@@ -347,7 +350,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/MoneyPrecisionAndDecimalContractTests.cs` | `91d300e4d1fb14d6b6b08287ba7ee0909da38b1fb1b17014c04f39b95f290dce` | 5792 |
 | `tests/AMCCA.Core.Tests/NoInlineProductionDdlRegressionTests.cs` | `480c20fb89da255a1c4fa321b0c93fd6f0b0cbee06eea300d2828d30cf1b5bba` | 2136 |
 | `tests/AMCCA.Core.Tests/OAuthSsrfAndDisclosureRegressionTests.cs` | `2a8aaec6cfbbc2d49edd79d6524ccaccbd01d8cb623669bb981694bb13269400` | 8570 |
-| `tests/AMCCA.Core.Tests/OperatorControlAndAuditContractTests.cs` | `4cead7d0c61a6210098694ecb1ec5dbd8a226dd6e89ff5f4c6d177e411b2c1bc` | 7135 |
+| `tests/AMCCA.Core.Tests/OperatorControlAndAuditContractTests.cs` | `7838a97ce23258ecd77c3fd96c85469b82aaf3027c04cfd2cf3a45fcf10d5c43` | 13152 |
 | `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` | `258b9a3832da651fa86f22772d6365ca1598b270629947001c74673cc95d0e4a` | 5447 |
 | `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` | `929f5355858ce242cd4306d8d49b35160e21b5ed84942820cb363b8384e33f73` | 1964 |
 | `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` | `14397a80221e364fd787ecbc4d4665c025bd2aa810ff2cac278ed46997c24f19` | 5999 |
@@ -372,4 +375,4 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/TestSecretStores.cs` | `b50f6419786f2b86cfdac2bb0e48b5f77abb129bc0bee1d217ec86b38fad1453` | 744 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
-| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `a4c27bc74ef935d0caaee8ee396369d1ac9454ebbbe38e0bff437d2b79d37c1f` | 16857 |
+| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `a057e291b085c0af707e2a408cd4c0a9a81e5e3d61549f6433b36d38a1d73250` | 21708 |

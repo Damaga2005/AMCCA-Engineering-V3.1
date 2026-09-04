@@ -19,6 +19,9 @@
         <DataTemplate DataType="{x:Type vm:ProductionInspectorViewModel}">
             <views:ProductionInspectorView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:JobQueueViewModel}">
+            <views:JobQueueView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ApprovalQueueViewModel}">
             <views:ApprovalQueueView/>
         </DataTemplate>
@@ -56,6 +59,7 @@
                     <Button Content="Dashboard" Command="{Binding NavigateDashboardCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Productions" Command="{Binding NavigateProductionsCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Production Inspector" Command="{Binding NavigateProductionInspectorCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Job Queue" Command="{Binding NavigateJobQueueCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Approval Queue" Command="{Binding NavigateApprovalQueueCommand}" Background="Transparent" Foreground="#F9E2AF" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Audit Log" Command="{Binding NavigateAuditLogCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Settings" Command="{Binding NavigateSettingsCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
@@ -382,6 +384,119 @@ public class JobManager
         await connection.ExecuteAsync(
             "UPDATE jobs SET state = 'QUEUED' WHERE id = @Id; UPDATE leases SET lease_until = @Past WHERE job_id = @Id;",
             new { Id = jobId, Past = past });
+    }
+
+    /// <summary>
+    /// Operator-facing queue listing (SPEC/62 requires lists to be paged; this system accumulates
+    /// hundreds of thousands of rows, so the UI never asks for the whole table).
+    /// </summary>
+    public async Task<IReadOnlyList<JobQueueEntry>> ListJobsAsync(
+        string? stateFilter = null,
+        int limit = 50,
+        int offset = 0,
+        CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var sql = @"
+            SELECT
+                j.id AS Id,
+                j.production_id AS ProductionId,
+                j.type AS Type,
+                j.state AS State,
+                j.priority AS Priority,
+                j.attempt AS Attempt,
+                j.max_attempts AS MaxAttempts,
+                j.correlation_id AS CorrelationId,
+                j.created_at AS CreatedAt,
+                j.updated_at AS UpdatedAt,
+                l.owner_id AS LeaseOwnerId,
+                l.lease_until AS LeaseUntil,
+                l.heartbeat_at AS HeartbeatAt,
+                l.fence_token AS FenceToken
+            FROM jobs j
+            LEFT JOIN leases l ON l.job_id = j.id
+        ";
+
+        if (!string.IsNullOrWhiteSpace(stateFilter))
+        {
+            sql += " WHERE j.state = @StateFilter";
+        }
+
+        // Priority ascending mirrors the dispatch order in TryClaimNextJobAsync (SPEC/14: 0 is highest).
+        sql += " ORDER BY j.priority ASC, j.created_at DESC LIMIT @Limit OFFSET @Offset;";
+
+        var rows = await connection.QueryAsync<JobQueueEntry>(
+            sql, new { StateFilter = stateFilter, Limit = limit, Offset = offset });
+        return rows.ToList();
+    }
+
+    /// <summary>
+    /// The job states actually present in this database. The queue filter is built from this rather than
+    /// from a hardcoded list because `job.schema.json` enumerates SUCCEEDED while JobManager writes
+    /// COMPLETED on the success path -- a contract/implementation contradiction that is not this method's
+    /// to resolve. Reporting the states that exist keeps the filter honest either way.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ListDistinctJobStatesAsync(CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var rows = await connection.QueryAsync<string>(
+            "SELECT DISTINCT state FROM jobs ORDER BY state ASC;");
+        return rows.ToList();
+    }
+
+    public async Task<int> CountJobsAsync(string? stateFilter = null, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var sql = "SELECT COUNT(*) FROM jobs";
+        if (!string.IsNullOrWhiteSpace(stateFilter))
+        {
+            sql += " WHERE state = @StateFilter";
+        }
+        sql += ";";
+        return await connection.ExecuteScalarAsync<int>(sql, new { StateFilter = stateFilter });
+    }
+
+    /// <summary>
+    /// SPEC/14: "A dead-lettered job is never silently dropped and never automatically retried; it waits
+    /// for an operator." This is that operator action, and the only legal way out of DEAD_LETTER.
+    ///
+    /// The attempt counter is deliberately NOT reset. SPEC/14 bounds retries by max_attempts and by
+    /// cumulative retry cost; zeroing the counter would erase both bounds and the attempt history, and
+    /// would let an operator loop a poisoned job indefinitely with no record. Preserving it grants exactly
+    /// one further attempt, after which the job returns to DEAD_LETTER for the operator to look at again.
+    /// SPEC/14 does not state which of the two it wants, so this takes the bounded reading; if the
+    /// intended semantics are a full budget reset, that belongs in SPEC/14 and an ADR, not in a guess here.
+    /// </summary>
+    public async Task RequeueDeadLetterJobAsync(string jobId, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        using var tx = connection.BeginTransaction();
+
+        var now = DateTimeOffset.UtcNow.ToString("O");
+
+        // Single conditional statement, as with every other job state change (SPEC/14, D-010).
+        const string requeueSql = @"
+            UPDATE jobs
+            SET state = 'QUEUED',
+                updated_at = @Now
+            WHERE id = @Id AND state = 'DEAD_LETTER';
+        ";
+        var rows = await connection.ExecuteAsync(requeueSql, new { Id = jobId, Now = now }, transaction: tx);
+
+        if (rows == 0)
+        {
+            tx.Rollback();
+            throw new AmccaException(
+                AmccaErrors.Job003,
+                ErrorCategory.UserActionRequired,
+                $"Job '{jobId}' cannot be requeued: only a DEAD_LETTER job waits for an operator (SPEC/14).");
+        }
+
+        // A requeued job must not carry a stale lease into its next claim; FailJobAsync already removes it
+        // on the dead-letter path, so this only defends against a lease row that outlived its job.
+        await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @Id;", new { Id = jobId }, transaction: tx);
+
+        tx.Commit();
     }
 
     public async Task<JobRecord?> GetJobAsync(string jobId, CancellationToken ct = default)
