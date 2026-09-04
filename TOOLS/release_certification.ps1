@@ -16,7 +16,8 @@ $outPath = Join-Path $root $OutputDir
 
 # 1. Environment & Git Discovery & Clean Tree Validation
 Write-Host "[1/8] Verifying Git state and repository hygiene..."
-$gitStatus = (git status --porcelain).Trim()
+$gitStatusRaw = git status --porcelain
+$gitStatus = if ($gitStatusRaw) { ($gitStatusRaw -join "`n").Trim() } else { "" }
 if (-not [string]::IsNullOrWhiteSpace($gitStatus)) {
     throw "DEF-CERT-007 VIOLATION: Working tree is dirty. Clean working tree is strictly required for release certification.`nDirty items:`n$gitStatus"
 }
