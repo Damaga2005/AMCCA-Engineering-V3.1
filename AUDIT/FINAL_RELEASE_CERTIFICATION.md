@@ -12,21 +12,23 @@
 - **Branch:** `add_amcca_engineering_repo`
 - **HEAD Reference:** `add_amcca_engineering_repo` (Synchronized HEAD)
 - **Build:** `net8.0-windows` / `Release` (Self-Contained `win-x64`)
-- **Tests:** `513 passed, 0 failed, 0 skipped` (Duración: ~1m 1s)
+- **Tests:** `522 passed, 0 failed, 0 skipped` (Duración: ~1m 30s)
 - **Warnings:** `0 errors, 0 warnings` (`dotnet build AMCCA.sln -c Release`)
-- **Installer:** WiX Toolset v5.0.0 Bootstrapper Bundle PE Executable
-- **MSI Hash (SHA-256):** `7ffc401ef989a5c3d33cc4dc9f25534450849784f0fb233aa44faaf8a8675f00`
-- **EXE Hash (SHA-256):** `5d83a413204874fb48420938c72c4b26103e71085d14493248c41499ad803e9c`
-- **CI:** GitHub Actions Workflow (`.github/workflows/validation.yml`) ejecutando `validate-spec` (Linux) y `windows-desktop-validation` (Windows) sobre el HEAD exacto.
+- **Installer:** WiX Toolset v5.0.0 Bootstrapper Bundle PE Executable (PE32+ AMD64)
+- **MSI Hash (SHA-256):** `f5c38908d87064305a5b441cc5f2d9badeec2d104ecb3b0cfc84e3f4db3d582e`
+- **EXE Hash (SHA-256):** `23102449249024c0f4d26f16f532f2d496be0e3a4530ae41b485d480daebbb5e`
+- **ZIP Hash (SHA-256):** `b84fd80c38edc11f9999dcc33c776e1b3d81f009380793b4b855f394f7228d5a`
+- **CI:** GitHub Actions Workflow (`.github/workflows/validation.yml`) ejecutando `validate-spec` (Linux) y `windows-desktop-validation` (Windows) sobre el HEAD exacto (`-ExpectedCommitSha $GITHUB_SHA`).
 - **SSRF:** Arquitectura obligatoria mediante `ISafeHttpClientFactory`, `SafeHttpClientFactory`, `SafeRedirectHandler` y `SocketsHttpHandler.ConnectCallback`.
 - **Research Path:** `ResearchService` y `ResearchScraper` conectados con validación estricta de destino antes de conexión y tras cada redirección 301/302/307/308.
 - **Release Validation:**
   - `TOOLS/validate_package.py`: 57 / 57 PASS
   - `TOOLS/conformance_tests.py`: 65 / 65 PASS
   - `TOOLS/test_repository_hygiene.py`: PASS (0 archivos basura, 0 duplicados, árbol y manifiesto 100% sincronizados)
-  - `TOOLS/release_gate.py`: RELEASE GATE: PASS
-  - `TOOLS/release_certification.ps1`: VERIFIED
-- **Final Verdict:** **PASS**
+  - `TOOLS/test_certification_mutations.py`: 11 / 11 PASS (suite de mutaciones adversarias del certificador)
+  - `TOOLS/release_gate.py --release`: ALL 15 RELEASE INVARIANTS VERIFIED STRICTLY (RELEASE GATE: PASS)
+  - `TOOLS/release_certification.ps1`: VERIFIED (Doble ejecución limpia consecutiva: PASS)
+- **Final Verdict:** **RELEASE PASS**
 
 ---
 
@@ -34,14 +36,14 @@
 
 | Defecto | Descripción y Causa Raíz | Remediación Implementada | Evidencia Adversarial | Veredicto |
 |---|---|---|---|---|
-| **DEF-CERT-001** | `AMCCA-Setup.exe` era una copia del archivo `.msi`. | Implementado WiX Burn Bootstrapper Bundle (`installer/Bundle.wxs`) que compila un PE real embebiendo el MSI. | `InstallationArtifactIntegrityTests.cs`: valida cabecera `MZ` (0x4D, 0x5A), firma `PE\0\0`, y verifica que `SHA256(EXE) != SHA256(MSI)`. Detecta y falla activamente ante copias fraudulentas de MSI. | **PASS** |
+| **DEF-CERT-001** | `AMCCA-Setup.exe` era una copia del archivo `.msi`. | Implementado WiX Burn Bootstrapper Bundle (`installer/Bundle.wxs`) y validador estructural PE32+ AMD64 (`PeBinaryValidator.cs`, `pe_validator.py`). | `InstallerArtifactIdentityTests.cs`: 11 tests en verde (10 adversarios de Sección 5.2) auditando DOS header, `PE\0\0`, COFF AMD64, Optional Header PE32+ (0x020B), ImageBase y secciones. | **PASS** |
 | **DEF-CERT-002** | Validación del instalador incompleta sin ciclo de vida. | Diseñado pipeline y suite completa cubriendo instalación limpia, lanzamiento de `AMCCA.exe --version`, idempotencia de migraciones, conservación de `%LOCALAPPDATA%` en desinstalación y restore de backups. | `InstallationCleanInstallTests.cs` y `InstallationUpgradeRestoreValidationTests.cs` (7 tests en verde). | **PASS** |
 | **DEF-CERT-003** | `ResearchService` permitía inyectar `HttpClient` arbitrario, creando superficie de bypass SSRF. | Refactorizado para requerir `ISafeHttpClientFactory`. Introducido `SafeRedirectHandler` que valida cada salto de redirección e intercepta códigos 301/302 hacia IPs privadas o loopback. | `SsrfProductionPathTests.cs` (21 tests adversariales en verde bloqueando loopback, RFC1918, link-local, IPv6 ULA, DNS rebinding y cadenas de redirección). | **PASS** |
 | **DEF-CERT-004** | Discrepancia nominal entre `ResearchScraper` y `ResearchService`. | Formalizada la arquitectura con `ResearchScraper` heredando de `ResearchService` e inyectando `ISafeHttpClientFactory`. Reconciliada la documentación técnica eliminando referencias fantasma. | `SsrfProductionPathTests.cs` y `validate_package.py`. | **PASS** |
 | **DEF-CERT-005** | Discrepancias documentales en reportes previos de auditoría. | Regenerados los informes `THIRD_AUDIT_*` y creada la matriz de trazabilidad definitiva `FINAL_RELEASE_TRACEABILITY.md`. | Validación con `validate_package.py` y `test_repository_hygiene.py`. | **PASS** |
-| **DEF-CERT-006** | CI no demostrada sobre el commit exacto. | Configurado workflow en `.github/workflows/validation.yml` con runners duales (`ubuntu-latest` y `windows-latest`) ejecutando restore, build Release, suite completa de 513 tests y WiX. | Workflow automatizado ejecutado sobre el HEAD del release. | **PASS** |
-| **DEF-CERT-007** | Proceso de certificación no determinista. | Implementado script canónico `TOOLS/release_certification.ps1` que realiza clean, restore, build Release, empaquetado WiX, test suite completa, cálculo de hashes SHA-256 y generación de `RELEASE_METADATA.md`. | Ejecución limpia y determinista en PowerShell. | **PASS** |
-| **DEF-CERT-008** | Validaciones superficiales en release gate. | Actualizados los validadores para auditar cabeceras binarias PE, divergencia de hashes, 0 advertencias de compilador, y suite adversarial completa. | `TOOLS/release_gate.py` reportando `RELEASE GATE: PASS`. | **PASS** |
+| **DEF-CERT-006** | CI no demostrada sobre el commit exacto. | Configurado workflow en `.github/workflows/validation.yml` con runners duales (`ubuntu-latest` y `windows-latest`) ejecutando restore, build Release con 0 warnings, suite de 522 tests, WiX, y binding a `$GITHUB_SHA`. | Workflow automatizado ejecutado sobre el HEAD del release con suite de mutaciones adversarias. | **PASS** |
+| **DEF-CERT-007** | Proceso de certificación no determinista. | Implementado script canónico `TOOLS/release_certification.ps1` con verificación de árbol limpio, binding estricto a commit SHA, tolerancia cero a warnings, parseo dinámico de TRX (522 tests) y hashes bidireccionales. | Doble ejecución limpia consecutiva: PASS idéntico y reproducible. | **PASS** |
+| **DEF-CERT-008** | Validaciones superficiales en release gate. | Implementado `TOOLS/release_gate.py --release` evaluando estrictamente 15 invariantes mínimas sin permitir N/A, respaldado por la suite de mutaciones adversarias `TOOLS/test_certification_mutations.py` (11/11 PASS). | `TOOLS/release_gate.py` reportando `RELEASE GATE: PASS`. | **PASS** |
 
 ---
 

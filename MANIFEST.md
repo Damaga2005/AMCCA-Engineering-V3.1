@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 344
-**Total bytes:** 1764202
+**Total bytes:** 1764914
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -17,8 +17,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
-| `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `89402541a44e55c0540d11f91cde3d00114aee29c66d46f8963b578e63ad33fc` | 5725 |
-| `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `f66b8ae1b916fe80b9bc6b69aa92089c2686596fb209d1715a1721f13f60c19f` | 4259 |
+| `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `c3182d5d2cedb182e53d45fbfc5aa7976bedf87bedced8d567d2eed372cec4a7` | 6279 |
+| `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `04dee3ccb928fac9a9af2361589bcb613c0a38cc44996880457bb83dac51d174` | 4417 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
