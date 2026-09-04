@@ -92,3 +92,9 @@ jobs:
             throw "dist/installer/AMCCA-Setup.exe not found"
           }
           Write-Host "WiX Installer verified successfully."
+
+      - name: Run Deterministic Release Certification Pipeline
+        shell: pwsh
+        run: |
+          & powershell -ExecutionPolicy Bypass -File TOOLS/release_certification.ps1
+          Write-Host "Release certification completed successfully."
