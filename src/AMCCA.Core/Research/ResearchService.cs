@@ -15,22 +15,14 @@ using AMCCA.Core.Security;
 public class ResearchService : IDisposable
 {
     private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly ISafeHttpClientFactory _clientFactory;
     private readonly HttpClient _httpClient;
-    private readonly bool _ownsHttpClient;
 
-    public ResearchService(DatabaseConnectionFactory connectionFactory, HttpClient? httpClient = null)
+    public ResearchService(DatabaseConnectionFactory connectionFactory, ISafeHttpClientFactory? clientFactory = null)
     {
         _connectionFactory = connectionFactory;
-        if (httpClient != null)
-        {
-            _httpClient = httpClient;
-            _ownsHttpClient = false;
-        }
-        else
-        {
-            _httpClient = new HttpClient(SsrfValidator.CreateSafeSocketsHttpHandler());
-            _ownsHttpClient = true;
-        }
+        _clientFactory = clientFactory ?? SafeHttpClientFactory.Default;
+        _httpClient = _clientFactory.CreateClient();
     }
 
     public async Task<Source> FetchAndIngestSourceAsync(
@@ -80,10 +72,7 @@ public class ResearchService : IDisposable
 
     public void Dispose()
     {
-        if (_ownsHttpClient)
-        {
-            _httpClient.Dispose();
-        }
+        _httpClient.Dispose();
     }
 
     public async Task InsertSourceAsync(Source source, CancellationToken ct = default)

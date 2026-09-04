@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 334
-**Total bytes:** 1676362
+**Files:** 338
+**Total bytes:** 1692446
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -281,9 +281,11 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `4921945956ad5419f57cb662736275ce4b91817d6a8999f46012bcd7c3a0e82a` | 1777 |
 | `src/AMCCA.Core/Research/ClaimValidator.cs` | `b16d3aff481491822ecdcb2d8da60e7998a3ef5fdd15260e1a00795b3e59eada` | 2040 |
 | `src/AMCCA.Core/Research/ResearchModels.cs` | `681ef7c07810e4f89c8cc97ef46fee8112037f1e299991f96c50bc3828c2e20b` | 1450 |
-| `src/AMCCA.Core/Research/ResearchService.cs` | `451b24a83f7e5161f357ef5126f35ca618c6e15b755d3e6f3844df5b6b12cf0e` | 6841 |
+| `src/AMCCA.Core/Research/ResearchScraper.cs` | `deb3756e131bee488bb3410b6dc5d2a09a6722a6a46242bfaaa2fc99ef060771` | 471 |
+| `src/AMCCA.Core/Research/ResearchService.cs` | `f1bf2d509c577e77abbdc8c8a6cd5b48f28d8c099c751abc4b770b6890fcab2a` | 6662 |
 | `src/AMCCA.Core/Scripts/ScriptModels.cs` | `c4fdda5d199969f15796bae4171e2a5662f591e4d3278d6d6ea76fbc70d91807` | 347 |
 | `src/AMCCA.Core/Scripts/ScriptValidator.cs` | `70b43aa51c9f333677887009307cd27147a45a0023e0537e3a701af7be000552` | 2062 |
+| `src/AMCCA.Core/Security/ISafeHttpClientFactory.cs` | `c2fb3714f1feffa2a85be52c96781b99a3fdf2eed7120fe56dd4f75c1dc203f2` | 268 |
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `ce7cd5197af36b90979079e9e6365b62dad5815281ba8b7fa43c49d73ab50608` | 939 |
 | `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `ffaa63fc71cb65ad51250b1bfcaa27a6c905c2f025329f6489a1f7d4d5cc900b` | 3968 |
@@ -291,6 +293,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/OAuthModels.cs` | `f6bf3984f62d28ca1788aa0c7b30fb1031f87f256ef76260f7db7e64427bc0d1` | 539 |
 | `src/AMCCA.Core/Security/PathConfinement.cs` | `b94ba951eb665c92c0d1a920ceba535ba7e603daa242699be4c9b6bde3687539` | 1465 |
 | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | `f8ae352a2a3c0892668400dc5d0671acb0a554e82bc7457ed2ed2df3c6aa9329` | 5185 |
+| `src/AMCCA.Core/Security/SafeHttpClientFactory.cs` | `cfba8d25a0678a3164c42415eec0c35e85c79c74cc5ecd234509a0e409070d30` | 4106 |
 | `src/AMCCA.Core/Security/SecretReference.cs` | `b6e95821d1d0249d4208aa16a77d4a33a24ff8cb58ffa228f0c52cf8ed3ffd85` | 1883 |
 | `src/AMCCA.Core/Security/SqlSurfaceAuditor.cs` | `1a43e2399fcfd7d8c3bd380503e68967f07fbdb677877b211b72e33a253b8b57` | 1227 |
 | `src/AMCCA.Core/Security/SsrfValidator.cs` | `5725ff285f84974279c67f0652d7af00114ee0c740fe6eedb2364156630bcd5c` | 8569 |
@@ -306,18 +309,18 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ArchitecturalDependenciesRegressionTests.cs` | `892e7dc8b129b36370e17988be422eeadb7d3bc2a726487adf6d8c115fe1ca36` | 2112 |
 | `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` | `31bc22b832e944ab044af8f56a466de46bca429f05dc2f27f5636e9721ba686c` | 8742 |
 | `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `40bb41e32a868d3c1da014a20533079b60574ce85e14bbdc15f64634b2f6150b` | 6216 |
-| `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs` | `63768d37ca2d64825c5d7a745897dfe71cd70448512613622920e56d92386f61` | 20157 |
-| `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `b0cd0479bd72357f29cd0cda0480811e07d5d36935ac37aa507aef0d591474ff` | 22147 |
+| `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs` | `58167a8cb301f6a01b5ab31b2bb8e0ee52f41543aeda2da4712d24f3105d06af` | 20154 |
+| `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `096185e6cf0a2a5f8d18e0c17f6bdd17034ed5670fd13973f0cfb1ccd3fefcf1` | 22148 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `d3d9385e0e5239561fa106aed3bd13579b48ccc9d27cde0e082d5565e0a77b4c` | 5467 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
 | `tests/AMCCA.Core.Tests/DagReworkAndInvalidationContractTests.cs` | `0402ffa482753f07cdacbe3e1c4fa38e865322166161ad8828f52d2bd6ab4c45` | 6562 |
 | `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
-| `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `b849fd11d1b71f8ababb9c1720dc1d4cf1d5438c1f3d6e124c77f3ed35ac5c73` | 4630 |
+| `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `dc9932b3c720a60feb988704add4a87599f2e638b28a49142a88a1c71d9772f1` | 5993 |
 | `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `2bd6108e52697ceb7dc984a6317d0e063cd2a1770f20494e585ae313e506c134` | 7504 |
 | `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `abb49f175584ea71210b26370e8833be93320b9c421cc0b708abe3bb46c0a074` | 9271 |
-| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `e92637df1cda717ef64fb7d9bd2fc92d28a45a4d1d975331235a8f42b1302fcf` | 3310 |
+| `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `55372798d2bdb94abe3ce8b56c2667728930fac6a18901a1d598c72f7248e394` | 4670 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `ad294304f44fca7026cc043cbf275f06e428b056f7854b771771349a3de27401` | 4620 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `4b70e718bddc284f79334ca9250c8c4a95dc6ea62e19c31323d6f2c95ffe72f5` | 8991 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
@@ -342,6 +345,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/SecurityHardeningSpec72ContractTests.cs` | `80356f4e82057cbdd9a1bd81550deff3a0eb17207733700b90a691aa93a339b4` | 4044 |
 | `tests/AMCCA.Core.Tests/SsrfAndDnsRebindingRegressionTests.cs` | `3bbb7a02a62897747d93bf75bc9918a4c7dfdcfd29dcccff40a628e580d43d00` | 3723 |
 | `tests/AMCCA.Core.Tests/SsrfPipelineEnforcementContractTests.cs` | `17412e1c1251b1ba7c3db9ebe8a2ed47f56eb110122c2afbd69d4990085e4649` | 4287 |
+| `tests/AMCCA.Core.Tests/SsrfProductionPathTests.cs` | `be569bd9ca5a77e499648a3072f2847fefd4e159efbab059ee26abbbde2515d0` | 8697 |
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
 | `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `aa7f5de6ff6ce88241e9b52b2882e1e5520b7bcd52af5e026f0fcd080c8ef64d` | 10807 |
