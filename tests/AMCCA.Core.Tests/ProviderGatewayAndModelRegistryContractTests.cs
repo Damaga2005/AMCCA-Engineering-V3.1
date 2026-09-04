@@ -129,8 +129,9 @@ public class ProviderGatewayAndModelRegistryContractTests : IDisposable
     public void TwoDistinctGatewayImplementations_ExistAndImplementPort()
     {
         // D-013 / SPEC/23: "A second IProviderGateway implementation MUST exist before autonomous mode is enabled"
-        IProviderGateway primary = new OmniRoutersGatewayAdapter("https://api.omnirouters.example", "secret://amcca/key");
-        IProviderGateway secondary = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.example/v1", "secret://amcca/key");
+        var secretStore = TestSecretStores.With("secret://amcca/key", "unit-test-key");
+        IProviderGateway primary = new OmniRoutersGatewayAdapter("https://api.omnirouters.example", secretStore, "secret://amcca/key");
+        IProviderGateway secondary = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.example/v1", secretStore, "secret://amcca/key");
 
         primary.ProviderId.Should().Be("omnirouters");
         secondary.ProviderId.Should().Be("direct-openai-compatible");

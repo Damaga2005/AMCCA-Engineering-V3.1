@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
+using AMCCA.Core.Security;
 
 namespace AMCCA.Core.Providers;
 
@@ -15,17 +16,34 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
 {
     public string ProviderId => "direct-openai-compatible";
     private readonly string _endpoint;
-    private readonly string _apiKeySecretRef;
+    private readonly ISecretStore _secretStore;
+    private readonly SecretReference _apiKeyRef;
     private readonly HttpClient _httpClient;
     private readonly bool _ownsHttpClient;
 
+    /// <summary>
+    /// SEC-01: the credential is supplied as a <c>secret://vault/name</c> reference and resolved
+    /// through <see cref="ISecretStore"/> at call time. A literal API key is rejected by
+    /// <see cref="SecretReference.Parse"/> (AMCCA-SEC-002) and never accepted as a Bearer token.
+    /// </summary>
     public DirectOpenAiCompatibleGatewayAdapter(
         string endpoint,
+        ISecretStore secretStore,
+        string apiKeySecretRef)
+        : this(endpoint, secretStore, apiKeySecretRef, httpClient: null)
+    {
+    }
+
+    // SEC-11: HttpClient injection is test-only. Production always uses the SSRF-safe handler.
+    internal DirectOpenAiCompatibleGatewayAdapter(
+        string endpoint,
+        ISecretStore secretStore,
         string apiKeySecretRef,
-        HttpClient? httpClient = null)
+        HttpClient? httpClient)
     {
         _endpoint = endpoint?.TrimEnd('/') ?? string.Empty;
-        _apiKeySecretRef = apiKeySecretRef ?? string.Empty;
+        _secretStore = secretStore ?? throw new ArgumentNullException(nameof(secretStore));
+        _apiKeyRef = SecretReference.Parse(apiKeySecretRef);
         if (httpClient != null)
         {
             _httpClient = httpClient;
@@ -33,9 +51,22 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         }
         else
         {
-            _httpClient = new HttpClient(AMCCA.Core.Security.SsrfValidator.CreateSafeSocketsHttpHandler());
+            _httpClient = new HttpClient(SsrfValidator.CreateSafeSocketsHttpHandler());
             _ownsHttpClient = true;
         }
+    }
+
+    private async Task<string> ResolveApiKeyAsync(CancellationToken ct)
+    {
+        var key = await _secretStore.GetSecretAsync(_apiKeyRef, ct);
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new AmccaException(
+                AmccaErrors.Ai001,
+                ErrorCategory.Configuration,
+                $"Model provider credential '{_apiKeyRef}' is not present in the secret store.");
+        }
+        return key;
     }
 
     public void Dispose()
@@ -52,21 +83,32 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         string capability,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(_endpoint) || string.IsNullOrWhiteSpace(_apiKeySecretRef))
+        if (string.IsNullOrWhiteSpace(_endpoint))
         {
             return new ProviderProbeResult(
                 Success: false,
                 LatencyMs: 0,
-                ErrorMessage: "Endpoint or ApiKeySecretRef missing.");
+                ErrorMessage: "Endpoint missing.");
         }
 
         var sw = Stopwatch.StartNew();
+        string apiKey;
+        try
+        {
+            apiKey = await ResolveApiKeyAsync(ct);
+        }
+        catch (AmccaException ex)
+        {
+            sw.Stop();
+            return new ProviderProbeResult(Success: false, LatencyMs: 0, ErrorMessage: ex.Message);
+        }
+
         try
         {
             // Perform real lightweight capability probe using chat completions with max_tokens=1
             var requestUri = $"{_endpoint}/chat/completions";
             using var req = new HttpRequestMessage(HttpMethod.Post, requestUri);
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKeySecretRef);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
             var probeBody = new
             {
@@ -100,7 +142,7 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         {
             sw.Stop();
             // Sanitize message: never leak secret key
-            var safeMessage = ex.Message.Replace(_apiKeySecretRef, "[REDACTED]");
+            var safeMessage = ex.Message.Replace(apiKey, "[REDACTED]");
             return new ProviderProbeResult(
                 Success: false,
                 LatencyMs: sw.ElapsedMilliseconds,
@@ -112,17 +154,19 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         GatewayTextRequest request,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(_endpoint) || string.IsNullOrWhiteSpace(_apiKeySecretRef))
+        if (string.IsNullOrWhiteSpace(_endpoint))
         {
             throw new AmccaException(
                 AmccaErrors.Ai001,
                 ErrorCategory.Configuration,
-                "Model provider endpoint or API key is unconfigured.");
+                "Model provider endpoint is unconfigured.");
         }
+
+        var apiKey = await ResolveApiKeyAsync(ct);
 
         var requestUri = $"{_endpoint}/chat/completions";
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, requestUri);
-        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKeySecretRef);
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         httpRequest.Headers.Add("X-Correlation-Id", request.CorrelationId);
 
         var payload = new
@@ -149,7 +193,7 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         }
         catch (Exception ex)
         {
-            var safeMsg = ex.Message.Replace(_apiKeySecretRef, "[REDACTED]");
+            var safeMsg = ex.Message.Replace(apiKey, "[REDACTED]");
             throw new AmccaException(
                 AmccaErrors.Ai001,
                 ErrorCategory.Provider,
@@ -256,16 +300,18 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         GatewayTextRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(_endpoint) || string.IsNullOrWhiteSpace(_apiKeySecretRef))
+        if (string.IsNullOrWhiteSpace(_endpoint))
         {
             throw new AmccaException(
                 AmccaErrors.Ai001,
                 ErrorCategory.Configuration,
-                "Model provider endpoint or ApiKeySecretRef missing.");
+                "Model provider endpoint missing.");
         }
 
+        var apiKey = await ResolveApiKeyAsync(ct);
+
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/chat/completions");
-        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKeySecretRef);
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
 
         var payload = new
@@ -293,7 +339,7 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         }
         catch (Exception ex)
         {
-            var safeMsg = ex.Message.Replace(_apiKeySecretRef, "[REDACTED]");
+            var safeMsg = ex.Message.Replace(apiKey, "[REDACTED]");
             throw new AmccaException(
                 AmccaErrors.Ai001,
                 ErrorCategory.Provider,

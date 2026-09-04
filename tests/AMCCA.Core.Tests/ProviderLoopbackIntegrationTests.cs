@@ -170,7 +170,7 @@ public class ProviderLoopbackIntegrationTests : IDisposable
     public async Task LoopbackProvider_RealHttpRequest_ReturnsValidResponse()
     {
         using var client = new HttpClient();
-        using var adapter = new DirectOpenAiCompatibleGatewayAdapter(_serverUrl, "test-api-key", client);
+        using var adapter = new DirectOpenAiCompatibleGatewayAdapter(_serverUrl, TestSecretStores.With("secret://test/loopback", "test-api-key"), "secret://test/loopback", client);
 
         var request = new GatewayTextRequest(
             ModelId: "gpt-4o-mini",
@@ -191,7 +191,7 @@ public class ProviderLoopbackIntegrationTests : IDisposable
     public async Task LoopbackProvider_RealSseStreaming_YieldsTokensInOrder()
     {
         using var client = new HttpClient();
-        using var adapter = new DirectOpenAiCompatibleGatewayAdapter(_serverUrl, "test-api-key", client);
+        using var adapter = new DirectOpenAiCompatibleGatewayAdapter(_serverUrl, TestSecretStores.With("secret://test/loopback", "test-api-key"), "secret://test/loopback", client);
 
         var request = new GatewayTextRequest(
             ModelId: "gpt-4o-mini",
@@ -213,7 +213,7 @@ public class ProviderLoopbackIntegrationTests : IDisposable
     public async Task LoopbackProvider_RateLimit429_MapsToAmccaAi002()
     {
         using var client = new HttpClient();
-        using var adapter = new DirectOpenAiCompatibleGatewayAdapter($"{_serverUrl}rate_limited", "test-api-key", client);
+        using var adapter = new DirectOpenAiCompatibleGatewayAdapter($"{_serverUrl}rate_limited", TestSecretStores.With("secret://test/loopback", "test-api-key"), "secret://test/loopback", client);
 
         var request = new GatewayTextRequest("gpt-4o", "Hello", 0.7, 50);
 
@@ -228,7 +228,7 @@ public class ProviderLoopbackIntegrationTests : IDisposable
     public async Task LoopbackProvider_StreamAbortedMidway_ThrowsProviderException()
     {
         using var client = new HttpClient();
-        using var adapter = new DirectOpenAiCompatibleGatewayAdapter($"{_serverUrl}abort_midstream", "test-api-key", client);
+        using var adapter = new DirectOpenAiCompatibleGatewayAdapter($"{_serverUrl}abort_midstream", TestSecretStores.With("secret://test/loopback", "test-api-key"), "secret://test/loopback", client);
 
         var request = new GatewayTextRequest("gpt-4o", "Hello", 0.7, 50);
 
@@ -248,8 +248,8 @@ public class ProviderLoopbackIntegrationTests : IDisposable
     public async Task FailoverProviderGateway_PrimaryFailsWith500_SeamlesslyFallsBackToSecondary()
     {
         using var client = new HttpClient();
-        using var primaryFailing = new DirectOpenAiCompatibleGatewayAdapter($"{_serverUrl}server_error", "key-1", client);
-        using var secondarySucceeding = new DirectOpenAiCompatibleGatewayAdapter(_serverUrl, "key-2", client);
+        using var primaryFailing = new DirectOpenAiCompatibleGatewayAdapter($"{_serverUrl}server_error", TestSecretStores.With("secret://test/loopback", "key-1"), "secret://test/loopback", client);
+        using var secondarySucceeding = new DirectOpenAiCompatibleGatewayAdapter(_serverUrl, TestSecretStores.With("secret://test/loopback", "key-2"), "secret://test/loopback", client);
 
         var failover = new FailoverProviderGateway(new[] { primaryFailing, secondarySucceeding });
 

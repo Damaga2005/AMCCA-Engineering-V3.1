@@ -65,7 +65,7 @@ public class AiProviderRealIntegrationTests
 
         var httpClient = new HttpClient(mockHandler);
         var secretApiKey = "sk-super-secret-key-12345";
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", secretApiKey, httpClient);
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", secretApiKey), "secret://test/openai", httpClient);
 
         var request = new GatewayTextRequest(
             ModelId: "gpt-4o",
@@ -108,7 +108,7 @@ public class AiProviderRealIntegrationTests
         {
             Handler = (req, ct) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized))
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "bad-key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "bad-key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var act = async () => await adapter.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "test", 0.5, 50, "c-1"));
 
@@ -124,7 +124,7 @@ public class AiProviderRealIntegrationTests
         {
             Handler = (req, ct) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden))
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var act = async () => await adapter.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "test", 0.5, 50, "c-1"));
 
@@ -140,7 +140,7 @@ public class AiProviderRealIntegrationTests
         {
             Handler = (req, ct) => Task.FromResult(new HttpResponseMessage((HttpStatusCode)429))
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var act = async () => await adapter.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "test", 0.5, 50, "c-1"));
 
@@ -156,7 +156,7 @@ public class AiProviderRealIntegrationTests
         {
             Handler = (req, ct) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError))
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var act = async () => await adapter.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "test", 0.5, 50, "c-1"));
 
@@ -175,7 +175,7 @@ public class AiProviderRealIntegrationTests
                 Content = new StringContent("{ not valid json", Encoding.UTF8, "application/json")
             })
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var act = async () => await adapter.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "test", 0.5, 50, "c-1"));
 
@@ -195,7 +195,7 @@ public class AiProviderRealIntegrationTests
                 return new HttpResponseMessage(HttpStatusCode.OK);
             }
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
 
@@ -211,7 +211,7 @@ public class AiProviderRealIntegrationTests
         {
             Handler = (req, ct) => throw new HttpRequestException("DNS resolution failed: name does not exist")
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://nonexistent.ai.gateway", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://nonexistent.ai.gateway", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var probe = await adapter.ProbeCapabilityAsync("openai", "gpt-4o", "chat");
 
@@ -229,7 +229,7 @@ public class AiProviderRealIntegrationTests
                 Content = new StringContent(@"{""error"": {""message"": ""The model 'non-existent-model' does not exist""}}", Encoding.UTF8, "application/json")
             })
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", "key", new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", "key"), "secret://test/openai", new HttpClient(mockHandler));
 
         var probe = await adapter.ProbeCapabilityAsync("openai", "non-existent-model", "chat");
 
@@ -248,7 +248,7 @@ public class AiProviderRealIntegrationTests
                 Content = new StringContent("Invalid authentication token", Encoding.UTF8, "text/plain")
             })
         };
-        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", sensitiveSecret, new HttpClient(mockHandler));
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", sensitiveSecret), "secret://test/openai", new HttpClient(mockHandler));
 
         try
         {
