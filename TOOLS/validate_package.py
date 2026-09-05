@@ -434,6 +434,27 @@ _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN = {
 }
 
 
+def _is_nested_shape(spec):
+    """Whether a JSON Schema property spec describes an object or array -- a shape with no
+    single flat column to check for -- including when that shape is wrapped in `oneOf`/`anyOf`
+    (e.g. `{"oneOf": [{"type": "object"}, {"type": "null"}]}`, the nullable-object pattern this
+    package uses throughout). Checking only the top-level `type`/`properties`/`items` keys
+    misses this wrapped form entirely, which is exactly how cost-event.schema.json's `units`
+    (an object) was first misreported as a missing flat column when it was never meant to be
+    one -- confirmed by generate_artifacts.py's own SPEC/11 model, which already names the
+    column `units_json`, a JSON-serialized column under a different name entirely, not `units`."""
+    if not isinstance(spec, dict):
+        return False
+    if spec.get("type") in ("object", "array") or "properties" in spec or "items" in spec:
+        return True
+    for branch in spec.get("oneOf", []) + spec.get("anyOf", []):
+        if isinstance(branch, dict) and (
+            branch.get("type") in ("object", "array") or "properties" in branch or "items" in branch
+        ):
+            return True
+    return False
+
+
 def check_contract_fields_have_columns():
     """Gate blind spot 4 from the fourth audit (section 4): nothing checked whether a JSON
     contract's own fields actually have somewhere to live in the database. cost_events is the
@@ -468,9 +489,7 @@ def check_contract_fields_have_columns():
             continue
 
         for prop, spec in (contract.get("properties") or {}).items():
-            if not isinstance(spec, dict):
-                continue
-            if spec.get("type") in ("object", "array") or "properties" in spec or "items" in spec:
+            if _is_nested_shape(spec):
                 continue  # a nested shape has no flat column to check by design
             if (schema_file, prop) in _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN:
                 continue

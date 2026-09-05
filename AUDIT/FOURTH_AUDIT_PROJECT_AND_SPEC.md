@@ -125,7 +125,7 @@ ninguna columna real:
 
 | Tabla | Campos sin columna (estado original) |
 |---|---|
-| `cost_events` | ~~`schema_version`~~ (migración 008), `agent_run_id`, `model_id`, `provider_request_id`, `units`, `pricing_snapshot_id`, `reconciliation_state`, `budget_id` (8 de 15 propiedades del contrato) |
+| `cost_events` | ~~`schema_version`~~ (migración 008), `agent_run_id`, `model_id`, `provider_request_id`, ~~`units`~~ **falso positivo, ver más abajo**, `pricing_snapshot_id`, `reconciliation_state`, `budget_id` (8 de 15 propiedades del contrato) |
 | `jobs` | ~~`schema_version`~~ (migración 008), `scheduled_at`, `deadline_at`, `estimated_cost`, `reserved_cost`, `currency`, `causation_id`, `last_error_code` |
 | ~~`referral_links`~~ | ~~`brand`, `commission_model`, `disclosure_required`~~ **No eran un hueco** |
 | ~~`analytics_snapshots`~~ | ~~`source_account_id`~~ **Resuelto** (migración 007) |
@@ -160,10 +160,21 @@ real que una fila insertada *antes* de la migración recibe el valor por defecto
 `JobManager.EnqueueJobAsync`/`GetJobAsync` y `RevenueService.RecordCostAsync` se actualizaron para
 fijar/leer el campo explícitamente en vez de depender solo del default.
 
-Quedan **14** campos sin columna, no 20 — `cost_events`×7 y `jobs`×7. Ninguno de los 14 restantes se corrigió aquí — igual que las 16
-columnas sin `CHECK` de §2.1, cada uno es su propia unidad de riesgo (decidir si el campo se añade a la
-tabla, se normaliza en otra, o se retira del contrato) y corregirlos a ciegas en bloque sería exactamente
-el tipo de cambio grande y no verificado que esta sesión ha evitado deliberadamente en otros puntos.
+**Falso positivo encontrado y corregido en el propio check:** `cost_events.units` aparecía en la lista de
+huecos, pero `units` es un objeto anidado (`{"oneOf": [{"type": "object"}, {"type": "null"}]}`) — no tiene
+columna plana por diseño, igual que cualquier otro campo JSON de este proyecto (`payload_json`,
+`restrictions_json`...). `contracts.fields_have_columns` solo miraba `type`/`properties`/`items` en el
+nivel superior del `spec`, así que un objeto envuelto en `oneOf` (el patrón que este proyecto usa en todas
+partes para "opcional y nulable") se colaba como si fuera un campo plano. Corregido con `_is_nested_shape()`,
+que también mira dentro de `oneOf`/`anyOf`. No se añadió ninguna columna `units_json`: el contrato nunca
+tuvo un campo llamado `units` esperando una columna homónima, así que no había nada que corregir en el
+esquema, solo en el check que lo mal interpretaba.
+
+Quedan **13** campos sin columna, no 20 ni 14 — `cost_events`×6 y `jobs`×7. Ninguno de los 13 restantes se
+corrigió aquí — igual que las 16 columnas sin `CHECK` de §2.1, cada uno es su propia unidad de riesgo
+(decidir si el campo se añade a la tabla, se normaliza en otra, o se retira del contrato) y corregirlos a
+ciegas en bloque sería exactamente el tipo de cambio grande y no verificado que esta sesión ha evitado
+deliberadamente en otros puntos.
 
 ### 2.3 Contradicción contrato ↔ implementación
 
@@ -354,8 +365,9 @@ confirmados por los hallazgos anteriores:
    una regresión que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni
    menos que eso.
 4. ~~No detecta campos de contrato sin columna~~ **Resuelto** (`contracts.fields_have_columns`, con
-   mutation test `mutation_19`) → deja de pasar en verde: hoy señala 14 campos de contrato sin columna
-   real en `cost_events` y `jobs` (detalle completo en §2.2). El ejemplo original de la auditoría
+   mutation test `mutation_19`) → deja de pasar en verde: hoy señala 13 campos de contrato sin columna
+   real en `cost_events` y `jobs` (detalle completo en §2.2; el propio check tuvo un falso positivo, ya
+   corregido, con un objeto anidado envuelto en `oneOf`). El ejemplo original de la auditoría
    (`cost_events.reconciliation_state`) era solo uno de ocho campos sin columna en esa misma tabla. De los
    otros hallazgos que este check sacó a la luz, `referral_links.brand`/`commission_model`/
    `disclosure_required` resultaron ser diseño correcto (normalizados en `referral_programs`), y
@@ -397,7 +409,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
 | P0 | Acotar `tool_runs.side_effect_class` con `CHECK` | La defensa de intent falla en abierto (§2.1) |
 | P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
-| P2 | 14 campos de contrato sin columna (`cost_events`×7, `jobs`×7) — cada uno su propia unidad de riesgo | Ahora visibles vía `contracts.fields_have_columns` (§2.2, §4) |
+| P2 | 13 campos de contrato sin columna (`cost_events`×6, `jobs`×7) — cada uno su propia unidad de riesgo | Ahora visibles vía `contracts.fields_have_columns` (§2.2, §4) |
 | P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`cost_events`/`jobs`.`schema_version`~~ **Resuelto** (migración 008, D-004); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | Aprobaciones: mostrar sujeto, techo de coste y expiración | Obligación 5, operador aprobando a ciegas (§3.1) |
