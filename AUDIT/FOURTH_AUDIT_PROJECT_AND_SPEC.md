@@ -162,7 +162,7 @@ relevante: SPEC/14 exige que un worker con token obsoleto **abandone** su escrit
 
 | Punto | Documento | Qué falta |
 |---|---|---|
-| Rango de versión de FFmpeg soportado | SPEC/49 gate 8 | Dice «within the supported range» y **el rango no está definido en ningún sitio** |
+| ~~Rango de versión de FFmpeg soportado~~ **Resuelto** | SPEC/49 gate 8 | El código ya solo comprueba presencia + `-version` ejecutable, sin rango (correcto: inventar un rango no verificado violaría «no inventar capacidades»). El texto de SPEC/49 decía «within the supported range» sin definirlo nunca; se corrigió la redacción de la gate 8 para describir lo que el código realmente hace, y se añadió una nota explicando por qué no hay rango y que una incompatibilidad real debe aparecer como fallo de render (`AMCCA-MED-001`/`002`), no como bloqueo de arranque. |
 | Semántica del contador de intentos al reencolar un dead-letter | SPEC/14 | No dice si se preserva o se reinicia |
 | Ruta del `config.yaml` desplegado | SPEC/03, DECISIONS | Ningún ADR fija dónde vive en una instalación |
 
@@ -265,7 +265,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P1 | Resolver `COMPLETED` vs `SUCCEEDED` | Contradicción contrato ↔ implementación (§2.3) |
 | P2 | Completar el Inspector con claims, decisiones de política, hallazgos de QA y aristas del DAG | Datos ya disponibles (§3.2) |
 | P2 | Migración del kill switch desde `settings` | Regresión en actualización (§3.3) |
-| P2 | Fijar rango de FFmpeg, semántica de requeue y ruta de config | Contratos incompletos (§2.5) |
+| P2 | ~~Fijar rango de FFmpeg~~ (resuelto, ver §2.5), semántica de requeue y ruta de config | Contratos incompletos (§2.5) |
 | P2 | Kill switch y modo de autonomía en todas las pantallas | Obligaciones 1 y 2 (§3.1) |
 
 ---
