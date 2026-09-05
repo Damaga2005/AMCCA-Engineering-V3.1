@@ -197,7 +197,7 @@ public class InstallationUpgradeRestoreValidationTests : IDisposable
 
             await conn.ExecuteAsync(@"
                 INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
-                VALUES ('aud-u1', 'PRODUCTION_CREATED', 'OPERATOR', 'operator_admin', 'PRODUCTION', 'prod-u1', 'SUCCESS', 'NEW', 'corr-u1', '3.1.0', datetime('now'));
+                VALUES ('aud-u1', 'PRODUCTION_CREATED', 'OPERATOR', 'operator_admin', 'PRODUCTION', 'prod-u1', 'ALLOWED', 'NEW', 'corr-u1', '3.1.0', datetime('now'));
             ");
         }
 

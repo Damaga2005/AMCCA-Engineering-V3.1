@@ -84,9 +84,9 @@ public class ChaosSuiteSpec74Tests : IDisposable
                 VALUES ('pt-x02', 'script_gen', 'generate script', datetime('now'), datetime('now'));
                 INSERT INTO prompt_versions (id, template_id, version_no, body_sha256, body_ref, created_at)
                 VALUES ('pv-x02', 'pt-x02', 1, 'sha', 'ref', datetime('now'));
-                -- Agent run starts in RUNNING state
+                -- Agent run starts in STARTED state
                 INSERT INTO agent_runs (run_id, agent_id, agent_version, prompt_version_id, model_id, model_params_hash, state, input_hash, correlation_id, schema_version, started_at)
-                VALUES ('run-x02', 'script-agent', '1.0', 'pv-x02', 'claude-3-5', 'paramhash', 'RUNNING', 'inphash', 'corr-x02', '3.1.0', datetime('now'));
+                VALUES ('run-x02', 'script-agent', '1.0', 'pv-x02', 'claude-3-5', 'paramhash', 'STARTED', 'inphash', 'corr-x02', '3.1.0', datetime('now'));
             ");
         }
 
@@ -96,7 +96,7 @@ public class ChaosSuiteSpec74Tests : IDisposable
             await restartConn.ExecuteAsync(@"
                 UPDATE agent_runs
                 SET state = 'FAILED', output_valid = 0, finished_at = datetime('now')
-                WHERE state = 'RUNNING';
+                WHERE state = 'STARTED';
             ");
 
             var finalState = await restartConn.ExecuteScalarAsync<string>("SELECT state FROM agent_runs WHERE run_id = 'run-x02'");

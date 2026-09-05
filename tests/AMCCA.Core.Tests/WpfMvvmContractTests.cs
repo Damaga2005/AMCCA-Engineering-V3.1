@@ -405,9 +405,39 @@ public class WpfMvvmContractTests : IDisposable
             ", new { ProductionId = prod.Id });
 
             await conn.ExecuteAsync(@"
-                INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
-                VALUES ('pub-insp-1', @ProductionId, 'youtube', 'acc-1', 'artv-1', 'QUEUED', 'idem-insp-1', '3.1.0', datetime('now'), datetime('now'));
+                INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, external_id, evidence_source, evidence_retrieved_at, schema_version, created_at, updated_at)
+                VALUES ('pub-insp-1', @ProductionId, 'youtube', 'acc-1', 'artv-1', 'VERIFIED', 'idem-insp-1', 'yt-video-1', 'OFFICIAL_API', datetime('now'), '3.1.0', datetime('now'), datetime('now'));
             ", new { ProductionId = prod.Id });
+
+            // SPEC/60: claims with sources and retrieval timestamps.
+            await conn.ExecuteAsync(@"
+                INSERT INTO sources (id, url, publisher, retrieved_at, content_hash, trust_tier, robots_allowed, created_at)
+                VALUES ('src-1', 'https://example.com/article', 'Example Wire', datetime('now'), 'hash-1', 'SECONDARY', 1, datetime('now'));
+                INSERT INTO claims (id, production_id, text, status, materiality, subject_class, schema_version, created_at)
+                VALUES ('claim-1', @ProductionId, 'Example claim under review', 'VERIFIED', 'MATERIAL', 'GENERAL', '3.1.0', datetime('now'));
+                INSERT INTO claim_sources (claim_id, source_id, relation)
+                VALUES ('claim-1', 'src-1', 'SUPPORTS');
+            ", new { ProductionId = prod.Id });
+
+            // SPEC/60: every policy decision.
+            await conn.ExecuteAsync(@"
+                INSERT INTO policy_decisions (id, production_id, action, decision, rule_key, policy_version_id, inputs_hash, correlation_id, decided_at)
+                VALUES ('pd-1', @ProductionId, 'PUBLISH', 'REQUIRE_APPROVAL', 'publish_requires_approval', 'polver-1', 'inhash-1', 'corr-pd-1', datetime('now'));
+            ", new { ProductionId = prod.Id });
+
+            // SPEC/60: every QA finding with its responsible node.
+            await conn.ExecuteAsync(@"
+                INSERT INTO qa_findings (id, report_id, check_id, check_kind, status, severity, responsible_artifact_version_id, remediation_code, message)
+                VALUES ('finding-1', 'qa-1', 'audio_levels', 'DETERMINISTIC', 'FAIL', 'HIGH', 'artv-1', 'REMEDIATE_AUDIO', 'Audio peaks exceed threshold');
+            ");
+
+            // SPEC/60: the artifact DAG's edges, not just its nodes.
+            await conn.ExecuteAsync(@"
+                INSERT INTO artifact_versions (id, artifact_id, version_no, sha256, bytes, rel_path, state, created_at)
+                VALUES ('artv-2', 'art-1', 2, @Sha256, 20, 'script_v2.txt', 'CURRENT', datetime('now'));
+                INSERT INTO artifact_edges (parent_version_id, child_version_id, edge_kind, created_at)
+                VALUES ('artv-1', 'artv-2', 'DERIVED_FROM', datetime('now'));
+            ", new { Sha256 = new string('b', 64) });
         }
 
         var inspectorVm = new ProductionInspectorViewModel(_productionService, _factory, _notificationService);
@@ -426,7 +456,24 @@ public class WpfMvvmContractTests : IDisposable
         inspectorVm.Approvals.Should().Contain(a => a.Id == "appr-1");
         inspectorVm.Jobs.Should().Contain(j => j.Id == "job-1");
         inspectorVm.CostEvents.Should().Contain(c => c.Id == "cost-1");
-        inspectorVm.Publications.Should().Contain(p => p.Id == "pub-insp-1");
+
+        var publication = inspectorVm.Publications.Should().ContainSingle(p => p.Id == "pub-insp-1").Subject;
+        publication.EvidenceSource.Should().Be("OFFICIAL_API", "SPEC/60 requires every publication to show its evidence, not just its URL");
+        publication.EvidenceRetrievedAt.Should().NotBeNullOrEmpty();
+
+        var claim = inspectorVm.Claims.Should().ContainSingle(c => c.ClaimId == "claim-1").Subject;
+        claim.SourceUrl.Should().Be("https://example.com/article");
+        claim.Publisher.Should().Be("Example Wire");
+        claim.Relation.Should().Be("SUPPORTS");
+        claim.RetrievedAt.Should().NotBeNullOrEmpty();
+
+        inspectorVm.PolicyDecisions.Should().ContainSingle(pd => pd.Id == "pd-1" && pd.Decision == "REQUIRE_APPROVAL");
+
+        var finding = inspectorVm.QaFindings.Should().ContainSingle(f => f.Id == "finding-1").Subject;
+        finding.Stage.Should().Be("CONTENT_QA", "a QA finding must be traceable to the report/stage that raised it");
+        finding.ResponsibleArtifactVersionId.Should().Be("artv-1");
+
+        inspectorVm.ArtifactEdges.Should().ContainSingle(e => e.ParentVersionId == "artv-1" && e.ChildVersionId == "artv-2" && e.EdgeKind == "DERIVED_FROM");
     }
 
     private async Task<string> CreateDeadLetteredJobAsync(string idempotencyKey)
@@ -531,8 +578,8 @@ public class WpfMvvmContractTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
-                VALUES ('aud-wpf-1', 'POLICY_CHECK_PASSED', 'SYSTEM', 'policy_engine', 'PRODUCTION', 'prod-100', 'SUCCESS', 'POL_OK', 'corr-1', '3.1.0', datetime('now')),
-                       ('aud-wpf-2', 'KILL_SWITCH_ENGAGED', 'OPERATOR', 'operator_admin', 'GLOBAL', 'kill_switch', 'HALTED', 'KILL_ALL', 'corr-2', '3.1.0', datetime('now'));
+                VALUES ('aud-wpf-1', 'POLICY_CHECK_PASSED', 'SYSTEM', 'policy_engine', 'PRODUCTION', 'prod-100', 'ALLOWED', 'POL_OK', 'corr-1', '3.1.0', datetime('now')),
+                       ('aud-wpf-2', 'KILL_SWITCH_ENGAGED', 'OPERATOR', 'operator_admin', 'GLOBAL', 'kill_switch', 'BLOCKED', 'KILL_ALL', 'corr-2', '3.1.0', datetime('now'));
             ");
         }
 

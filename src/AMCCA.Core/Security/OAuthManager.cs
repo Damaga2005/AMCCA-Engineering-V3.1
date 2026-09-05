@@ -246,7 +246,7 @@ public class OAuthManager
         var auditId = "aud-" + UlidGenerator.NewUlid();
         await conn.ExecuteAsync(@"
             INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
-            VALUES (@AuditId, 'OAUTH_REAUTH_TRIGGERED', 'SYSTEM', 'oauth_manager', 'PLATFORM_ACCOUNT', @AccountId, 'REAUTH_REQUIRED', 'AMCCA-PLT-002', @CorrId, '3.1.0', datetime('now'));
+            VALUES (@AuditId, 'OAUTH_REAUTH_TRIGGERED', 'SYSTEM', 'oauth_manager', 'PLATFORM_ACCOUNT', @AccountId, 'BLOCKED', 'AMCCA-PLT-002', @CorrId, '3.1.0', datetime('now'));
         ", new { AuditId = auditId, AccountId = accountId, CorrId = "corr-oauth-" + accountId }, transaction: tx);
 
         tx.Commit();

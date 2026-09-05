@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2237860
+**Total bytes:** 2251898
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `45b16892221c5011df43ac9875cf74e5f451a5548c4c087baaa41a34bc39714b` | 42478 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `41ae576d749c72ba01173a1b7670f8c66efe6ae452a0f66b80cc6ba33d3bc285` | 44032 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -219,7 +219,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `8e78b547e5bce2d470ad14d622c547644b61d64d35eb3fa938a3f0001e3f38fb` | 3107 |
 | `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `4b59227e35b01ed1f476678518b47f3135ebdba044eb5be9378d85afd4c191f3` | 10072 |
 | `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e0bfba2178821fb59851adbbdfb9a2a08f05426359af5a474862cc9f2113f0e2` | 7173 |
-| `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `2dcbd4c20181c54ea76e5568aa06a3a26596cf9b87cd9b549e1042fed14801bc` | 10838 |
+| `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `099524d8b6480a010c8a0eba6c9d51f342448583e4cc0ce0cce63f9ac7c18086` | 15651 |
 | `src/AMCCA.App/ViewModels/ProductionsViewModel.cs` | `1b3fbc0474d148b33984f4701d00940ef0cefb826914a3fb095ed2a3633dd0e9` | 4839 |
 | `src/AMCCA.App/ViewModels/SettingsViewModel.cs` | `60f134380f819702339ee41db56e7e0487dbd097e08f1f21ab00a4aec1d6b105` | 2941 |
 | `src/AMCCA.App/Views/ApprovalQueueView.xaml` | `5a212a4aa9b2e844be095c4b4c88b3ce83d885c8c49fbb5ebebb0846ba5ac7c9` | 3213 |
@@ -230,7 +230,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Views/DashboardView.xaml.cs` | `943ff250963fecd6d37584a257ce501789c20020203713ad9ec33f22cc29cb0e` | 187 |
 | `src/AMCCA.App/Views/JobQueueView.xaml` | `7d4d3ebf9e0f1134b0e77c0e03b0d1bc39f2bae6d1039881ad113a5bc05f8a70` | 4955 |
 | `src/AMCCA.App/Views/JobQueueView.xaml.cs` | `8e5e929e1ed2dbd33460165303785714bd5546850d0937b3b17edd5f2287cd09` | 181 |
-| `src/AMCCA.App/Views/ProductionInspectorView.xaml` | `1f8d38cbd7cf5c72d0dd60b05a93e88d14ebc3d7f1b6ec9c96ce1ff04ac22dbd` | 9628 |
+| `src/AMCCA.App/Views/ProductionInspectorView.xaml` | `d2ee7ea0302becccfc635f509966be5df263faa5dd12eb4553c9c71dcbf2fc37` | 13787 |
 | `src/AMCCA.App/Views/ProductionInspectorView.xaml.cs` | `08e0fafdd059eab2fc2e0d4cd79fff782c45f60b8e1132919e0434642b936d7b` | 203 |
 | `src/AMCCA.App/Views/ProductionsView.xaml` | `361de49b6864f0a7085cd680b5283809f406bf6f8f4fd09211014906e5526019` | 2907 |
 | `src/AMCCA.App/Views/ProductionsView.xaml.cs` | `3e2e348507799ef993f9ec576ca43496399d55fceae6cd092dc97e0cea782bed` | 191 |
@@ -308,7 +308,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `686d4a6d01a41551071091e4a3b306d6c8c07be030d4df1c509dc7a6f77e99c2` | 1357 |
 | `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `ffaa63fc71cb65ad51250b1bfcaa27a6c905c2f025329f6489a1f7d4d5cc900b` | 3968 |
-| `src/AMCCA.Core/Security/OAuthManager.cs` | `1546c84a4de61897d0f4ce02ac52dcdfa7960d11ad78760303c16b70c8fa81bc` | 11843 |
+| `src/AMCCA.Core/Security/OAuthManager.cs` | `b3bb8145a3f5e3b1ee2ed4fd37ac7dae189b69d651eff124bee48e62ecdbf804` | 11835 |
 | `src/AMCCA.Core/Security/OAuthModels.cs` | `f6bf3984f62d28ca1788aa0c7b30fb1031f87f256ef76260f7db7e64427bc0d1` | 539 |
 | `src/AMCCA.Core/Security/PathConfinement.cs` | `9d3dc4442a3315268f999c4b260850e5b252270d91af45b5d154e53d8211f764` | 3563 |
 | `src/AMCCA.Core/Security/SafeArchiveExtractor.cs` | `97e7583715d80ab765e6c24342434cbc1ac0f87ac617129c5e59042dfebe20b5` | 7790 |
@@ -332,7 +332,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` | `31bc22b832e944ab044af8f56a466de46bca429f05dc2f27f5636e9721ba686c` | 8742 |
 | `tests/AMCCA.Core.Tests/ArchiveExtractionStagingRegressionTests.cs` | `6436e19ad0ef02ebf4689365d37f21812339c8e5c3d2bbcb3924c81b289f5f88` | 5508 |
 | `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `40bb41e32a868d3c1da014a20533079b60574ce85e14bbdc15f64634b2f6150b` | 6216 |
-| `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs` | `b844f13a8eee71ff465138c9cf1f8dc12ef9ef0c9865c011f1de29313a5ad7cc` | 20156 |
+| `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs` | `6adb5e799ebb4b6bb8a386e132f1d9b0a73c901b4de6cb622748980cd8f9f49c` | 20156 |
 | `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `7561776cd9a8bb862a08fe4049a395a164f33c6efd9ce211a5191740f25b1423` | 22147 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `c11056b5af8e32f641dd61177212a2a2763126a9f42c716c7240f5b7dd62f88b` | 5982 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
@@ -342,8 +342,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `897bec4bd24435dcef3aae4263392d641a86ceb58227b1dd7a5e6b586b514622` | 7403 |
 | `tests/AMCCA.Core.Tests/FakeSafeHttpClientFactory.cs` | `9f537b89d577a5c6dc9db60127d02b5ff1455252f7090bf12d82703b8ec762e3` | 860 |
 | `tests/AMCCA.Core.Tests/InstallationArtifactIntegrityTests.cs` | `28311223dea6af3e94ae4d7696c400ce81ac8b29e248cab97c757f318ff63dcf` | 7563 |
-| `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `66882ce206486c126df90446e3f881371c645f91dfe477002d5bae32c03c0c10` | 7533 |
-| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `062f505df71eda1e26457843492607225aaa733d6c1e3a606438fe308d14d4f9` | 12154 |
+| `tests/AMCCA.Core.Tests/InstallationCleanInstallTests.cs` | `b9c1588e5672c604631e4cc759cc5a03ac01203bc82284f6fd6a7c25e086ff98` | 7533 |
+| `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `e4fc7fdc62f2b271431b646594d3a22207e6725ae94d74a43c74b496b0f45d7d` | 12154 |
 | `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `b330ad40f3b83fafee83d8b73ef2055a937cfc09f8a7887b19803c6f0b730bb5` | 10739 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `e25244feb670676f404fd38c530587870ddbf4e14f8e62dcf1d943215542337d` | 5248 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `d2550620c23d142100cd1026752d6a228d7dbdb685556f21631c61271fa3128b` | 9242 |
@@ -379,4 +379,4 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/TestSecretStores.cs` | `b50f6419786f2b86cfdac2bb0e48b5f77abb129bc0bee1d217ec86b38fad1453` | 744 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
-| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `66a76ee147557c7baa17963ee217cc8bf090faa9193d5d57501392d1323ec918` | 27750 |
+| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `9733c1e24386e64fa2038520a6cfcd39edc5d154394408fb34c9ac7cd9139cc9` | 31270 |

@@ -27,7 +27,54 @@ public record InspectorJobItem(string Id, string Type, string State, long Attemp
 
 public record InspectorCostEventItem(string Id, string Kind, string Amount, string Currency, string OccurredAt);
 
-public record InspectorPublicationItem(string Id, string Platform, string State, string? ExternalUrl, string UpdatedAt);
+public record InspectorPublicationItem(
+    string Id,
+    string Platform,
+    string State,
+    string? ExternalUrl,
+    string? EvidenceSource,
+    string? EvidenceRetrievedAt,
+    string UpdatedAt);
+
+// SPEC/60: "Claims with sources and retrieval timestamps." One row per claim-source pair (a claim with
+// no source yet still gets one row, with null source fields) rather than a nested grid, matching the
+// flat DataGrid style already used by every other tab.
+public record InspectorClaimItem(
+    string ClaimId,
+    string Text,
+    string Status,
+    string Materiality,
+    string SubjectClass,
+    string? SourceUrl,
+    string? Publisher,
+    string? RetrievedAt,
+    string? Relation);
+
+public record InspectorPolicyDecisionItem(
+    string Id,
+    string Action,
+    string Decision,
+    string RuleKey,
+    string PolicyVersionId,
+    string CorrelationId,
+    string DecidedAt);
+
+public record InspectorQaFindingItem(
+    string Id,
+    string Stage,
+    string CheckId,
+    string CheckKind,
+    string Status,
+    string Severity,
+    string ResponsibleArtifactVersionId,
+    string? RemediationCode,
+    string? Message);
+
+public record InspectorArtifactEdgeItem(
+    string ParentVersionId,
+    string ChildVersionId,
+    string EdgeKind,
+    string CreatedAt);
 
 /// <summary>
 /// SPEC/60 Production Inspector: a read-only aggregate view across production state, versions,
@@ -63,6 +110,10 @@ public class ProductionInspectorViewModel : ViewModelBase
     public ObservableCollection<InspectorJobItem> Jobs { get; } = new();
     public ObservableCollection<InspectorCostEventItem> CostEvents { get; } = new();
     public ObservableCollection<InspectorPublicationItem> Publications { get; } = new();
+    public ObservableCollection<InspectorClaimItem> Claims { get; } = new();
+    public ObservableCollection<InspectorPolicyDecisionItem> PolicyDecisions { get; } = new();
+    public ObservableCollection<InspectorQaFindingItem> QaFindings { get; } = new();
+    public ObservableCollection<InspectorArtifactEdgeItem> ArtifactEdges { get; } = new();
 
     public InspectorProductionSummary? SelectedProduction
     {
@@ -160,6 +211,10 @@ public class ProductionInspectorViewModel : ViewModelBase
         Jobs.Clear();
         CostEvents.Clear();
         Publications.Clear();
+        Claims.Clear();
+        PolicyDecisions.Clear();
+        QaFindings.Clear();
+        ArtifactEdges.Clear();
         return Task.CompletedTask;
     }
 
@@ -213,7 +268,46 @@ public class ProductionInspectorViewModel : ViewModelBase
                 parameters);
 
             var publications = await conn.QueryAsync<InspectorPublicationItem>(
-                "SELECT id AS Id, platform AS Platform, state AS State, external_url AS ExternalUrl, updated_at AS UpdatedAt FROM publications WHERE production_id = @ProductionId ORDER BY updated_at DESC;",
+                "SELECT id AS Id, platform AS Platform, state AS State, external_url AS ExternalUrl, evidence_source AS EvidenceSource, evidence_retrieved_at AS EvidenceRetrievedAt, updated_at AS UpdatedAt FROM publications WHERE production_id = @ProductionId ORDER BY updated_at DESC;",
+                parameters);
+
+            // SPEC/60: claims with their sources and retrieval timestamps. LEFT JOINed so a claim with
+            // no source recorded yet still shows a row instead of vanishing from the inspector.
+            var claims = await conn.QueryAsync<InspectorClaimItem>(@"
+                SELECT c.id AS ClaimId, c.text AS Text, c.status AS Status, c.materiality AS Materiality, c.subject_class AS SubjectClass,
+                       s.url AS SourceUrl, s.publisher AS Publisher, s.retrieved_at AS RetrievedAt, cs.relation AS Relation
+                FROM claims c
+                LEFT JOIN claim_sources cs ON cs.claim_id = c.id
+                LEFT JOIN sources s ON s.id = cs.source_id
+                WHERE c.production_id = @ProductionId
+                ORDER BY c.created_at ASC;",
+                parameters);
+
+            var policyDecisions = await conn.QueryAsync<InspectorPolicyDecisionItem>(
+                "SELECT id AS Id, action AS Action, decision AS Decision, rule_key AS RuleKey, policy_version_id AS PolicyVersionId, correlation_id AS CorrelationId, decided_at AS DecidedAt FROM policy_decisions WHERE production_id = @ProductionId ORDER BY decided_at ASC;",
+                parameters);
+
+            // qa_findings has no production_id of its own; it is scoped to a production through the
+            // qa_reports row it belongs to.
+            var qaFindings = await conn.QueryAsync<InspectorQaFindingItem>(@"
+                SELECT qf.id AS Id, qr.stage AS Stage, qf.check_id AS CheckId, qf.check_kind AS CheckKind, qf.status AS Status,
+                       qf.severity AS Severity, qf.responsible_artifact_version_id AS ResponsibleArtifactVersionId,
+                       qf.remediation_code AS RemediationCode, qf.message AS Message
+                FROM qa_findings qf
+                INNER JOIN qa_reports qr ON qr.report_id = qf.report_id
+                WHERE qr.production_id = @ProductionId
+                ORDER BY qr.evaluated_at ASC;",
+                parameters);
+
+            // Same scoping problem as qa_findings: artifact_edges has no production_id, so it is joined
+            // through its parent version's artifact.
+            var artifactEdges = await conn.QueryAsync<InspectorArtifactEdgeItem>(@"
+                SELECT ae.parent_version_id AS ParentVersionId, ae.child_version_id AS ChildVersionId, ae.edge_kind AS EdgeKind, ae.created_at AS CreatedAt
+                FROM artifact_edges ae
+                INNER JOIN artifact_versions pv ON pv.id = ae.parent_version_id
+                INNER JOIN artifacts pa ON pa.id = pv.artifact_id
+                WHERE pa.production_id = @ProductionId
+                ORDER BY ae.created_at ASC;",
                 parameters);
 
             if (token != _loadRequestToken)
@@ -249,6 +343,18 @@ public class ProductionInspectorViewModel : ViewModelBase
 
             Publications.Clear();
             foreach (var p in publications) Publications.Add(p);
+
+            Claims.Clear();
+            foreach (var c in claims) Claims.Add(c);
+
+            PolicyDecisions.Clear();
+            foreach (var pd in policyDecisions) PolicyDecisions.Add(pd);
+
+            QaFindings.Clear();
+            foreach (var f in qaFindings) QaFindings.Add(f);
+
+            ArtifactEdges.Clear();
+            foreach (var e in artifactEdges) ArtifactEdges.Add(e);
         }
         catch (Exception ex)
         {

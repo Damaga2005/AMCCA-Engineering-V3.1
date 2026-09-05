@@ -149,8 +149,64 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Platform" Binding="{Binding Platform}" Width="140"/>
                         <DataGridTextColumn Header="State" Binding="{Binding State}" Width="140"/>
-                        <DataGridTextColumn Header="External URL" Binding="{Binding ExternalUrl}" Width="240"/>
+                        <DataGridTextColumn Header="External URL" Binding="{Binding ExternalUrl}" Width="200"/>
+                        <DataGridTextColumn Header="Evidence Source" Binding="{Binding EvidenceSource}" Width="160"/>
+                        <DataGridTextColumn Header="Evidence Retrieved At" Binding="{Binding EvidenceRetrievedAt}" Width="180"/>
                         <DataGridTextColumn Header="Updated At" Binding="{Binding UpdatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Claims">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding Claims}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Claim" Binding="{Binding Text}" Width="240"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                        <DataGridTextColumn Header="Materiality" Binding="{Binding Materiality}" Width="100"/>
+                        <DataGridTextColumn Header="Subject Class" Binding="{Binding SubjectClass}" Width="120"/>
+                        <DataGridTextColumn Header="Source URL" Binding="{Binding SourceUrl}" Width="220"/>
+                        <DataGridTextColumn Header="Publisher" Binding="{Binding Publisher}" Width="140"/>
+                        <DataGridTextColumn Header="Relation" Binding="{Binding Relation}" Width="100"/>
+                        <DataGridTextColumn Header="Retrieved At" Binding="{Binding RetrievedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Policy Decisions">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding PolicyDecisions}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="140"/>
+                        <DataGridTextColumn Header="Decision" Binding="{Binding Decision}" Width="140"/>
+                        <DataGridTextColumn Header="Rule Key" Binding="{Binding RuleKey}" Width="160"/>
+                        <DataGridTextColumn Header="Policy Version" Binding="{Binding PolicyVersionId}" Width="160"/>
+                        <DataGridTextColumn Header="Correlation Id" Binding="{Binding CorrelationId}" Width="160"/>
+                        <DataGridTextColumn Header="Decided At" Binding="{Binding DecidedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="QA Findings">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding QaFindings}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Stage" Binding="{Binding Stage}" Width="140"/>
+                        <DataGridTextColumn Header="Check" Binding="{Binding CheckId}" Width="140"/>
+                        <DataGridTextColumn Header="Kind" Binding="{Binding CheckKind}" Width="110"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                        <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="100"/>
+                        <DataGridTextColumn Header="Responsible Node" Binding="{Binding ResponsibleArtifactVersionId}" Width="180"/>
+                        <DataGridTextColumn Header="Remediation" Binding="{Binding RemediationCode}" Width="140"/>
+                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Artifact DAG">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding ArtifactEdges}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Parent Version" Binding="{Binding ParentVersionId}" Width="220"/>
+                        <DataGridTextColumn Header="Child Version" Binding="{Binding ChildVersionId}" Width="220"/>
+                        <DataGridTextColumn Header="Edge Kind" Binding="{Binding EdgeKind}" Width="140"/>
+                        <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>

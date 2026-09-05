@@ -416,7 +416,7 @@ esos cuatro bindings y pasa en verde. Cubierto además por
 `ApprovalQueueViewModel_ExposesScopeSubjectCostCeilingAndExpiry` en `WpfMvvmContractTests.cs`, que
 comprueba tanto el caso con scope como el caso heredado sin scope. Un operador ya no aprueba a ciegas.
 
-### 3.2 El Production Inspector cubre aproximadamente la mitad de lo que SPEC/60 exige
+### 3.2 El Production Inspector cubre aproximadamente la mitad de lo que SPEC/60 exige — **Resuelto salvo la oportunidad (subsistema inexistente)**
 
 SPEC/60 lo llama «*the most important screen*» y enumera su contenido obligatorio:
 
@@ -424,16 +424,28 @@ SPEC/60 lo llama «*the most important screen*» y enumera su contenido obligato
 |---|---|
 | Historial de transiciones con transition ids | ✅ |
 | Todo evento de coste | ✅ |
-| Toda publicación **con su evidencia** | 🟡 muestra URL, no `evidence_source`/`evidence_retrieved_at` |
-| Oportunidad y desglose de su puntuación | ❌ (subsistema inexistente) |
-| Claims con fuentes y marcas de tiempo de recuperación | ❌ **datos existen en BD** |
-| DAG de artefactos con estados de versión | 🟡 artefactos y versiones sí; aristas del DAG no |
-| Todo hallazgo de QA con su nodo responsable | ❌ muestra informes, no `qa_findings` |
-| Toda decisión de política | ❌ **tabla `policy_decisions` existe y no se lee** |
+| ~~Toda publicación **con su evidencia**~~ | ✅ **Resuelto**: ahora muestra `evidence_source`/`evidence_retrieved_at`, no solo la URL |
+| Oportunidad y desglose de su puntuación | ❌ (subsistema inexistente, sin cambios — ver más abajo) |
+| ~~Claims con fuentes y marcas de tiempo de recuperación~~ | ✅ **Resuelto** |
+| ~~DAG de artefactos con estados de versión~~ | ✅ **Resuelto**: pestaña nueva con las aristas de `artifact_edges` (antes solo se veían los nodos) |
+| ~~Todo hallazgo de QA con su nodo responsable~~ | ✅ **Resuelto**: pestaña nueva sobre `qa_findings` (antes solo se veían los `qa_reports` agregados) |
+| ~~Toda decisión de política~~ | ✅ **Resuelto**: pestaña nueva sobre `policy_decisions` |
 
-Cuatro de las ausencias tienen tabla y datos disponibles hoy: claims/fuentes, decisiones de política,
-hallazgos de QA y aristas del DAG. Se construyó contra la descripción de una línea del informe anterior
-en lugar de contra esta lista normativa.
+**Corregido esta sesión:** se añadieron cuatro pestañas nuevas (Claims, Policy Decisions, QA Findings,
+Artifact DAG) y se completaron las columnas de evidencia de Publications, todo sobre datos que ya
+existían en las tablas correspondientes — ninguna requirió una migración ni un escritor nuevo, solo la
+lectura que faltaba en `ProductionInspectorViewModel`. `claims` se muestra una fila por par
+claim-fuente (`LEFT JOIN` contra `claim_sources`/`sources`, para que una claim sin fuente todavía no
+desaparezca de la vista); `qa_findings` y `artifact_edges` no tienen `production_id` propio, así que se
+unen a través de `qa_reports`/`artifact_versions`+`artifacts` respectivamente para acotarlos a la
+producción seleccionada. Cubierto por una extensión de
+`ProductionInspectorViewModel_LoadsFullAggregateForSelectedProduction` en `WpfMvvmContractTests.cs`.
+
+La fila de **oportunidad y desglose de puntuación** sigue sin resolver deliberadamente: `productions.opportunity_id`
+existe, pero no hay ninguna tubería real que genere y puntúe oportunidades todavía (la tabla `opportunities`
+no tiene un escritor de producción en `src/AMCCA.Core`) — mostrar esa pestaña hoy sería una UI para datos
+que nunca van a aparecer, no una funcionalidad pendiente de cablear. Se deja fuera por el mismo principio
+que ya rige el resto del proyecto: no inventar una capacidad que el sistema no tiene todavía.
 
 ### 3.3 Ruta de actualización del kill switch — **Resuelto (migración 005)**
 
@@ -503,7 +515,7 @@ introducidas en la superficie cubierta por la herramienta.
 | Eliminar SQL directo de la UI | Cerrado para mutaciones; Dashboard y Audit Log siguen leyendo SQL directo |
 | Approval Queue vía dominio | Cerrado en la ruta; **cumple SPEC/60 obl. 5** (§3.1, corregido esta sesión: la auditoría estaba desactualizada) |
 | Kill switch operacional | Cerrado, incluida la ruta de actualización (§3.3) y la obl. 1 (§3.1), corregido esta sesión: fila desactualizada |
-| Production Inspector | Parcial: ~50 % de SPEC/60 (§3.2) |
+| Production Inspector | Completo salvo oportunidad/puntuación (subsistema inexistente, §3.2) |
 | Job Queue | Cerrado, incluido el requeue de dead-letter que SPEC/14 exigía y no existía |
 | Product E2E | Parcial: recorre las capas reales; el viaje completo depende de subsistemas inexistentes |
 
@@ -522,7 +534,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | ~~Aprobaciones: mostrar sujeto, techo de coste y expiración~~ **Ya resuelto** (entrada de la auditoría desactualizada, corregido esta sesión) | Obligación 5, `spec60.obligation_5_approval_detail_columns` en verde (§3.1) |
 | P1 | ~~Resolver `COMPLETED` vs `SUCCEEDED`~~ **Ya resuelto** (migración 006; entrada de la auditoría desactualizada, corregido esta sesión) | Contradicción contrato ↔ implementación (§2.3) |
-| P2 | Completar el Inspector con claims, decisiones de política, hallazgos de QA y aristas del DAG | Datos ya disponibles (§3.2) |
+| P2 | ~~Completar el Inspector con claims, decisiones de política, hallazgos de QA y aristas del DAG~~ **Resuelto** (evidencia de publicaciones incluida); oportunidad/puntuación queda fuera a propósito, subsistema inexistente | §3.2 |
 | P2 | ~~Migración del kill switch desde `settings`~~ **Resuelto** (migración 005) | Regresión en actualización (§3.3) |
 | P2 | ~~Fijar rango de FFmpeg~~, ~~semántica de requeue~~ y ~~ruta de config~~ **Resueltos**, ver §2.5 | Contratos incompletos (§2.5) |
 | P2 | ~~Kill switch y modo de autonomía en todas las pantallas~~ **Resuelto** | Obligaciones 1 y 2 (§3.1) |
