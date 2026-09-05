@@ -125,8 +125,8 @@ ninguna columna real:
 
 | Tabla | Campos sin columna (estado original) |
 |---|---|
-| `cost_events` | `schema_version`, `agent_run_id`, `model_id`, `provider_request_id`, `units`, `pricing_snapshot_id`, `reconciliation_state`, `budget_id` (8 de 15 propiedades del contrato) |
-| `jobs` | `schema_version`, `scheduled_at`, `deadline_at`, `estimated_cost`, `reserved_cost`, `currency`, `causation_id`, `last_error_code` |
+| `cost_events` | ~~`schema_version`~~ (migración 008), `agent_run_id`, `model_id`, `provider_request_id`, `units`, `pricing_snapshot_id`, `reconciliation_state`, `budget_id` (8 de 15 propiedades del contrato) |
+| `jobs` | ~~`schema_version`~~ (migración 008), `scheduled_at`, `deadline_at`, `estimated_cost`, `reserved_cost`, `currency`, `causation_id`, `last_error_code` |
 | ~~`referral_links`~~ | ~~`brand`, `commission_model`, `disclosure_required`~~ **No eran un hueco** |
 | ~~`analytics_snapshots`~~ | ~~`source_account_id`~~ **Resuelto** (migración 007) |
 
@@ -149,7 +149,18 @@ reconciliar. Se regeneró `SPEC/11_DATABASE_SCHEMA.md` con las funciones reales 
 se comprobó que el diff resultante es exactamente esa fila, sin arrastrar los ~20 ficheros de conversión
 CRLF→LF que una regeneración completa produce en este entorno.
 
-Quedan **16** campos sin columna, no 20 — `cost_events`×8 y `jobs`×8. Ninguno de los 16 restantes se corrigió aquí — igual que las 16
+**`cost_events.schema_version` y `jobs.schema_version` también se cerraron:** D-004 exige que "todo objeto
+de contrato persistido lleva `schema_version`", `job.schema.json`/`cost-event.schema.json` lo declaran
+requerido, e incluso el propio modelo de `generate_artifacts.py` para `SPEC/11` ya listaba la columna en
+ambas tablas — SPEC/11 llevaba tiempo siendo *aspiracional*, no descriptivo, en este único punto, porque
+nada comparaba ese modelo contra el DDL real de `MigrationService.cs`. Migración 008 añade la columna con
+`DEFAULT '3.1.0'` (no un `NOT NULL` a secas, porque a diferencia de `referral_links`/`analytics_snapshots`
+estas dos tablas sí tienen escritores reales y podrían tener filas existentes) y se verificó contra SQLite
+real que una fila insertada *antes* de la migración recibe el valor por defecto en el backfill.
+`JobManager.EnqueueJobAsync`/`GetJobAsync` y `RevenueService.RecordCostAsync` se actualizaron para
+fijar/leer el campo explícitamente en vez de depender solo del default.
+
+Quedan **14** campos sin columna, no 20 — `cost_events`×7 y `jobs`×7. Ninguno de los 14 restantes se corrigió aquí — igual que las 16
 columnas sin `CHECK` de §2.1, cada uno es su propia unidad de riesgo (decidir si el campo se añade a la
 tabla, se normaliza en otra, o se retira del contrato) y corregirlos a ciegas en bloque sería exactamente
 el tipo de cambio grande y no verificado que esta sesión ha evitado deliberadamente en otros puntos.
@@ -343,12 +354,13 @@ confirmados por los hallazgos anteriores:
    una regresión que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni
    menos que eso.
 4. ~~No detecta campos de contrato sin columna~~ **Resuelto** (`contracts.fields_have_columns`, con
-   mutation test `mutation_19`) → deja de pasar en verde: hoy señala 16 campos de contrato sin columna
+   mutation test `mutation_19`) → deja de pasar en verde: hoy señala 14 campos de contrato sin columna
    real en `cost_events` y `jobs` (detalle completo en §2.2). El ejemplo original de la auditoría
    (`cost_events.reconciliation_state`) era solo uno de ocho campos sin columna en esa misma tabla. De los
-   otros dos hallazgos que este check sacó a la luz, `referral_links.brand`/`commission_model`/
-   `disclosure_required` resultaron ser diseño correcto (normalizados en `referral_programs`) y
-   `analytics_snapshots.source_account_id` era un hueco real que se cerró (migración 007).
+   otros hallazgos que este check sacó a la luz, `referral_links.brand`/`commission_model`/
+   `disclosure_required` resultaron ser diseño correcto (normalizados en `referral_programs`), y
+   `analytics_snapshots.source_account_id` y `cost_events`/`jobs`.`schema_version` (D-004) eran huecos
+   reales que se cerraron (migraciones 007 y 008).
 
 Los cuatro puntos ciegos que esta auditoría nombró están ahora cerrados como checks del gate. Las
 obligaciones 3, 4 y 7 de
@@ -385,8 +397,8 @@ introducidas en la superficie cubierta por la herramienta.
 | P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
 | P0 | Acotar `tool_runs.side_effect_class` con `CHECK` | La defensa de intent falla en abierto (§2.1) |
 | P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
-| P2 | 16 campos de contrato sin columna (`cost_events`×8, `jobs`×8) — cada uno su propia unidad de riesgo | Ahora visibles vía `contracts.fields_have_columns` (§2.2, §4) |
-| P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |
+| P2 | 14 campos de contrato sin columna (`cost_events`×7, `jobs`×7) — cada uno su propia unidad de riesgo | Ahora visibles vía `contracts.fields_have_columns` (§2.2, §4) |
+| P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`cost_events`/`jobs`.`schema_version`~~ **Resuelto** (migración 008, D-004); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | Aprobaciones: mostrar sujeto, techo de coste y expiración | Obligación 5, operador aprobando a ciegas (§3.1) |
 | P1 | Resolver `COMPLETED` vs `SUCCEEDED` | Contradicción contrato ↔ implementación (§2.3) |

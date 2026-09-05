@@ -16,6 +16,7 @@ public class JobRecord
     public string PayloadJson { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
     public string UpdatedAt { get; set; } = string.Empty;
+    public string SchemaVersion { get; set; } = "3.1.0";
 }
 
 /// <summary>

@@ -1148,6 +1148,30 @@ public class MigrationService
             @"
                 ALTER TABLE analytics_snapshots DROP COLUMN source_account_id;
             "
+        ),
+        (
+            8,
+            "008_jobs_and_cost_events_schema_version_column",
+            @"
+                -- D-004: 'Every persisted contract object carries schema_version.' job.schema.json and
+                -- cost-event.schema.json both require it, and generate_artifacts.py's own SPEC/11 model
+                -- for both tables already listed a schema_version column -- but neither table's real DDL
+                -- ever had one, and neither writer (JobManager.EnqueueJobAsync, RevenueService.
+                -- RecordCostAsync) ever set it. SPEC/11 was accidentally aspirational, not descriptive,
+                -- for this one column on these two tables (fourth audit, AUDIT/FOURTH_AUDIT_PROJECT_AND_
+                -- SPEC.md section 2.2, and 2.4's contracts.fields_have_columns gate check).
+                --
+                -- DEFAULT '3.1.0' (not a bare NOT NULL) because, unlike migration 7's tables, jobs and
+                -- cost_events have real writers and so may already hold rows in a deployed database;
+                -- SQLite requires a default to add a NOT NULL column to a non-empty table, and every row
+                -- ever written by this codebase was in fact written under schema 3.1.0.
+                ALTER TABLE jobs ADD COLUMN schema_version TEXT NOT NULL DEFAULT '3.1.0';
+                ALTER TABLE cost_events ADD COLUMN schema_version TEXT NOT NULL DEFAULT '3.1.0';
+            ",
+            @"
+                ALTER TABLE jobs DROP COLUMN schema_version;
+                ALTER TABLE cost_events DROP COLUMN schema_version;
+            "
         )
     };
 

@@ -44,17 +44,18 @@ public class JobManager
             CorrelationId = correlationId,
             PayloadJson = payloadJson,
             CreatedAt = now,
-            UpdatedAt = now
+            UpdatedAt = now,
+            SchemaVersion = "3.1.0"
         };
 
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             INSERT INTO jobs (
                 id, production_id, type, state, priority, idempotency_key, attempt,
-                max_attempts, correlation_id, payload_json, created_at, updated_at
+                max_attempts, correlation_id, payload_json, created_at, updated_at, schema_version
             ) VALUES (
                 @Id, @ProductionId, @Type, @State, @Priority, @IdempotencyKey, @Attempt,
-                @MaxAttempts, @CorrelationId, @PayloadJson, @CreatedAt, @UpdatedAt
+                @MaxAttempts, @CorrelationId, @PayloadJson, @CreatedAt, @UpdatedAt, @SchemaVersion
             );
         ";
         await connection.ExecuteAsync(sql, job);
@@ -525,7 +526,8 @@ public class JobManager
                 correlation_id AS CorrelationId,
                 payload_json AS PayloadJson,
                 created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                updated_at AS UpdatedAt,
+                schema_version AS SchemaVersion
             FROM jobs
             WHERE id = @Id;
         ";

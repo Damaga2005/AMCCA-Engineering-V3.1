@@ -479,4 +479,59 @@ public class DatabaseAndMigrationContractTests : IDisposable
         var columns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('analytics_snapshots');")).ToList();
         columns.Should().NotContain("source_account_id");
     }
+
+    /// <summary>
+    /// D-004: "Every persisted contract object carries schema_version." job.schema.json and
+    /// cost-event.schema.json both require it, and generate_artifacts.py's own SPEC/11 model for both
+    /// tables already listed it, but neither table's real DDL ever had the column (fourth audit section
+    /// 2.2, and 2.4's contracts.fields_have_columns gate check). Unlike migration 7's tables, jobs and
+    /// cost_events have real writers, so this proves the DEFAULT '3.1.0' actually backfills a row written
+    /// before the column existed -- not just that a fresh row can set it.
+    /// </summary>
+    [Fact]
+    public async Task Migration008_BackfillsSchemaVersionOnPreExistingJobsAndCostEventsRows()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 7);
+
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync(@"
+                INSERT INTO jobs (id, type, state, priority, idempotency_key, attempt, max_attempts, payload_json, created_at, updated_at)
+                VALUES ('job-pre-mig8', 'RENDER', 'QUEUED', 3, 'idem-pre-mig8', 0, 3, '{}', datetime('now'), datetime('now'));
+                INSERT INTO cost_events (id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at)
+                VALUES ('cost-pre-mig8', 'prod-pre-mig8', 'job-pre-mig8', 'RESERVATION', '1.000000', 'EUR', 'test-provider', datetime('now'), datetime('now'));
+            ");
+        }
+
+        await migrationService.UpgradeAsync();
+
+        using var verifyConnection = await factory.CreateOpenConnectionAsync();
+        var jobSchemaVersion = await verifyConnection.ExecuteScalarAsync<string>(
+            "SELECT schema_version FROM jobs WHERE id = 'job-pre-mig8';");
+        jobSchemaVersion.Should().Be("3.1.0", "a row written before this migration must be backfilled, not left NULL");
+
+        var costSchemaVersion = await verifyConnection.ExecuteScalarAsync<string>(
+            "SELECT schema_version FROM cost_events WHERE id = 'cost-pre-mig8';");
+        costSchemaVersion.Should().Be("3.1.0");
+    }
+
+    [Fact]
+    public async Task Migration008_RollbackRemovesSchemaVersionFromJobsAndCostEvents()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 7);
+
+        using var connection = await factory.CreateOpenConnectionAsync();
+        var jobColumns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('jobs');")).ToList();
+        jobColumns.Should().NotContain("schema_version");
+
+        var costColumns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('cost_events');")).ToList();
+        costColumns.Should().NotContain("schema_version");
+    }
 }

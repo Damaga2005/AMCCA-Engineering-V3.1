@@ -53,6 +53,7 @@ public class JobsAndLeasesContractTests : IDisposable
         var job1 = await jobManager.EnqueueJobAsync("render", key, "corr-1", "{}", priority: 2);
         job1.Should().NotBeNull();
         job1.State.Should().Be("QUEUED");
+        job1.SchemaVersion.Should().Be("3.1.0", "D-004: every persisted contract object carries schema_version");
 
         // Enqueueing identical logical intent key fails with unique constraint
         var act = async () => await jobManager.EnqueueJobAsync("render", key, "corr-2", "{}", priority: 2);
@@ -141,6 +142,7 @@ public class JobsAndLeasesContractTests : IDisposable
         var job = await jobManager.GetJobAsync(enqueued.Id);
         job.Should().NotBeNull();
         job!.State.Should().Be("DEAD_LETTER", "job must be moved to DEAD_LETTER on attempt exhaustion (SPEC/14)");
+        job.SchemaVersion.Should().Be("3.1.0", "GetJobAsync must round-trip schema_version, not just EnqueueJobAsync's in-memory copy");
     }
 
     [Fact]

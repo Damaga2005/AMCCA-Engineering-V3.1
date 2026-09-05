@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Monetization;
+using Dapper;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -106,6 +107,15 @@ public class MonetizationAndRevenueContractTests : IDisposable
             amount: 40.00m,
             currency: "EUR",
             provider: "elevenlabs");
+
+        // D-004: every persisted contract object carries schema_version.
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            var schemaVersion = await conn.ExecuteScalarAsync<string>(
+                "SELECT schema_version FROM cost_events WHERE production_id = @Id AND kind = 'SETTLEMENT';",
+                new { Id = prodId });
+            schemaVersion.Should().Be("3.1.0");
+        }
 
         // 4. Reserved cost: 20.00 EUR (must NOT be counted in settled spend!)
         await _revenueService.RecordCostAsync(
