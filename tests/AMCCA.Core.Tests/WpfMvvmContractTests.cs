@@ -197,7 +197,7 @@ public class WpfMvvmContractTests : IDisposable
             // Insert active production
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-d1', 'SCRIPT_GEN', 'Tech Trends', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-d1', 'SCRIPTING', 'Tech Trends', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
 
             // Insert pending approval
@@ -216,7 +216,7 @@ public class WpfMvvmContractTests : IDisposable
             // because the filter excluded 'PUBLISHED', which is not a state in the canonical machine.
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-d2', 'ARCHIVED', 'Done and filed', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-d2', 'ARCHIVED', 'Done and filed', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
         }
 
@@ -257,7 +257,7 @@ public class WpfMvvmContractTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-app-1', 'APPROVAL_PENDING', 'Topic 1', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-app-1', 'BLOCKED', 'Topic 1', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
 
             await conn.ExecuteAsync(@"
@@ -306,7 +306,7 @@ public class WpfMvvmContractTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-scope-1', 'APPROVAL_PENDING', 'Topic', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-scope-1', 'BLOCKED', 'Topic', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
 
             var scopeJson = System.Text.Json.JsonSerializer.Serialize(
@@ -369,7 +369,7 @@ public class WpfMvvmContractTests : IDisposable
     public async Task ProductionInspectorViewModel_LoadsFullAggregateForSelectedProduction()
     {
         var correlationId = Guid.NewGuid().ToString("N");
-        var prod = await _productionService.CreateProductionAsync("Inspector Target", "en", "COLLABORATIVE", correlationId, nicheId: "tech");
+        var prod = await _productionService.CreateProductionAsync("Inspector Target", "en", "ASSISTED", correlationId, nicheId: "tech");
         await _productionService.TransitionAsync(prod.Id, "RESEARCHING", "ORCHESTRATOR", correlationId);
 
         using (var conn = await _factory.CreateOpenConnectionAsync())
@@ -386,7 +386,7 @@ public class WpfMvvmContractTests : IDisposable
 
             await conn.ExecuteAsync(@"
                 INSERT INTO qa_reports (report_id, production_id, artifact_version_id, stage, overall_score, critical_scores_json, verdict, threshold_profile_id, schema_version, evaluated_at)
-                VALUES ('qa-1', @ProductionId, 'artv-1', 'SCRIPT_QA', 0.95, '{}', 'PASS', 'default', '3.1.0', datetime('now'));
+                VALUES ('qa-1', @ProductionId, 'artv-1', 'CONTENT_QA', 0.95, '{}', 'PASS', 'default', '3.1.0', datetime('now'));
             ", new { ProductionId = prod.Id });
 
             await conn.ExecuteAsync(@"

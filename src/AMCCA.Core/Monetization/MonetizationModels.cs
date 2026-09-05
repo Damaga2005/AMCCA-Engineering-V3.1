@@ -22,7 +22,7 @@ public class CostRecord
     public string Id { get; set; } = string.Empty;
     public string ProductionId { get; set; } = string.Empty;
     public string? JobId { get; set; }
-    public string Kind { get; set; } = "SETTLEMENT"; // RESERVATION, SETTLEMENT, REFUND, ADJUSTMENT
+    public string Kind { get; set; } = "SETTLEMENT"; // ESTIMATE, RESERVATION, SETTLEMENT, RELEASE, ADJUSTMENT
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "EUR";
     public string Provider { get; set; } = string.Empty;

@@ -168,7 +168,7 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
         var eventStore = new EventStore(_factory);
         var productionService = new ProductionService(_factory, registry, eventStore);
 
-        var prod = await productionService.CreateProductionAsync("Test C04", "en", "FULL_AUTONOMY", "corr-init");
+        var prod = await productionService.CreateProductionAsync("Test C04", "en", "AUTONOMOUS", "corr-init");
 
         // Two concurrent transitions: INIT -> RESEARCHING
         var t1 = Task.Run(async () =>
@@ -261,7 +261,7 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
             Platform = "youtube",
             AccountId = accountId,
             ContentVersionId = "cv-c06",
-            State = "QUEUED",
+            State = "INTENT_CREATED",
             IdempotencyKey = "key-c06-b",
             CreatedAt = DateTimeOffset.UtcNow.ToString("O"),
             UpdatedAt = DateTimeOffset.UtcNow.ToString("O")
@@ -278,7 +278,7 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
         using var conn = await _factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync(@"
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-c07', 'INIT', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-c07', 'INIT', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO artifacts (id, production_id, kind, created_at, updated_at)
             VALUES ('art-c07', 'prod-c07', 'SCRIPT', datetime('now'), datetime('now'));
         ");
@@ -354,7 +354,7 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
         using var conn = await _factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync(@"
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-c09', 'REWORK', 1, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-c09', 'REWORK', 1, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO artifacts (id, production_id, kind, created_at, updated_at)
             VALUES ('art-c09', 'prod-c09', 'SCRIPT', datetime('now'), datetime('now'));
             INSERT INTO artifact_versions (id, artifact_id, version_no, sha256, bytes, rel_path, state, created_at)

@@ -60,7 +60,7 @@ public class PlatformHub
             Platform = platform,
             AccountId = accountId,
             ContentVersionId = contentVersionId,
-            State = "QUEUED",
+            State = "INTENT_CREATED",
             IdempotencyKey = idempotencyKey,
             CreatedAt = now,
             UpdatedAt = now

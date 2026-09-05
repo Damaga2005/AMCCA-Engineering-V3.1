@@ -97,7 +97,7 @@ public class InstallationCleanInstallTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-life-1', 'RENDER_DONE', 'Lifecycle Video', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-life-1', 'CANDIDATE_RENDERED', 'Lifecycle Video', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
 
             await conn.ExecuteAsync(@"

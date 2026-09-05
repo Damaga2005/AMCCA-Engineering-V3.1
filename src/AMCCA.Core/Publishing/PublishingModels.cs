@@ -7,7 +7,7 @@ public class PublicationRecord
     public string Platform { get; set; } = string.Empty;
     public string AccountId { get; set; } = string.Empty;
     public string ContentVersionId { get; set; } = string.Empty;
-    public string State { get; set; } = "QUEUED";
+    public string State { get; set; } = "INTENT_CREATED";
     public string IdempotencyKey { get; set; } = string.Empty;
     public string? ProviderRequestId { get; set; }
     public string? ExternalId { get; set; }

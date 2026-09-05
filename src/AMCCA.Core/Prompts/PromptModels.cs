@@ -31,7 +31,7 @@ public class AgentRunRecord
     public string ModelParamsHash { get; set; } = string.Empty;
     public string InputHash { get; set; } = string.Empty;
     public bool OutputValid { get; set; }
-    public string State { get; set; } = "QUEUED";
+    public string State { get; set; } = "STARTED";
     public string Cost { get; set; } = "0.00";
     public string StartedAt { get; set; } = string.Empty;
     public string? CompletedAt { get; set; }

@@ -91,7 +91,7 @@ public class ResearchAndClaimValidationContractTests : IDisposable
             ProductionId = "prod-1",
             Text = "Company X acquired Startup Y for $500M.",
             Materiality = "MATERIAL",
-            SubjectClass = "TECH",
+            SubjectClass = "GENERAL",
             ContainsPersonalData = false
         };
 
@@ -132,7 +132,7 @@ public class ResearchAndClaimValidationContractTests : IDisposable
             ProductionId = "prod-1",
             Text = "EU AI Act enters into force today.",
             Materiality = "MATERIAL",
-            SubjectClass = "LAW",
+            SubjectClass = "LEGAL",
             ContainsPersonalData = false
         };
 
@@ -222,7 +222,7 @@ public class ResearchAndClaimValidationContractTests : IDisposable
         using (var conn = await _factory.CreateOpenConnectionAsync())
         {
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at) VALUES ('prod-200', 'RESEARCH', 0, 1, 'FULL_AUTONOMY', 'es', '3.1.0', datetime('now'), datetime('now'));";
+            cmd.CommandText = "INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at) VALUES ('prod-200', 'RESEARCHING', 0, 1, 'AUTONOMOUS', 'es', '3.1.0', datetime('now'), datetime('now'));";
             await cmd.ExecuteNonQueryAsync();
         }
 

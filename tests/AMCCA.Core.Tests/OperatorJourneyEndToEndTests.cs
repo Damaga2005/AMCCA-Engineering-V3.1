@@ -170,7 +170,7 @@ public class OperatorJourneyEndToEndTests : IDisposable
             Text = "El archivo histórico confirma el evento de 1920.",
             Status = "VERIFIED",
             Materiality = "MATERIAL",
-            SubjectClass = "HISTORY",
+            SubjectClass = "GENERAL",
             ContainsPersonalData = false
         };
         await _researchService.InsertClaimWithSourceAsync(claim, source.Id, "SUPPORTS");

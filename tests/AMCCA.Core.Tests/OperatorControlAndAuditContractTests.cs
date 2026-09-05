@@ -90,7 +90,7 @@ public class OperatorControlAndAuditContractTests : IDisposable
         log.Action.Should().Be("operator.global_kill_switch_toggled");
         log.ActorType.Should().Be("OPERATOR", "operator actions must have actor_type = OPERATOR");
         log.ActorId.Should().Be("operator@amcca.local");
-        log.Outcome.Should().Be("COMMITTED");
+        log.Outcome.Should().Be("APPROVED");
         log.SubjectType.Should().Be("system_control");
     }
 
@@ -118,7 +118,7 @@ public class OperatorControlAndAuditContractTests : IDisposable
         log.Action.Should().Be("operator.approval_decided");
         log.ActorType.Should().Be("OPERATOR");
         log.ActorId.Should().Be("admin@amcca.local");
-        log.Outcome.Should().Be("COMMITTED");
+        log.Outcome.Should().Be("APPROVED");
         log.SubjectType.Should().Be("approval");
         log.SubjectId.Should().Be(approvalId);
     }

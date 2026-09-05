@@ -108,7 +108,7 @@ public class ProductionsViewModel : ViewModelBase
             var prod = await _productionService.CreateProductionAsync(
                 title: NewTopic,
                 language: "en",
-                autonomyMode: "COLLABORATIVE",
+                autonomyMode: "ASSISTED",
                 correlationId: correlationId,
                 nicheId: NewNiche);
 

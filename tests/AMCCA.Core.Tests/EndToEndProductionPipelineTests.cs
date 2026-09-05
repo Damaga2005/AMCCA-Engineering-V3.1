@@ -99,7 +99,7 @@ public class EndToEndProductionPipelineTests : IDisposable
             Text = "El archivo historico confirma el evento de 1920.",
             Status = "VERIFIED",
             Materiality = "MATERIAL",
-            SubjectClass = "HISTORY",
+            SubjectClass = "GENERAL",
             ContainsPersonalData = false
         };
         await _researchService.InsertClaimWithSourceAsync(claimRecord, source.Id, "SUPPORTS");

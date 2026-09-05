@@ -70,43 +70,106 @@ preservarlo tal como se produjo.
 
 ## 2. Hallazgos sobre la especificación
 
-### 2.1 Contratos declarados pero no aplicados (16 columnas)
+### 2.1 Contratos declarados pero no aplicados (16 columnas) — **Resuelto (migración 010)**
 
 `validate_package.py` comprueba que toda tabla tenga contrato (`db.every_table_has_contract`, PASS),
-pero **no compara los `enum` del contrato con las restricciones `CHECK` del DDL**. Comparándolos:
+pero **no comparaba los `enum` del contrato con las restricciones `CHECK` del DDL**. Comparándolos:
 
-| Columna | Contrato | DDL |
+| Columna | Contrato | DDL (estado original) |
 |---|---:|---|
-| `productions.state` | 32 valores | **sin `CHECK`** |
-| `jobs.state` | 9 valores | **sin `CHECK`** |
-| `tool_runs.state` | 6 valores | **sin `CHECK`** |
-| `tool_runs.side_effect_class` | 5 valores | **sin `CHECK`** |
-| `agent_runs.state` | 7 valores | sin `CHECK` |
-| `events.aggregate_type` | 9 valores | sin `CHECK` |
-| `audit_log.outcome` | 6 valores | sin `CHECK` |
-| `productions.autonomy_mode` | 3 valores | sin `CHECK` |
-| `qa_reports.stage`, `claims.materiality`, `claims.subject_class`, `rights_records.provenance`, `rights_records.commercial_use`, `rights_records.modification`, `referral_links.validation_method`, `analytics_snapshots.provenance` | — | sin `CHECK` |
+| ~~`productions.state`~~ | 32 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`jobs.state`~~ | 9 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`tool_runs.state`~~ | 6 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`tool_runs.side_effect_class`~~ | 5 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`agent_runs.state`~~ | 7 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`events.aggregate_type`~~ | 9 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`audit_log.outcome`~~ | 6 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`productions.autonomy_mode`~~ | 3 valores | ~~sin `CHECK`~~ **Resuelto** |
+| ~~`qa_reports.stage`, `claims.materiality`, `claims.subject_class`, `rights_records.provenance`, `rights_records.commercial_use`, `rights_records.modification`, `referral_links.validation_method`, `analytics_snapshots.provenance`~~ | — | ~~sin `CHECK`~~ **Resueltos** |
 
-Esto contradice el principio que el propio proyecto declara en D-026: *«This gate is **structural**, not
+Esto contradecía el principio que el propio proyecto declara en D-026: *«This gate is **structural**, not
 merely procedural… This holds even if the preflight code path that is supposed to enforce it has a
-bug»*. El proyecto cree en la aplicación estructural pero solo la aplica en algunas columnas.
+bug»*. El proyecto creía en la aplicación estructural pero solo la aplicaba en algunas columnas.
 
-Dos casos merecen atención especial:
+Dos casos merecían atención especial, ambos cerrados:
 
-- **`productions.state` sin `CHECK`** es la máquina de estados central del sistema sin ninguna defensa
-  a nivel de base de datos. Solo el código de aplicación la protege.
-- **`tool_runs.side_effect_class` sin `CHECK`** es relevante para seguridad. Existe la restricción
+- **`productions.state` sin `CHECK`** era la máquina de estados central del sistema sin ninguna defensa
+  a nivel de base de datos. Ahora tiene un `CHECK` con los 32 valores exactos del contrato.
+- **`tool_runs.side_effect_class` sin `CHECK`** era relevante para seguridad: existía la restricción
   condicional `CHECK(side_effect_class <> 'EXTERNAL_UNSAFE' OR intent_id IS NOT NULL)`, pero como el
-  dominio de valores no está acotado, un valor mal escrito (`'external_unsafe'`, espacio final) **evade
-  la exigencia de intent** en lugar de ser rechazado. La defensa estructural falla en abierto.
+  dominio de valores no estaba acotado, un valor mal escrito (`'external_unsafe'`, espacio final)
+  **evadía la exigencia de intent** en lugar de ser rechazado. La defensa estructural fallaba en abierto;
+  ahora el `CHECK` de dominio (`side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')`)
+  cierra ese hueco: un valor fuera de esos cinco es rechazado antes de que la condicional de intent
+  entre siquiera en juego.
+
+**Cómo se cerraron las 17 columnas (16 tablas del hallazgo original, más `cost_events.kind`/
+`publications.state` de §2.2 en la misma migración) — migración 010:** SQLite no tiene
+`ALTER TABLE ... ADD CONSTRAINT`, así que añadir un `CHECK` a una columna existente exige recrear la
+tabla completa. Cinco de las trece tablas tocadas —`agent_runs`, `jobs`, `productions`, `publications`,
+`qa_reports`— son objetivo de FK desde otras tablas vivas (`productions` en particular, desde `claims`,
+`rights_records`, `qa_reports`, `artifacts`, `artifact_manifests`, `production_versions` y `hooks`).
+
+El primer intento (`DROP TABLE`+`CREATE TABLE` bajo el mismo nombre, con
+`PRAGMA defer_foreign_keys = ON`) se verificó contra SQLite real (3.45.1) que **falla en el `COMMIT`**
+con `"FOREIGN KEY constraint failed"` pese a que `PRAGMA foreign_key_check` justo antes no reporta
+ninguna violación — un contador interno de FK diferida que el `DROP` incrementa y que una tabla
+homónima recreada y repoblada después, en la misma transacción, no decrementa. Renombrar la tabla en
+vez de borrarla tampoco lo evita: el renombrado reescribe automáticamente la cláusula `FOREIGN KEY` de
+*cualquier otra* tabla que la referenciara, y arreglar eso (recreando cada una de esas tablas para que
+vuelvan a apuntar al nombre real) resultó ser transitivo — arreglar una tabla hija "envenena" a sus
+propias tablas hijas, verificado con una réplica mínima de tres niveles abuelo/padre/hijo.
+
+El patrón que sí funciona, y que es el recomendado por la propia documentación de SQLite para este caso
+exacto ("Making Other Kinds Of Table Schema Changes"): desactivar la aplicación de FK durante el
+tiempo que dura la reconstrucción, hacer el `DROP`+`CREATE` normal bajo el mismo nombre para cada
+tabla que lo necesite, reactivar la aplicación de FK y verificar con un `PRAGMA foreign_key_check` real
+antes de confiar en el resultado. El problema es que `PRAGMA foreign_keys` es un no-op documentado una
+vez que ya hay una transacción abierta, y `MigrationService.UpgradeAsync` envuelve el `UpSql` de cada
+migración en una única `connection.BeginTransaction()`. La migración 010 se ejecuta por tanto como una
+excepción con nombre (`MigrationsRequiringForeignKeysOff` en `MigrationService.cs`): su SQL gestiona su
+propia atomicidad (`PRAGMA foreign_keys = OFF; BEGIN; ...; COMMIT; PRAGMA foreign_keys = ON;`) sin
+transacción ADO ambiente, y `UpgradeAsync`/`RollbackAsync` verifican `PRAGMA foreign_key_check` por su
+cuenta después, lanzando `AmccaException` si queda alguna violación, en vez de fiarse de que el propio
+`COMMIT` haya funcionado (D-026 aplicado a la propia migración, no solo a la columna).
+
+**Divergencias de código descubiertas al trazar cada escritor real (no solo el DDL) mientras se cerraba
+esto** — el check automatizado solo compara contrato↔DDL, así que estos cuatro no aparecían en ningún
+informe hasta que se revisó manualmente cada sitio que escribe uno de los 17 campos:
+
+- `PlatformHub.CreatePublicationAsync` escribía `state = 'QUEUED'` — no está en el dominio de
+  `publication.schema.json` (que empieza en `INTENT_CREATED`). Corregido, junto con el valor por defecto
+  del propio modelo `PublicationRecord.State` (mismo valor, mismo bug si algún día se construye el
+  objeto sin fijar `State` explícitamente).
+- `OperatorControlService` escribía `Outcome: "COMMITTED"` en tres sitios (kill switch, decisión de
+  aprobación, requeue de dead-letter) — no está en el dominio de `audit.schema.json`. Corregido a
+  `APPROVED`.
+- `PromptService.RunAgentAsync` escribía `State = "RUNNING"` para un `agent_runs` recién creado — no
+  está en el dominio de `agent-run.schema.json` (que usa `STARTED`). Corregido, junto con el valor por
+  defecto de `AgentRunRecord.State` (mismo modelo de bug latente que `PublicationRecord`).
+- `ProductionsViewModel.CreateProductionAsync` (la única pantalla WPF que crea producciones) llamaba a
+  `CreateProductionAsync(..., autonomyMode: "COLLABORATIVE", ...)` — `COLLABORATIVE` nunca estuvo en el
+  dominio de `production.schema.json` (`MANUAL`/`ASSISTED`/`AUTONOMOUS`). Sin el `CHECK` nuevo esto
+  nunca se habría detectado: cualquier producción creada desde la UI real habría escrito un valor que el
+  contrato prohíbe. Corregido a `ASSISTED`.
+
+Por el mismo motivo se auditaron y corrigieron **19 sitios en 8 ficheros de test** que sembraban
+`productions.state`/`autonomy_mode` con valores heredados que el DDL nunca comprobó
+(`FULL_AUTONOMY`→`AUTONOMOUS`, `COLLABORATIVE`→`ASSISTED`, y estados como `RENDERING`, `RENDER_DONE`,
+`DRAFT`, `PUBLISHED`, `RESEARCH`, `SCRIPT_GEN`, `APPROVAL_PENDING` mapeados a su valor real más cercano
+en la máquina de 32 estados), más 2 sitios adicionales en un test de `events`/`audit_log`
+(`aggregate_type='PRODUCTION'` en mayúsculas cuando el dominio es minúsculas; `outcome='SUCCESS'`, que
+nunca estuvo en el dominio). Ninguno de estos tests aserciona sobre el valor literal en sí — son datos de
+relleno para satisfacer una FK `NOT NULL` — así que el `CHECK` nuevo no cambia lo que cada test verifica,
+solo exige que el relleno sea un valor real del contrato.
 
 ### 2.2 Contradicciones directas contrato ↔ DDL (3)
 
 | Columna | Contrato permite y el DDL rechaza | DDL permite y el contrato rechaza |
 |---|---|---|
 | `audit_log.actor_type` | `ORCHESTRATOR`, `RECONCILER`, `SCHEDULER` | — |
-| `cost_events.kind` | `ESTIMATE`, `RELEASE` | `REFUND` |
-| `publications.state` | — | `QUEUED`, `RECONCILING`, `RETRACTED`, `SUBMITTED` |
+| ~~`cost_events.kind`~~ | ~~`ESTIMATE`, `RELEASE`~~ | ~~`REFUND`~~ **Resuelto (migración 010)** |
+| ~~`publications.state`~~ | — | ~~`QUEUED`, `RECONCILING`, `RETRACTED`, `SUBMITTED`~~ **Resuelto (migración 010)** |
 
 La primera es la más grave: `audit.schema.json` admite cinco tipos de actor y el DDL solo dos
 (`'OPERATOR','SYSTEM'`). SPEC/12 designa al **orquestador** como único committer de estado; si algún
@@ -371,7 +434,7 @@ nunca se ha desplegado), pero es una regresión de seguridad en el camino de act
 El gate está bien construido, y precisamente por eso conviene nombrar sus puntos ciegos, todos
 confirmados por los hallazgos anteriores:
 
-1. ~~No compara `enum` de contrato contra `CHECK` del DDL~~ **Resuelto** (`contracts.enum_matches_ddl_check`) → §2.1 y §2.2 ahora son fallos visibles (las 16 columnas sin CHECK y las 2 que divergen).
+1. ~~No compara `enum` de contrato contra `CHECK` del DDL~~ **Resuelto** (`contracts.enum_matches_ddl_check`) → §2.1 y §2.2 pasaron a ser fallos visibles (las 16 columnas sin CHECK y las 2 que divergían), y **el propio check está ahora en verde**: las 17 columnas (16 de §2.1 más `cost_events.kind` de §2.2; `publications.state` resuelto en la misma migración) tienen su `CHECK` real, verificado contra SQLite real (no solo contra el harness simplificado del propio check) por la dificultad añadida de que cinco de esas tablas son objetivo de FK — ver el detalle en §2.1.
 2. ~~No comprueba que los códigos lanzados por el código estén catalogados~~ **Resuelto**
    (`refs.all_thrown_error_codes_catalogued`, con mutation test `mutation_17`) → resuelve cada
    `AmccaErrors.Xxx` que aparece en un `throw new AmccaException(...)` real del código (incluyendo el alias
@@ -431,7 +494,7 @@ introducidas en la superficie cubierta por la herramienta.
 |---|---|---|
 | P0 | Compilar y ejecutar la suite .NET | Nada de esta rama ha sido compilado (§0) |
 | P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
-| P0 | Acotar `tool_runs.side_effect_class` con `CHECK` | La defensa de intent falla en abierto (§2.1) |
+| P0 | ~~Acotar `tool_runs.side_effect_class` con `CHECK`~~ **Resuelto** (migración 010) | La defensa de intent ya no falla en abierto (§2.1) |
 | P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
 | P2 | ~~13 campos de contrato sin columna (`cost_events`×6, `jobs`×7)~~ **Todos resueltos** (migración 009; `pricing_snapshot_id` deliberadamente nulable, ver §2.2) | `contracts.fields_have_columns` en verde |
 | P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`cost_events`/`jobs`.`schema_version`~~ **Resuelto** (migración 008, D-004); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |

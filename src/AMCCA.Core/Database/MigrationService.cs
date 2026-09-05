@@ -1242,8 +1242,980 @@ public class MigrationService
                 ALTER TABLE jobs DROP COLUMN last_error_code;
                 ALTER TABLE jobs DROP COLUMN scheduled_at;
             "
+        ),
+        (
+            10,
+            "010_enum_check_constraints_for_ddl_contract_match",
+            @"
+                -- Adding a CHECK to an existing column requires a full CREATE TABLE (SQLite has no ALTER TABLE
+                -- ... ADD CONSTRAINT). Five of the thirteen tables touched here -- agent_runs, jobs, productions,
+                -- publications, qa_reports -- are FK *targets* from other live tables (and productions in
+                -- particular has many: claims, rights_records, qa_reports, artifacts, artifact_manifests,
+                -- production_versions, hooks).
+                --
+                -- Doing the DROP+CREATE-under-original-name rebuild with FK enforcement left ON (even deferred
+                -- via PRAGMA defer_foreign_keys) was verified against real SQLite (3.45.1) to fail at COMMIT with
+                -- ""FOREIGN KEY constraint failed"" despite PRAGMA foreign_key_check reporting zero violations
+                -- immediately beforehand -- a genuine engine quirk where the deferred-FK row counters bumped by
+                -- the implicit delete-on-DROP are not cleared by a same-named table being recreated and
+                -- repopulated later in the same transaction. Renaming the table out of the way instead (so the
+                -- DROP never touches the live name) does not avoid it either: the rename auto-rewrites every
+                -- *other* live table's stored FK clause to follow the renamed name, and fixing all of those back
+                -- up (itself required before the renamed-away original can be dropped) turned out to cascade
+                -- transitively through the whole schema, since fixing a child by rebuilding it poisons that
+                -- child's own children in turn (verified with a 3-level parent/child/grandchild repro).
+                --
+                -- The only pattern verified to commit cleanly, with no cascade and no rebuild of anything beyond
+                -- the tables that actually need a new CHECK, is SQLite's own documented approach for exactly this
+                -- case (see ""Making Other Kinds Of Table Schema Changes"" in the ALTER TABLE docs): disable FK
+                -- enforcement for the duration of the rebuild, do the plain DROP+CREATE-under-original-name for
+                -- every table that needs one, then turn enforcement back on and verify with a real
+                -- PRAGMA foreign_key_check before trusting the result.
+                --
+                -- PRAGMA foreign_keys is a documented no-op once a transaction is already open, and
+                -- MigrationService.UpgradeAsync normally runs every migration's UpSql inside one
+                -- connection.BeginTransaction(). Migration 10 is therefore run by MigrationService as a named
+                -- exception (see MigrationsRequiringForeignKeysOff in MigrationService.cs): its UpSql is executed
+                -- with no ambient ADO transaction, and manages its own atomicity via the literal BEGIN/COMMIT
+                -- below, wrapped by the FK toggle. MigrationService still verifies PRAGMA foreign_key_check
+                -- itself afterward before recording the migration as applied (D-026: a structural guarantee must
+                -- hold even if the code that is supposed to enforce it has a bug -- so this migration does not
+                -- just trust its own COMMIT succeeding, it is independently checked).
+                PRAGMA foreign_keys = OFF;
+                BEGIN;
+
+                -- agent_runs.state
+                CREATE TABLE agent_runs_staging (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_id TEXT NOT NULL,
+                    agent_version TEXT NOT NULL,
+                    prompt_version_id TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    model_params_hash TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    output_valid INTEGER NULL,
+                    provider_request_id TEXT NULL,
+                    cost_event_id TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL
+                );
+                INSERT INTO agent_runs_staging SELECT * FROM agent_runs;
+                DROP TABLE agent_runs;
+                CREATE TABLE agent_runs (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_id TEXT NOT NULL,
+                    agent_version TEXT NOT NULL,
+                    prompt_version_id TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    model_params_hash TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('STARTED','SUCCEEDED','VALIDATION_FAILED','FAILED','BLOCKED','TIMED_OUT','UNKNOWN_EXTERNAL_STATE')),
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    output_valid INTEGER NULL,
+                    provider_request_id TEXT NULL,
+                    cost_event_id TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL,
+                    FOREIGN KEY(prompt_version_id) REFERENCES prompt_versions(id)
+                );
+                INSERT INTO agent_runs SELECT * FROM agent_runs_staging;
+                DROP TABLE agent_runs_staging;
+
+                -- analytics_snapshots.provenance
+                CREATE TABLE analytics_snapshots_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    publication_id TEXT NOT NULL,
+                    metric TEXT NOT NULL,
+                    value REAL NOT NULL,
+                    unit TEXT NULL,
+                    currency TEXT NULL,
+                    provenance TEXT NOT NULL CHECK(provenance IN ('API_MEASURED','IMPORTED','ESTIMATED','UNAVAILABLE')),
+                    window_start TEXT NULL,
+                    window_end TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    source_account_id TEXT NULL REFERENCES platform_accounts(id),
+                    FOREIGN KEY(publication_id) REFERENCES publications(id),
+                    UNIQUE(publication_id, metric, window_start, provenance)
+                );
+                INSERT INTO analytics_snapshots_new SELECT * FROM analytics_snapshots;
+                DROP TABLE analytics_snapshots;
+                ALTER TABLE analytics_snapshots_new RENAME TO analytics_snapshots;
+
+                -- audit_log.outcome. Append-only triggers must be recreated since DROP TABLE removes triggers
+                -- bound to it.
+                DROP TRIGGER IF EXISTS trg_audit_log_prevent_delete;
+                DROP TRIGGER IF EXISTS trg_audit_log_prevent_update;
+
+                CREATE TABLE audit_log_new (
+                    audit_id TEXT PRIMARY KEY,
+                    action TEXT NOT NULL,
+                    actor_type TEXT NOT NULL CHECK(actor_type IN ('OPERATOR','SCHEDULER','ORCHESTRATOR','RECONCILER','SYSTEM')),
+                    actor_id TEXT NOT NULL,
+                    subject_type TEXT NULL,
+                    subject_id TEXT NULL,
+                    production_id TEXT NULL,
+                    outcome TEXT NOT NULL CHECK(outcome IN ('ALLOWED','DENIED','BLOCKED','APPROVED','REJECTED','ERROR')),
+                    policy_decision_id TEXT NULL,
+                    reason_code TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL
+                );
+                INSERT INTO audit_log_new SELECT * FROM audit_log;
+                DROP TABLE audit_log;
+                ALTER TABLE audit_log_new RENAME TO audit_log;
+
+                CREATE TRIGGER trg_audit_log_prevent_update
+                BEFORE UPDATE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER trg_audit_log_prevent_delete
+                BEFORE DELETE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
+                -- claims.materiality, claims.subject_class
+                CREATE TABLE claims_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('VERIFIED','DISPUTED','ESTIMATED','UNKNOWN')),
+                    materiality TEXT NOT NULL CHECK(materiality IN ('MATERIAL','INCIDENTAL')),
+                    subject_class TEXT NOT NULL CHECK(subject_class IN ('GENERAL','PERSON','HEALTH','FINANCE','LEGAL','BREAKING_EVENT')),
+                    contains_personal_data INTEGER NOT NULL DEFAULT 0,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(production_id) REFERENCES productions(id)
+                );
+                INSERT INTO claims_new SELECT * FROM claims;
+                DROP TABLE claims;
+                ALTER TABLE claims_new RENAME TO claims;
+
+                -- cost_events.kind: fixes a real DIVERGES (DDL had REFUND; contract and generate_artifacts.py's
+                -- own SPEC/11 model have always said ESTIMATE/RELEASE instead). Nothing ever wrote kind='REFUND'
+                -- (verified: no call site anywhere in src or tests), so tightening to the contract's domain
+                -- breaks nothing.
+                CREATE TABLE cost_events_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    job_id TEXT NULL,
+                    kind TEXT NOT NULL CHECK(kind IN ('ESTIMATE','RESERVATION','SETTLEMENT','RELEASE','ADJUSTMENT')),
+                    amount TEXT NOT NULL,
+                    currency TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    agent_run_id TEXT NULL REFERENCES agent_runs(run_id),
+                    model_id TEXT NULL,
+                    provider_request_id TEXT NULL,
+                    budget_id TEXT NULL REFERENCES budgets(id),
+                    pricing_snapshot_id TEXT NULL REFERENCES pricing_snapshots(id),
+                    reconciliation_state TEXT NOT NULL DEFAULT 'ESTIMATED' CHECK(reconciliation_state IN ('ESTIMATED','RECONCILED','ESTIMATED_UNRECONCILED','DISPUTED')),
+                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')
+                );
+                INSERT INTO cost_events_new SELECT * FROM cost_events;
+                DROP TABLE cost_events;
+                ALTER TABLE cost_events_new RENAME TO cost_events;
+
+                -- events.aggregate_type. Append-only triggers must be recreated since DROP TABLE removes
+                -- triggers bound to it.
+                DROP TRIGGER IF EXISTS trg_events_prevent_delete;
+                DROP TRIGGER IF EXISTS trg_events_prevent_update;
+
+                CREATE TABLE events_new (
+                    event_id TEXT PRIMARY KEY,
+                    event_type TEXT NOT NULL,
+                    aggregate_type TEXT NOT NULL CHECK(aggregate_type IN ('production','publication','job','budget','policy','platform_account','referral','experiment','artifact')),
+                    aggregate_id TEXT NOT NULL,
+                    aggregate_version INTEGER NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    transition_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    seq INTEGER NOT NULL,
+                    UNIQUE(aggregate_type, aggregate_id, aggregate_version)
+                );
+                INSERT INTO events_new SELECT * FROM events;
+                DROP TABLE events;
+                ALTER TABLE events_new RENAME TO events;
+
+                CREATE TRIGGER trg_events_prevent_update
+                BEFORE UPDATE ON events
+                BEGIN
+                    SELECT RAISE(ABORT, 'events table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER trg_events_prevent_delete
+                BEFORE DELETE ON events
+                BEGIN
+                    SELECT RAISE(ABORT, 'events table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
+                -- jobs.state
+                CREATE TABLE jobs_staging (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    type TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    priority INTEGER NOT NULL DEFAULT 3,
+                    idempotency_key TEXT NULL,
+                    attempt INTEGER NOT NULL DEFAULT 0,
+                    max_attempts INTEGER NOT NULL DEFAULT 3,
+                    correlation_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    causation_id TEXT NULL,
+                    currency TEXT NULL,
+                    deadline_at TEXT NULL,
+                    estimated_cost TEXT NULL,
+                    reserved_cost TEXT NULL,
+                    last_error_code TEXT NULL,
+                    scheduled_at TEXT NULL
+                );
+                INSERT INTO jobs_staging SELECT * FROM jobs;
+                DROP TABLE jobs;
+                CREATE TABLE jobs (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    type TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('QUEUED','LEASED','RUNNING','SUCCEEDED','FAILED','BLOCKED','UNKNOWN_EXTERNAL_STATE','CANCELLED','DEAD_LETTER')),
+                    priority INTEGER NOT NULL DEFAULT 3,
+                    idempotency_key TEXT NULL,
+                    attempt INTEGER NOT NULL DEFAULT 0,
+                    max_attempts INTEGER NOT NULL DEFAULT 3,
+                    correlation_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    causation_id TEXT NULL,
+                    currency TEXT NULL,
+                    deadline_at TEXT NULL,
+                    estimated_cost TEXT NULL CHECK(estimated_cost IS NULL OR estimated_cost NOT LIKE '-%'),
+                    reserved_cost TEXT NULL CHECK(reserved_cost IS NULL OR reserved_cost NOT LIKE '-%'),
+                    last_error_code TEXT NULL,
+                    scheduled_at TEXT NULL,
+                    UNIQUE(idempotency_key)
+                );
+                INSERT INTO jobs SELECT * FROM jobs_staging;
+                DROP TABLE jobs_staging;
+
+                -- productions.state (32 canonical states, the state machine's own domain), productions.autonomy_mode.
+                CREATE TABLE productions_staging (
+                    id TEXT PRIMARY KEY,
+                    state TEXT NOT NULL,
+                    blocked_from TEXT NULL,
+                    unknown_from TEXT NULL,
+                    rework_attempts INTEGER NOT NULL DEFAULT 0,
+                    aggregate_version INTEGER NOT NULL DEFAULT 0,
+                    autonomy_mode TEXT NOT NULL,
+                    title TEXT NULL,
+                    language TEXT NOT NULL,
+                    niche_id TEXT NULL,
+                    opportunity_id TEXT NULL,
+                    current_manifest_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO productions_staging SELECT * FROM productions;
+                DROP TABLE productions;
+                CREATE TABLE productions (
+                    id TEXT PRIMARY KEY,
+                    state TEXT NOT NULL CHECK(state IN ('INIT','RESEARCHING','RESEARCH_VERIFIED','CONCEPT_SELECTED','SCRIPTING','SCRIPT_VERIFIED','STORYBOARDING','STORYBOARD_VERIFIED','ASSET_GENERATION','ASSETS_READY','AUDIO_GENERATION','AUDIO_READY','EDITING','CANDIDATE_RENDERED','TECHNICAL_QA','VISUAL_QA','AUDIO_QA','CONTENT_QA','RETENTION_QA','COMPLIANCE_QA','SCORING','REWORK','FINAL_VERIFIED','READY_TO_PUBLISH','PUBLISHING','PUBLICATION_PROCESSING','PUBLICATION_VERIFIED','ARCHIVED','BLOCKED','FAILED','CANCELLED','UNKNOWN_EXTERNAL_STATE')),
+                    blocked_from TEXT NULL,
+                    unknown_from TEXT NULL,
+                    rework_attempts INTEGER NOT NULL DEFAULT 0,
+                    aggregate_version INTEGER NOT NULL DEFAULT 0,
+                    autonomy_mode TEXT NOT NULL CHECK(autonomy_mode IN ('MANUAL','ASSISTED','AUTONOMOUS')),
+                    title TEXT NULL,
+                    language TEXT NOT NULL,
+                    niche_id TEXT NULL,
+                    opportunity_id TEXT NULL,
+                    current_manifest_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO productions SELECT * FROM productions_staging;
+                DROP TABLE productions_staging;
+
+                -- publications.state: fixes a real DIVERGES (DDL had legacy QUEUED/SUBMITTED/RECONCILING/RETRACTED
+                -- that were never in the contract). PlatformHub.CreatePublicationAsync wrote 'QUEUED' -- the code
+                -- is fixed to write 'INTENT_CREATED' (the contract's own initial state) in this same commit.
+                CREATE TABLE publications_staging (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    platform TEXT NOT NULL,
+                    account_id TEXT NOT NULL,
+                    content_version_id TEXT NOT NULL,
+                    metadata_version_id TEXT NULL,
+                    referral_version_id TEXT NULL,
+                    synthetic_declaration_id TEXT NULL,
+                    platform_label_required INTEGER NOT NULL DEFAULT 0,
+                    state TEXT NOT NULL,
+                    required INTEGER NOT NULL DEFAULT 1,
+                    idempotency_key TEXT NOT NULL,
+                    provider_request_id TEXT NULL,
+                    external_id TEXT NULL,
+                    external_url TEXT NULL,
+                    evidence_source TEXT NULL,
+                    evidence_retrieved_at TEXT NULL,
+                    synthetic_label_applied INTEGER NOT NULL DEFAULT 0,
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    last_error_code TEXT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO publications_staging SELECT * FROM publications;
+                DROP TABLE publications;
+                CREATE TABLE publications (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    platform TEXT NOT NULL,
+                    account_id TEXT NOT NULL,
+                    content_version_id TEXT NOT NULL,
+                    metadata_version_id TEXT NULL,
+                    referral_version_id TEXT NULL,
+                    synthetic_declaration_id TEXT NULL,
+                    platform_label_required INTEGER NOT NULL DEFAULT 0,
+                    state TEXT NOT NULL CHECK (state IN ('INTENT_CREATED','UPLOAD_REQUESTED','UPLOADED','PROCESSING','PUBLISHED','VERIFIED','REJECTED','FAILED','UNKNOWN_EXTERNAL_STATE','CANCELLED')),
+                    required INTEGER NOT NULL DEFAULT 1,
+                    idempotency_key TEXT NOT NULL,
+                    provider_request_id TEXT NULL,
+                    external_id TEXT NULL,
+                    external_url TEXT NULL,
+                    evidence_source TEXT NULL,
+                    evidence_retrieved_at TEXT NULL,
+                    synthetic_label_applied INTEGER NOT NULL DEFAULT 0,
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    last_error_code TEXT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (synthetic_declaration_id) REFERENCES synthetic_declarations(id),
+                    UNIQUE (idempotency_key),
+                    UNIQUE (production_id, platform, account_id, content_version_id),
+                    CHECK (platform_label_required = 0 OR synthetic_declaration_id IS NOT NULL),
+                    CHECK (state <> 'VERIFIED' OR (external_id IS NOT NULL
+                           AND evidence_source IN ('OFFICIAL_API', 'OFFICIAL_DASHBOARD', 'OPERATOR_CONFIRMATION')
+                           AND evidence_retrieved_at IS NOT NULL)),
+                    CHECK (state <> 'VERIFIED' OR platform_label_required = 0 OR synthetic_label_applied = 1)
+                );
+                INSERT INTO publications SELECT * FROM publications_staging;
+                DROP TABLE publications_staging;
+
+                -- qa_reports.stage
+                CREATE TABLE qa_reports_staging (
+                    report_id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    artifact_version_id TEXT NOT NULL,
+                    stage TEXT NOT NULL,
+                    overall_score REAL NOT NULL,
+                    critical_scores_json TEXT NOT NULL,
+                    verdict TEXT NOT NULL,
+                    threshold_profile_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    evaluated_at TEXT NOT NULL
+                );
+                INSERT INTO qa_reports_staging SELECT * FROM qa_reports;
+                DROP TABLE qa_reports;
+                CREATE TABLE qa_reports (
+                    report_id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    artifact_version_id TEXT NOT NULL,
+                    stage TEXT NOT NULL CHECK(stage IN ('TECHNICAL_QA','VISUAL_QA','AUDIO_QA','CONTENT_QA','RETENTION_QA','COMPLIANCE_QA','SCORING')),
+                    overall_score REAL NOT NULL,
+                    critical_scores_json TEXT NOT NULL,
+                    verdict TEXT NOT NULL CHECK(verdict IN ('PASS','FAIL')),
+                    threshold_profile_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    evaluated_at TEXT NOT NULL,
+                    FOREIGN KEY(production_id) REFERENCES productions(id),
+                    FOREIGN KEY(artifact_version_id) REFERENCES artifact_versions(id)
+                );
+                INSERT INTO qa_reports SELECT * FROM qa_reports_staging;
+                DROP TABLE qa_reports_staging;
+
+                -- referral_links.validation_method
+                CREATE TABLE referral_links_new (
+                    id TEXT PRIMARY KEY,
+                    program_id TEXT NOT NULL,
+                    production_id TEXT NULL,
+                    code TEXT NULL,
+                    url TEXT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('ACTIVE','EXPIRED','BLOCKED','REVIEW','UNVERIFIED','DISCOVERED')),
+                    validation_method TEXT NOT NULL CHECK(validation_method IN ('OFFICIAL_API','OFFICIAL_DASHBOARD','OPERATOR_VERIFIED','HTTP_CHECK','MANUAL_CONFIRMATION')),
+                    validation_evidence_ref TEXT NULL,
+                    validated_at TEXT NOT NULL,
+                    expires_at TEXT NULL,
+                    geo_json TEXT NOT NULL,
+                    platform_json TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(program_id) REFERENCES referral_programs(id)
+                );
+                INSERT INTO referral_links_new SELECT * FROM referral_links;
+                DROP TABLE referral_links;
+                ALTER TABLE referral_links_new RENAME TO referral_links;
+
+                -- rights_records.provenance, commercial_use, modification
+                CREATE TABLE rights_records_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    asset_hash TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('GREEN','YELLOW','RED')),
+                    license TEXT NOT NULL,
+                    provenance TEXT NOT NULL CHECK(provenance IN ('GENERATED','LICENSED_STOCK','PUBLIC_DOMAIN','OPERATOR_SUPPLIED','OPEN_LICENCE','UNKNOWN')),
+                    generator_model_id TEXT NULL,
+                    author TEXT NULL,
+                    acquired_at TEXT NULL,
+                    expires_at TEXT NULL,
+                    commercial_use TEXT NOT NULL CHECK(commercial_use IN ('ALLOWED','DENIED','UNKNOWN')),
+                    modification TEXT NOT NULL CHECK(modification IN ('ALLOWED','DENIED','UNKNOWN')),
+                    attribution_required INTEGER NOT NULL,
+                    attribution_text TEXT NULL,
+                    restrictions_json TEXT NOT NULL,
+                    evidence_ref TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    evaluated_at TEXT NOT NULL,
+                    FOREIGN KEY(production_id) REFERENCES productions(id),
+                    CHECK(status<>'GREEN' OR (commercial_use='ALLOWED' AND modification<>'UNKNOWN'))
+                );
+                INSERT INTO rights_records_new SELECT * FROM rights_records;
+                DROP TABLE rights_records;
+                ALTER TABLE rights_records_new RENAME TO rights_records;
+
+                -- tool_runs.state (side_effect_class CHECK already added by migration 4)
+                CREATE TABLE tool_runs_new (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_run_id TEXT NULL,
+                    tool_id TEXT NOT NULL,
+                    tool_version TEXT NOT NULL,
+                    side_effect_class TEXT NOT NULL CHECK(side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')),
+                    state TEXT NOT NULL CHECK(state IN ('STARTED','SUCCEEDED','FAILED','BLOCKED','TIMED_OUT','UNKNOWN_EXTERNAL_STATE')),
+                    intent_id TEXT NULL,
+                    idempotency_key TEXT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL,
+                    FOREIGN KEY(intent_id) REFERENCES intents(id),
+                    CHECK(side_effect_class<>'EXTERNAL_UNSAFE' OR intent_id IS NOT NULL)
+                );
+                INSERT INTO tool_runs_new SELECT * FROM tool_runs;
+                DROP TABLE tool_runs;
+                ALTER TABLE tool_runs_new RENAME TO tool_runs;
+
+                COMMIT;
+                PRAGMA foreign_keys = ON;
+            ",
+            @"
+                -- See the UpSql above for the full rationale: this rebuild pattern requires FK enforcement off
+                -- for its duration (verified against real SQLite; PRAGMA defer_foreign_keys does not correctly
+                -- handle a DROP+CREATE-same-name rebuild of a table other live tables reference). MigrationService
+                -- runs this DownSql the same way it runs the UpSql -- outside the ambient ADO transaction, via
+                -- MigrationsRequiringForeignKeysOff -- and independently verifies PRAGMA foreign_key_check
+                -- afterward before trusting the rollback.
+                PRAGMA foreign_keys = OFF;
+                BEGIN;
+
+                -- agent_runs: revert state to unconstrained
+                CREATE TABLE agent_runs_staging (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_id TEXT NOT NULL,
+                    agent_version TEXT NOT NULL,
+                    prompt_version_id TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    model_params_hash TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    output_valid INTEGER NULL,
+                    provider_request_id TEXT NULL,
+                    cost_event_id TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL
+                );
+                INSERT INTO agent_runs_staging SELECT * FROM agent_runs;
+                DROP TABLE agent_runs;
+                CREATE TABLE agent_runs (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_id TEXT NOT NULL,
+                    agent_version TEXT NOT NULL,
+                    prompt_version_id TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    model_params_hash TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    output_valid INTEGER NULL,
+                    provider_request_id TEXT NULL,
+                    cost_event_id TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL,
+                    FOREIGN KEY(prompt_version_id) REFERENCES prompt_versions(id)
+                );
+                INSERT INTO agent_runs SELECT * FROM agent_runs_staging;
+                DROP TABLE agent_runs_staging;
+
+                -- analytics_snapshots: revert provenance to unconstrained
+                CREATE TABLE analytics_snapshots_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    publication_id TEXT NOT NULL,
+                    metric TEXT NOT NULL,
+                    value REAL NOT NULL,
+                    unit TEXT NULL,
+                    currency TEXT NULL,
+                    provenance TEXT NOT NULL,
+                    window_start TEXT NULL,
+                    window_end TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    source_account_id TEXT NULL REFERENCES platform_accounts(id),
+                    FOREIGN KEY(publication_id) REFERENCES publications(id),
+                    UNIQUE(publication_id, metric, window_start, provenance)
+                );
+                INSERT INTO analytics_snapshots_new SELECT * FROM analytics_snapshots;
+                DROP TABLE analytics_snapshots;
+                ALTER TABLE analytics_snapshots_new RENAME TO analytics_snapshots;
+
+                -- audit_log: revert outcome to unconstrained; recreate append-only triggers
+                DROP TRIGGER IF EXISTS trg_audit_log_prevent_delete;
+                DROP TRIGGER IF EXISTS trg_audit_log_prevent_update;
+
+                CREATE TABLE audit_log_new (
+                    audit_id TEXT PRIMARY KEY,
+                    action TEXT NOT NULL,
+                    actor_type TEXT NOT NULL CHECK(actor_type IN ('OPERATOR','SCHEDULER','ORCHESTRATOR','RECONCILER','SYSTEM')),
+                    actor_id TEXT NOT NULL,
+                    subject_type TEXT NULL,
+                    subject_id TEXT NULL,
+                    production_id TEXT NULL,
+                    outcome TEXT NOT NULL,
+                    policy_decision_id TEXT NULL,
+                    reason_code TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL
+                );
+                INSERT INTO audit_log_new SELECT * FROM audit_log;
+                DROP TABLE audit_log;
+                ALTER TABLE audit_log_new RENAME TO audit_log;
+
+                CREATE TRIGGER trg_audit_log_prevent_update
+                BEFORE UPDATE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER trg_audit_log_prevent_delete
+                BEFORE DELETE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
+                -- claims: revert materiality/subject_class to unconstrained
+                CREATE TABLE claims_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('VERIFIED','DISPUTED','ESTIMATED','UNKNOWN')),
+                    materiality TEXT NOT NULL,
+                    subject_class TEXT NOT NULL,
+                    contains_personal_data INTEGER NOT NULL DEFAULT 0,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(production_id) REFERENCES productions(id)
+                );
+                INSERT INTO claims_new SELECT * FROM claims;
+                DROP TABLE claims;
+                ALTER TABLE claims_new RENAME TO claims;
+
+                -- cost_events: revert kind to the legacy (pre-migration-10) domain
+                CREATE TABLE cost_events_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    job_id TEXT NULL,
+                    kind TEXT NOT NULL CHECK(kind IN ('RESERVATION','SETTLEMENT','REFUND','ADJUSTMENT')),
+                    amount TEXT NOT NULL,
+                    currency TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    agent_run_id TEXT NULL REFERENCES agent_runs(run_id),
+                    model_id TEXT NULL,
+                    provider_request_id TEXT NULL,
+                    budget_id TEXT NULL REFERENCES budgets(id),
+                    pricing_snapshot_id TEXT NULL REFERENCES pricing_snapshots(id),
+                    reconciliation_state TEXT NOT NULL DEFAULT 'ESTIMATED' CHECK(reconciliation_state IN ('ESTIMATED','RECONCILED','ESTIMATED_UNRECONCILED','DISPUTED')),
+                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')
+                );
+                -- No rollback value-mapping for kind: nothing in AMCCA.Core ever writes ESTIMATE or RELEASE
+                -- (grep-verified), so this INSERT either passes through unchanged or fails loudly on the
+                -- legacy CHECK if that ever stops being true -- never silently drops rows.
+                INSERT INTO cost_events_new SELECT * FROM cost_events;
+                DROP TABLE cost_events;
+                ALTER TABLE cost_events_new RENAME TO cost_events;
+
+                -- events: revert aggregate_type to unconstrained; recreate append-only triggers
+                DROP TRIGGER IF EXISTS trg_events_prevent_delete;
+                DROP TRIGGER IF EXISTS trg_events_prevent_update;
+
+                CREATE TABLE events_new (
+                    event_id TEXT PRIMARY KEY,
+                    event_type TEXT NOT NULL,
+                    aggregate_type TEXT NOT NULL,
+                    aggregate_id TEXT NOT NULL,
+                    aggregate_version INTEGER NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    transition_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    seq INTEGER NOT NULL,
+                    UNIQUE(aggregate_type, aggregate_id, aggregate_version)
+                );
+                INSERT INTO events_new SELECT * FROM events;
+                DROP TABLE events;
+                ALTER TABLE events_new RENAME TO events;
+
+                CREATE TRIGGER trg_events_prevent_update
+                BEFORE UPDATE ON events
+                BEGIN
+                    SELECT RAISE(ABORT, 'events table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER trg_events_prevent_delete
+                BEFORE DELETE ON events
+                BEGIN
+                    SELECT RAISE(ABORT, 'events table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
+                -- jobs: revert state to unconstrained
+                CREATE TABLE jobs_staging (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    type TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    priority INTEGER NOT NULL DEFAULT 3,
+                    idempotency_key TEXT NULL,
+                    attempt INTEGER NOT NULL DEFAULT 0,
+                    max_attempts INTEGER NOT NULL DEFAULT 3,
+                    correlation_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    causation_id TEXT NULL,
+                    currency TEXT NULL,
+                    deadline_at TEXT NULL,
+                    estimated_cost TEXT NULL,
+                    reserved_cost TEXT NULL,
+                    last_error_code TEXT NULL,
+                    scheduled_at TEXT NULL
+                );
+                INSERT INTO jobs_staging SELECT * FROM jobs;
+                DROP TABLE jobs;
+                CREATE TABLE jobs (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    type TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    priority INTEGER NOT NULL DEFAULT 3,
+                    idempotency_key TEXT NULL,
+                    attempt INTEGER NOT NULL DEFAULT 0,
+                    max_attempts INTEGER NOT NULL DEFAULT 3,
+                    correlation_id TEXT NULL,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    causation_id TEXT NULL,
+                    currency TEXT NULL,
+                    deadline_at TEXT NULL,
+                    estimated_cost TEXT NULL CHECK(estimated_cost IS NULL OR estimated_cost NOT LIKE '-%'),
+                    reserved_cost TEXT NULL CHECK(reserved_cost IS NULL OR reserved_cost NOT LIKE '-%'),
+                    last_error_code TEXT NULL,
+                    scheduled_at TEXT NULL,
+                    UNIQUE(idempotency_key)
+                );
+                INSERT INTO jobs SELECT * FROM jobs_staging;
+                DROP TABLE jobs_staging;
+
+                -- productions: revert state/autonomy_mode to unconstrained
+                CREATE TABLE productions_staging (
+                    id TEXT PRIMARY KEY,
+                    state TEXT NOT NULL,
+                    blocked_from TEXT NULL,
+                    unknown_from TEXT NULL,
+                    rework_attempts INTEGER NOT NULL DEFAULT 0,
+                    aggregate_version INTEGER NOT NULL DEFAULT 0,
+                    autonomy_mode TEXT NOT NULL,
+                    title TEXT NULL,
+                    language TEXT NOT NULL,
+                    niche_id TEXT NULL,
+                    opportunity_id TEXT NULL,
+                    current_manifest_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO productions_staging SELECT * FROM productions;
+                DROP TABLE productions;
+                CREATE TABLE productions (
+                    id TEXT PRIMARY KEY,
+                    state TEXT NOT NULL,
+                    blocked_from TEXT NULL,
+                    unknown_from TEXT NULL,
+                    rework_attempts INTEGER NOT NULL DEFAULT 0,
+                    aggregate_version INTEGER NOT NULL DEFAULT 0,
+                    autonomy_mode TEXT NOT NULL,
+                    title TEXT NULL,
+                    language TEXT NOT NULL,
+                    niche_id TEXT NULL,
+                    opportunity_id TEXT NULL,
+                    current_manifest_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO productions SELECT * FROM productions_staging;
+                DROP TABLE productions_staging;
+
+                -- publications: revert state to the legacy (pre-migration-10) domain
+                CREATE TABLE publications_staging (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    platform TEXT NOT NULL,
+                    account_id TEXT NOT NULL,
+                    content_version_id TEXT NOT NULL,
+                    metadata_version_id TEXT NULL,
+                    referral_version_id TEXT NULL,
+                    synthetic_declaration_id TEXT NULL,
+                    platform_label_required INTEGER NOT NULL DEFAULT 0,
+                    state TEXT NOT NULL,
+                    required INTEGER NOT NULL DEFAULT 1,
+                    idempotency_key TEXT NOT NULL,
+                    provider_request_id TEXT NULL,
+                    external_id TEXT NULL,
+                    external_url TEXT NULL,
+                    evidence_source TEXT NULL,
+                    evidence_retrieved_at TEXT NULL,
+                    synthetic_label_applied INTEGER NOT NULL DEFAULT 0,
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    last_error_code TEXT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                INSERT INTO publications_staging SELECT * FROM publications;
+                DROP TABLE publications;
+                CREATE TABLE publications (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    platform TEXT NOT NULL,
+                    account_id TEXT NOT NULL,
+                    content_version_id TEXT NOT NULL,
+                    metadata_version_id TEXT NULL,
+                    referral_version_id TEXT NULL,
+                    synthetic_declaration_id TEXT NULL,
+                    platform_label_required INTEGER NOT NULL DEFAULT 0,
+                    state TEXT NOT NULL,
+                    required INTEGER NOT NULL DEFAULT 1,
+                    idempotency_key TEXT NOT NULL,
+                    provider_request_id TEXT NULL,
+                    external_id TEXT NULL,
+                    external_url TEXT NULL,
+                    evidence_source TEXT NULL,
+                    evidence_retrieved_at TEXT NULL,
+                    synthetic_label_applied INTEGER NOT NULL DEFAULT 0,
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    last_error_code TEXT NULL,
+                    schema_version TEXT NOT NULL DEFAULT '3.1.0',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (synthetic_declaration_id) REFERENCES synthetic_declarations(id),
+                    UNIQUE (idempotency_key),
+                    UNIQUE (production_id, platform, account_id, content_version_id),
+                    CHECK (state IN ('QUEUED', 'SUBMITTED', 'PROCESSING', 'PUBLISHED', 'VERIFIED', 'RECONCILING', 'FAILED', 'RETRACTED', 'UNKNOWN_EXTERNAL_STATE', 'INTENT_CREATED', 'UPLOAD_REQUESTED', 'UPLOADED', 'REJECTED', 'CANCELLED')),
+                    CHECK (platform_label_required = 0 OR synthetic_declaration_id IS NOT NULL),
+                    CHECK (state <> 'VERIFIED' OR (external_id IS NOT NULL
+                           AND evidence_source IN ('OFFICIAL_API', 'OFFICIAL_DASHBOARD', 'OPERATOR_CONFIRMATION')
+                           AND evidence_retrieved_at IS NOT NULL)),
+                    CHECK (state <> 'VERIFIED' OR platform_label_required = 0 OR synthetic_label_applied = 1)
+                );
+                INSERT INTO publications SELECT * FROM publications_staging;
+                DROP TABLE publications_staging;
+
+                -- qa_reports: revert stage to unconstrained
+                CREATE TABLE qa_reports_staging (
+                    report_id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    artifact_version_id TEXT NOT NULL,
+                    stage TEXT NOT NULL,
+                    overall_score REAL NOT NULL,
+                    critical_scores_json TEXT NOT NULL,
+                    verdict TEXT NOT NULL,
+                    threshold_profile_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    evaluated_at TEXT NOT NULL
+                );
+                INSERT INTO qa_reports_staging SELECT * FROM qa_reports;
+                DROP TABLE qa_reports;
+                CREATE TABLE qa_reports (
+                    report_id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    artifact_version_id TEXT NOT NULL,
+                    stage TEXT NOT NULL,
+                    overall_score REAL NOT NULL,
+                    critical_scores_json TEXT NOT NULL,
+                    verdict TEXT NOT NULL CHECK(verdict IN ('PASS','FAIL')),
+                    threshold_profile_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    evaluated_at TEXT NOT NULL,
+                    FOREIGN KEY(production_id) REFERENCES productions(id),
+                    FOREIGN KEY(artifact_version_id) REFERENCES artifact_versions(id)
+                );
+                INSERT INTO qa_reports SELECT * FROM qa_reports_staging;
+                DROP TABLE qa_reports_staging;
+
+                -- referral_links: revert validation_method to unconstrained
+                CREATE TABLE referral_links_new (
+                    id TEXT PRIMARY KEY,
+                    program_id TEXT NOT NULL,
+                    production_id TEXT NULL,
+                    code TEXT NULL,
+                    url TEXT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('ACTIVE','EXPIRED','BLOCKED','REVIEW','UNVERIFIED','DISCOVERED')),
+                    validation_method TEXT NOT NULL,
+                    validation_evidence_ref TEXT NULL,
+                    validated_at TEXT NOT NULL,
+                    expires_at TEXT NULL,
+                    geo_json TEXT NOT NULL,
+                    platform_json TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(program_id) REFERENCES referral_programs(id)
+                );
+                INSERT INTO referral_links_new SELECT * FROM referral_links;
+                DROP TABLE referral_links;
+                ALTER TABLE referral_links_new RENAME TO referral_links;
+
+                -- rights_records: revert provenance/commercial_use/modification to unconstrained
+                CREATE TABLE rights_records_new (
+                    id TEXT PRIMARY KEY,
+                    production_id TEXT NOT NULL,
+                    asset_hash TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('GREEN','YELLOW','RED')),
+                    license TEXT NOT NULL,
+                    provenance TEXT NOT NULL,
+                    generator_model_id TEXT NULL,
+                    author TEXT NULL,
+                    acquired_at TEXT NULL,
+                    expires_at TEXT NULL,
+                    commercial_use TEXT NOT NULL,
+                    modification TEXT NOT NULL,
+                    attribution_required INTEGER NOT NULL,
+                    attribution_text TEXT NULL,
+                    restrictions_json TEXT NOT NULL,
+                    evidence_ref TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    evaluated_at TEXT NOT NULL,
+                    FOREIGN KEY(production_id) REFERENCES productions(id),
+                    CHECK(status<>'GREEN' OR (commercial_use='ALLOWED' AND modification<>'UNKNOWN'))
+                );
+                INSERT INTO rights_records_new SELECT * FROM rights_records;
+                DROP TABLE rights_records;
+                ALTER TABLE rights_records_new RENAME TO rights_records;
+
+                -- tool_runs: revert state to unconstrained
+                CREATE TABLE tool_runs_new (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_run_id TEXT NULL,
+                    tool_id TEXT NOT NULL,
+                    tool_version TEXT NOT NULL,
+                    side_effect_class TEXT NOT NULL CHECK(side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')),
+                    state TEXT NOT NULL,
+                    intent_id TEXT NULL,
+                    idempotency_key TEXT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL,
+                    FOREIGN KEY(intent_id) REFERENCES intents(id),
+                    CHECK(side_effect_class<>'EXTERNAL_UNSAFE' OR intent_id IS NOT NULL)
+                );
+                INSERT INTO tool_runs_new SELECT * FROM tool_runs;
+                DROP TABLE tool_runs;
+                ALTER TABLE tool_runs_new RENAME TO tool_runs;
+
+                COMMIT;
+                PRAGMA foreign_keys = ON;
+            "
         )
     };
+
+    // Migrations that rebuild a table other live tables reference via FOREIGN KEY need real FK
+    // enforcement off for the duration of the rebuild -- PRAGMA foreign_keys is a documented no-op
+    // once a transaction is already open, and PRAGMA defer_foreign_keys was verified against real
+    // SQLite (3.45.1) to still fail at COMMIT with a phantom "FOREIGN KEY constraint failed" for a
+    // DROP+CREATE-same-name rebuild of a table with live referencing rows, even though
+    // PRAGMA foreign_key_check reports zero violations immediately beforehand (see migration 10's
+    // own UpSql comment for the full investigation). A migration listed here is run with no ambient
+    // ADO transaction around it -- its UpSql/DownSql text manages its own PRAGMA foreign_keys
+    // toggle and BEGIN/COMMIT -- and UpgradeAsync/RollbackAsync independently verify
+    // PRAGMA foreign_key_check afterward before trusting it (D-026: the guarantee must hold even if
+    // the code that is supposed to enforce it has a bug).
+    private static readonly HashSet<int> MigrationsRequiringForeignKeysOff = new() { 10 };
 
     public static string ComputeSha256Checksum(string content)
     {
@@ -1291,6 +2263,44 @@ public class MigrationService
         foreach (var m in BuiltInMigrations.OrderBy(m => m.Version))
         {
             if (applied.ContainsKey((long)m.Version)) continue;
+
+            if (MigrationsRequiringForeignKeysOff.Contains(m.Version))
+            {
+                // No ambient ADO transaction here: the UpSql text itself contains
+                // "PRAGMA foreign_keys = OFF; BEGIN; ... COMMIT; PRAGMA foreign_keys = ON;", and
+                // PRAGMA foreign_keys is a no-op once a transaction is already open, so wrapping
+                // this call in connection.BeginTransaction() would silently defeat the toggle.
+                await connection.ExecuteAsync(m.UpSql);
+
+                var violations = (await connection.QueryAsync("PRAGMA foreign_key_check;")).AsList();
+                if (violations.Count > 0)
+                {
+                    throw new AmccaException(
+                        AmccaErrors.Db002,
+                        ErrorCategory.Internal,
+                        $"Migration {m.Version} ('{m.Name}') left {violations.Count} foreign key violation(s) after applying. Startup aborted.");
+                }
+
+                using var recordTx = connection.BeginTransaction();
+                var offChecksum = ComputeSha256Checksum(m.UpSql);
+                var offNow = DateTimeOffset.UtcNow.ToString("O");
+                await connection.ExecuteAsync(@"
+                    INSERT INTO schema_migrations (version, name, checksum, applied_at, applied_by, rollback_sql_ref)
+                    VALUES (@Version, @Name, @Checksum, @AppliedAt, @AppliedBy, @RollbackSqlRef);
+                ", new
+                {
+                    m.Version,
+                    m.Name,
+                    Checksum = offChecksum,
+                    AppliedAt = offNow,
+                    AppliedBy = "AMCCA.Migrator",
+                    RollbackSqlRef = m.Name + "_rollback"
+                }, transaction: recordTx);
+                recordTx.Commit();
+
+                appliedCount++;
+                continue;
+            }
 
             using var tx = connection.BeginTransaction();
             try
@@ -1344,6 +2354,32 @@ public class MigrationService
             if (migrationDef == default)
             {
                 throw new InvalidOperationException($"No rollback definition for version {rec.Version}.");
+            }
+
+            if (MigrationsRequiringForeignKeysOff.Contains(rec.Version))
+            {
+                // Mirrors the UpgradeAsync branch above: no ambient ADO transaction, since the
+                // DownSql text manages its own PRAGMA foreign_keys toggle and BEGIN/COMMIT.
+                await connection.ExecuteAsync(migrationDef.DownSql);
+
+                var violations = (await connection.QueryAsync("PRAGMA foreign_key_check;")).AsList();
+                if (violations.Count > 0)
+                {
+                    throw new AmccaException(
+                        AmccaErrors.Db002,
+                        ErrorCategory.Internal,
+                        $"Rollback of migration {rec.Version} left {violations.Count} foreign key violation(s). Rollback aborted.");
+                }
+
+                using var recordTx = connection.BeginTransaction();
+                await connection.ExecuteAsync(
+                    "DELETE FROM schema_migrations WHERE version = @Version;",
+                    new { rec.Version },
+                    transaction: recordTx);
+                recordTx.Commit();
+
+                rolledBackCount++;
+                continue;
             }
 
             using var tx = connection.BeginTransaction();

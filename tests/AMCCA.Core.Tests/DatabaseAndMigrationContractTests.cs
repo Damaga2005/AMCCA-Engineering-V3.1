@@ -428,7 +428,7 @@ public class DatabaseAndMigrationContractTests : IDisposable
         using var connection = await factory.CreateOpenConnectionAsync();
         await connection.ExecuteAsync(@"
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-src-acct', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-src-acct', 'PUBLICATION_VERIFIED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
             VALUES ('pub-src-acct', 'prod-src-acct', 'youtube', 'acc-x', 'ver-x', 'PUBLISHED', 'idem-src-acct', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO platform_accounts (id, platform, account_handle, credential_secret_ref, state, created_at, updated_at)
@@ -622,5 +622,254 @@ public class DatabaseAndMigrationContractTests : IDisposable
         {
             jobColumns.Should().NotContain(col);
         }
+    }
+
+    /// <summary>
+    /// contracts.enum_matches_ddl_check (fourth audit): 17 columns across 13 tables had a JSON-contract
+    /// enum with no matching DDL CHECK, so a bug anywhere upstream of an INSERT could silently write a
+    /// value the contract itself forbids (D-026). Five of those tables -- agent_runs, jobs, productions,
+    /// publications, qa_reports -- are FK targets from other live tables, so this migration cannot use
+    /// the ordinary DROP+CREATE-under-original-name rebuild: it runs with FK enforcement off for its
+    /// duration (MigrationService.MigrationsRequiringForeignKeysOff), the one pattern verified against
+    /// real SQLite not to hit a phantom deferred-FK COMMIT failure. This test seeds one row per touched
+    /// table with data that predates the migration, upgrades through it, and checks both that every row
+    /// survived (including through the FK web productions/agent_runs/publications/qa_reports sit at the
+    /// center of) and that each new CHECK actually rejects a value the contract disallows.
+    /// </summary>
+    [Fact]
+    public async Task Migration010_AddsEnumCheckConstraints_DataSurvivesAndChecksReject()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 9);
+
+        var sha = new string('a', 64);
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync($@"
+                INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
+                VALUES ('prod-mig10', 'INIT', 0, 0, 'MANUAL', 'en', '3.1.0', datetime('now'), datetime('now'));
+
+                INSERT INTO prompt_templates (id, key, purpose, created_at, updated_at)
+                VALUES ('pt-mig10', 'key-mig10', 'purpose-mig10', datetime('now'), datetime('now'));
+                INSERT INTO prompt_versions (id, template_id, version_no, body_sha256, body_ref, created_at)
+                VALUES ('pv-mig10', 'pt-mig10', 1, '{sha}', 'ref-mig10', datetime('now'));
+                INSERT INTO agent_runs (run_id, production_id, agent_id, agent_version, prompt_version_id, model_id, model_params_hash, state, input_hash, correlation_id, schema_version, started_at)
+                VALUES ('run-mig10', 'prod-mig10', 'agent-1', '1.0', 'pv-mig10', 'model-1', 'h1', 'RUNNING', 'ih1', 'corr-mig10', '3.1.0', datetime('now'));
+
+                INSERT INTO jobs (id, production_id, type, state, payload_json, created_at, updated_at, schema_version)
+                VALUES ('job-mig10', 'prod-mig10', 'RENDER', 'QUEUED', '{{}}', datetime('now'), datetime('now'), '3.1.0');
+
+                INSERT INTO platform_accounts (id, platform, account_handle, credential_secret_ref, state, created_at, updated_at)
+                VALUES ('acct-mig10', 'youtube', '@h', 'secret://vault/x', 'CONNECTED', datetime('now'), datetime('now'));
+                INSERT INTO synthetic_declarations (id) VALUES ('sd-mig10');
+                INSERT INTO publications (id, production_id, platform, account_id, content_version_id, synthetic_declaration_id, platform_label_required, state, idempotency_key, schema_version, created_at, updated_at)
+                VALUES ('pub-mig10', 'prod-mig10', 'youtube', 'acct-mig10', 'cv-mig10', 'sd-mig10', 1, 'QUEUED', 'idem-mig10', '3.1.0', datetime('now'), datetime('now'));
+
+                INSERT INTO analytics_snapshots (id, production_id, publication_id, metric, value, provenance, schema_version, observed_at)
+                VALUES ('as-mig10', 'prod-mig10', 'pub-mig10', 'views', 1, 'API_MEASURED', '3.1.0', datetime('now'));
+
+                INSERT INTO audit_log (audit_id, action, actor_type, actor_id, outcome, correlation_id, schema_version, occurred_at)
+                VALUES ('al-mig10', 'some_action', 'OPERATOR', 'op-1', 'COMMITTED', 'corr-mig10', '3.1.0', datetime('now'));
+
+                INSERT INTO claims (id, production_id, text, status, materiality, subject_class, schema_version, created_at)
+                VALUES ('cl-mig10', 'prod-mig10', 'claim text', 'VERIFIED', 'MATERIAL', 'GENERAL', '3.1.0', datetime('now'));
+
+                INSERT INTO cost_events (id, production_id, kind, amount, currency, provider, occurred_at, created_at, schema_version, reconciliation_state)
+                VALUES ('ce-mig10', 'prod-mig10', 'SETTLEMENT', '10.00', 'EUR', 'openai', datetime('now'), datetime('now'), '3.1.0', 'ESTIMATED');
+
+                INSERT INTO events (event_id, event_type, aggregate_type, aggregate_id, aggregate_version, correlation_id, payload_json, schema_version, occurred_at, seq)
+                VALUES ('ev-mig10', 'created', 'production', 'prod-mig10', 1, 'corr-mig10', '{{}}', '3.1.0', datetime('now'), 1);
+
+                INSERT INTO artifacts (id, production_id, kind, created_at, updated_at) VALUES ('art-mig10', 'prod-mig10', 'video', datetime('now'), datetime('now'));
+                INSERT INTO artifact_versions (id, artifact_id, version_no, sha256, bytes, rel_path, state, created_at)
+                VALUES ('av-mig10', 'art-mig10', 1, '{sha}', 10, 'p.mp4', 'CURRENT', datetime('now'));
+                INSERT INTO qa_reports (report_id, production_id, artifact_version_id, stage, overall_score, critical_scores_json, verdict, threshold_profile_id, schema_version, evaluated_at)
+                VALUES ('qr-mig10', 'prod-mig10', 'av-mig10', 'TECHNICAL_QA', 0.9, '{{}}', 'PASS', 'default', '3.1.0', datetime('now'));
+
+                INSERT INTO referral_programs (id, brand, program, state, disclosure_required, created_at, updated_at)
+                VALUES ('rp-mig10', 'brand', 'program', 'ACTIVE', 1, datetime('now'), datetime('now'));
+                INSERT INTO referral_links (id, program_id, production_id, state, validation_method, validated_at, geo_json, platform_json, schema_version, created_at, updated_at)
+                VALUES ('rl-mig10', 'rp-mig10', 'prod-mig10', 'ACTIVE', 'OFFICIAL_API', datetime('now'), '{{}}', '{{}}', '3.1.0', datetime('now'), datetime('now'));
+
+                INSERT INTO rights_records (id, production_id, asset_hash, status, license, provenance, commercial_use, modification, attribution_required, restrictions_json, schema_version, evaluated_at)
+                VALUES ('rr-mig10', 'prod-mig10', '{sha}', 'GREEN', 'CC0', 'GENERATED', 'ALLOWED', 'ALLOWED', 0, '{{}}', '3.1.0', datetime('now'));
+
+                INSERT INTO tool_runs (run_id, production_id, job_id, agent_run_id, tool_id, tool_version, side_effect_class, state, input_hash, correlation_id, schema_version, started_at)
+                VALUES ('tr-mig10', 'prod-mig10', 'job-mig10', 'run-mig10', 'tool-1', '1.0', 'PURE', 'STARTED', 'ih1', 'corr-mig10', '3.1.0', datetime('now'));
+            ");
+        }
+
+        await migrationService.UpgradeAsync();
+
+        using var connection2 = await factory.CreateOpenConnectionAsync();
+
+        // Every row seeded on the pre-migration-10 (unconstrained) schema survives the rebuild --
+        // including the ones sitting inside the productions/agent_runs/publications/qa_reports FK web.
+        var survivalChecks = new (string Table, string Column, string Id)[]
+        {
+            ("productions", "id", "prod-mig10"),
+            ("agent_runs", "run_id", "run-mig10"),
+            ("jobs", "id", "job-mig10"),
+            ("publications", "id", "pub-mig10"),
+            ("qa_reports", "report_id", "qr-mig10"),
+            ("analytics_snapshots", "id", "as-mig10"),
+            ("audit_log", "audit_id", "al-mig10"),
+            ("claims", "id", "cl-mig10"),
+            ("cost_events", "id", "ce-mig10"),
+            ("events", "event_id", "ev-mig10"),
+            ("referral_links", "id", "rl-mig10"),
+            ("rights_records", "id", "rr-mig10"),
+            ("tool_runs", "run_id", "tr-mig10"),
+        };
+        foreach (var (table, column, id) in survivalChecks)
+        {
+            var count = await connection2.ExecuteScalarAsync<int>(
+                $"SELECT COUNT(*) FROM {table} WHERE {column} = @Id;", new { Id = id });
+            count.Should().Be(1, $"row {id} in {table} must survive migration 10's rebuild");
+        }
+
+        var fkViolations = (await connection2.QueryAsync("PRAGMA foreign_key_check;")).AsList();
+        fkViolations.Should().BeEmpty("migration 10 must leave the database with zero foreign key violations");
+
+        var foreignKeysOn = await connection2.ExecuteScalarAsync<long>("PRAGMA foreign_keys;");
+        foreignKeysOn.Should().Be(1, "migration 10 must restore foreign_keys = ON before returning control");
+
+        // The two real DIVERGES the fourth audit found: cost_events.kind's DDL allowed the legacy
+        // REFUND value the contract never had, and publications.state's DDL allowed several legacy
+        // values (including QUEUED, which PlatformHub used to write) never in the contract's 10-value
+        // domain. Both writes pre-date this test's seed rows, so this proves the CHECK is real, not
+        // just present in the schema text.
+        var actBadCostKind = async () => await connection2.ExecuteAsync(
+            "UPDATE cost_events SET kind = 'REFUND' WHERE id = 'ce-mig10';");
+        await actBadCostKind.Should().ThrowAsync<SqliteException>();
+
+        var actBadPublicationState = async () => await connection2.ExecuteAsync(
+            "UPDATE publications SET state = 'QUEUED' WHERE id = 'pub-mig10';");
+        await actBadPublicationState.Should().ThrowAsync<SqliteException>();
+
+        // A representative sample of the other 15 new CHECKs, one per remaining table, confirms this
+        // isn't limited to the two DIVERGES cases above.
+        var actBadAgentRunState = async () => await connection2.ExecuteAsync(
+            "UPDATE agent_runs SET state = 'RUNNING' WHERE run_id = 'run-mig10';");
+        await actBadAgentRunState.Should().ThrowAsync<SqliteException>("RUNNING was never in agent-run.schema.json's enum -- STARTED is");
+
+        var actBadQaStage = async () => await connection2.ExecuteAsync(
+            "UPDATE qa_reports SET stage = 'SCRIPT_QA' WHERE report_id = 'qr-mig10';");
+        await actBadQaStage.Should().ThrowAsync<SqliteException>();
+
+        var actBadAuditOutcome = async () => await connection2.ExecuteAsync(
+            "UPDATE audit_log SET outcome = 'COMMITTED' WHERE audit_id = 'al-mig10';");
+        await actBadAuditOutcome.Should().ThrowAsync<SqliteException>("COMMITTED was never in audit.schema.json's enum -- APPROVED is");
+
+        var actBadClaimSubjectClass = async () => await connection2.ExecuteAsync(
+            "UPDATE claims SET subject_class = 'HISTORY' WHERE id = 'cl-mig10';");
+        await actBadClaimSubjectClass.Should().ThrowAsync<SqliteException>();
+
+        var actBadProductionState = async () => await connection2.ExecuteAsync(
+            "UPDATE productions SET state = 'BOGUS_STATE' WHERE id = 'prod-mig10';");
+        await actBadProductionState.Should().ThrowAsync<SqliteException>();
+
+        var actBadAutonomyMode = async () => await connection2.ExecuteAsync(
+            "UPDATE productions SET autonomy_mode = 'FULL_AUTONOMY' WHERE id = 'prod-mig10';");
+        await actBadAutonomyMode.Should().ThrowAsync<SqliteException>();
+
+        var actBadJobState = async () => await connection2.ExecuteAsync(
+            "UPDATE jobs SET state = 'BOGUS_STATE' WHERE id = 'job-mig10';");
+        await actBadJobState.Should().ThrowAsync<SqliteException>();
+
+        var actBadRightsProvenance = async () => await connection2.ExecuteAsync(
+            "UPDATE rights_records SET provenance = 'BOGUS' WHERE id = 'rr-mig10';");
+        await actBadRightsProvenance.Should().ThrowAsync<SqliteException>();
+
+        var actBadReferralMethod = async () => await connection2.ExecuteAsync(
+            "UPDATE referral_links SET validation_method = 'BOGUS' WHERE id = 'rl-mig10';");
+        await actBadReferralMethod.Should().ThrowAsync<SqliteException>();
+
+        var actBadToolRunState = async () => await connection2.ExecuteAsync(
+            "UPDATE tool_runs SET state = 'BOGUS' WHERE run_id = 'tr-mig10';");
+        await actBadToolRunState.Should().ThrowAsync<SqliteException>();
+
+        var actBadAnalyticsProvenance = async () => await connection2.ExecuteAsync(
+            "UPDATE analytics_snapshots SET provenance = 'BOGUS' WHERE id = 'as-mig10';");
+        await actBadAnalyticsProvenance.Should().ThrowAsync<SqliteException>();
+
+        var actBadEventsAggregateType = async () => await connection2.ExecuteAsync(
+            "UPDATE events SET aggregate_type = 'BOGUS' WHERE event_id = 'ev-mig10';");
+        await actBadEventsAggregateType.Should().ThrowAsync<SqliteException>();
+
+        // The append-only triggers on audit_log/events (dropped and recreated as part of this
+        // migration's rebuild of those two tables) must still be armed afterward.
+        var actAuditUpdate = async () => await connection2.ExecuteAsync(
+            "UPDATE audit_log SET action = 'x' WHERE audit_id = 'al-mig10';");
+        (await actAuditUpdate.Should().ThrowAsync<SqliteException>()).Which.Message.Should().Contain("append-only");
+
+        var actEventsDelete = async () => await connection2.ExecuteAsync(
+            "DELETE FROM events WHERE event_id = 'ev-mig10';");
+        (await actEventsDelete.Should().ThrowAsync<SqliteException>()).Which.Message.Should().Contain("append-only");
+    }
+
+    /// <summary>
+    /// Rolling migration 10 back must restore every touched column to its pre-migration (unconstrained,
+    /// or legacy-domain for the two real DIVERGES) shape, with all data intact -- proving the DownSql,
+    /// which runs through the same FK-enforcement-off path as the UpSql, is not a one-way door.
+    /// </summary>
+    [Fact]
+    public async Task Migration010_RollbackRestoresUnconstrainedColumnsAndLegacyDomains()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+
+        var sha = new string('a', 64);
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync($@"
+                INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
+                VALUES ('prod-mig10-rb', 'INIT', 0, 0, 'MANUAL', 'en', '3.1.0', datetime('now'), datetime('now'));
+                INSERT INTO cost_events (id, production_id, kind, amount, currency, provider, occurred_at, created_at, schema_version, reconciliation_state)
+                VALUES ('ce-mig10-rb', 'prod-mig10-rb', 'SETTLEMENT', '10.00', 'EUR', 'openai', datetime('now'), datetime('now'), '3.1.0', 'ESTIMATED');
+            ");
+        }
+
+        await migrationService.RollbackAsync(targetVersion: 9);
+
+        using var connection2 = await factory.CreateOpenConnectionAsync();
+
+        var survivingProduction = await connection2.ExecuteScalarAsync<string>(
+            "SELECT id FROM productions WHERE id = 'prod-mig10-rb';");
+        survivingProduction.Should().Be("prod-mig10-rb");
+
+        var survivingCostEvent = await connection2.ExecuteScalarAsync<string>(
+            "SELECT id FROM cost_events WHERE id = 'ce-mig10-rb';");
+        survivingCostEvent.Should().Be("ce-mig10-rb");
+
+        var fkViolations = (await connection2.QueryAsync("PRAGMA foreign_key_check;")).AsList();
+        fkViolations.Should().BeEmpty("rolling migration 10 back must also leave zero foreign key violations");
+
+        var foreignKeysOn = await connection2.ExecuteScalarAsync<long>("PRAGMA foreign_keys;");
+        foreignKeysOn.Should().Be(1, "migration 10's rollback must restore foreign_keys = ON before returning control");
+
+        // The legacy value cost_events.kind's CHECK forbade after migration 10 must be accepted again.
+        await connection2.ExecuteAsync("UPDATE cost_events SET kind = 'REFUND' WHERE id = 'ce-mig10-rb';");
+        var revertedKind = await connection2.ExecuteScalarAsync<string>(
+            "SELECT kind FROM cost_events WHERE id = 'ce-mig10-rb';");
+        revertedKind.Should().Be("REFUND");
+
+        // A previously-CHECKed column (agent_runs.state) must go back to accepting anything.
+        await connection2.ExecuteAsync(@"
+            INSERT INTO prompt_templates (id, key, purpose, created_at, updated_at)
+            VALUES ('pt-mig10-rb', 'key-rb', 'purpose-rb', datetime('now'), datetime('now'));
+            INSERT INTO prompt_versions (id, template_id, version_no, body_sha256, body_ref, created_at)
+            VALUES ('pv-mig10-rb', 'pt-mig10-rb', 1, @Sha, 'ref-rb', datetime('now'));
+        ", new { Sha = sha });
+        await connection2.ExecuteAsync(@"
+            INSERT INTO agent_runs (run_id, production_id, agent_id, agent_version, prompt_version_id, model_id, model_params_hash, state, input_hash, correlation_id, schema_version, started_at)
+            VALUES ('run-mig10-rb', 'prod-mig10-rb', 'agent-1', '1.0', 'pv-mig10-rb', 'model-1', 'h1', 'ANY_LEGACY_VALUE', 'ih1', 'corr-rb', '3.1.0', datetime('now'));
+        ");
+        var revertedAgentRunState = await connection2.ExecuteScalarAsync<string>(
+            "SELECT state FROM agent_runs WHERE run_id = 'run-mig10-rb';");
+        revertedAgentRunState.Should().Be("ANY_LEGACY_VALUE");
     }
 }
