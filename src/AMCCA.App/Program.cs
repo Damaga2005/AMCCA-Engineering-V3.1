@@ -62,25 +62,30 @@ public static class Program
             builder.Services.AddSingleton(gateway);
         }
         builder.Services.AddSingleton<AMCCA.Core.Research.ResearchService>();
+        builder.Services.AddSingleton(sp => new AMCCA.Core.Artifacts.ArtifactStore(
+            sp.GetRequiredService<DatabaseConnectionFactory>(), config.DataRoot));
 
         builder.Services.AddSingleton(sp =>
         {
             var cf = sp.GetRequiredService<DatabaseConnectionFactory>();
             var gw = sp.GetService<IProviderGateway>();
+            var prods = sp.GetRequiredService<AMCCA.Core.Domain.ProductionService>();
+            var audit = sp.GetRequiredService<AMCCA.Core.Events.IAuditStore>();
 
             AMCCA.Core.Orchestration.Handlers.IResearchAgent? researchAgent = gw is null ? null
                 : new AMCCA.Core.Orchestration.Handlers.AgentResearchAgent(
-                    sp.GetRequiredService<AMCCA.Core.Domain.ProductionService>(),
-                    sp.GetRequiredService<AMCCA.Core.Research.ResearchService>(),
-                    sp.GetRequiredService<AMCCA.Core.Events.IAuditStore>(),
-                    gw);
+                    prods, sp.GetRequiredService<AMCCA.Core.Research.ResearchService>(), audit, gw);
+
+            AMCCA.Core.Orchestration.Handlers.IScriptAgent? scriptAgent = gw is null ? null
+                : new AMCCA.Core.Orchestration.Handlers.AgentScriptAgent(
+                    prods, cf, audit, gw, sp.GetRequiredService<AMCCA.Core.Artifacts.ArtifactStore>());
 
             var registry = new StageHandlerRegistry();
             registry.Register("INIT", new InitStageHandler());
-            // RESEARCHING runs its generative agent (when a provider is configured) then the
-            // deterministic SPEC/26 verification. SCRIPTING's agent arrives in A4.
+            // RESEARCHING / SCRIPTING run their generative agent (when a provider is configured) then
+            // the deterministic verification (SPEC/26, SPEC/32).
             registry.Register("RESEARCHING", new ResearchStageHandler(cf, researchAgent));
-            registry.Register("SCRIPTING", new ScriptStageHandler(cf, agent: null));
+            registry.Register("SCRIPTING", new ScriptStageHandler(cf, scriptAgent));
             // Pure bookkeeping states between producing stages.
             var advance = new NoWorkAdvanceHandler();
             registry.Register("RESEARCH_VERIFIED", advance);

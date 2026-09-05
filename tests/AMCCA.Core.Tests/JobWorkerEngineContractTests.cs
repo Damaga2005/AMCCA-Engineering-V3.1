@@ -18,12 +18,12 @@ public class JobWorkerEngineContractTests : IDisposable
     private readonly DatabaseConnectionFactory _factory;
     private readonly JobManager _jobs;
 
-    // Lease is kept well above heartbeat×2 so a scheduling hiccup under full-suite load cannot let it
-    // lapse mid-heartbeat (the earlier 400/120 ratio was flaky).
+    // The heartbeat fires ~20x per lease, so only a ~2s scheduling stall could let the lease lapse
+    // between beats. A fully deterministic version waits on B2 (inject TimeProvider).
     private static readonly JobWorkerOptions FastOptions = new(
         MaxConcurrency: 2,
-        LeaseDuration: TimeSpan.FromMilliseconds(1500),
-        HeartbeatInterval: TimeSpan.FromMilliseconds(150),
+        LeaseDuration: TimeSpan.FromMilliseconds(2000),
+        HeartbeatInterval: TimeSpan.FromMilliseconds(100),
         PollInterval: TimeSpan.FromMilliseconds(50),
         AgingWindow: TimeSpan.FromSeconds(2),
         ReaperInterval: TimeSpan.FromMilliseconds(100));
@@ -137,7 +137,7 @@ public class JobWorkerEngineContractTests : IDisposable
 
         var handlers = new JobHandlerRegistry().Register("RENDER", new FnJobHandler(async (_, ct) =>
         {
-            await Task.Delay(2500, ct);          // well past the 1500ms lease — only the heartbeat keeps it alive
+            await Task.Delay(2800, ct);          // well past the 2000ms lease — only the heartbeat keeps it alive
             reclaimedMidFlight = await _jobs.ReclaimExpiredLeasesAsync();
             return JobResult.Success();
         }));
