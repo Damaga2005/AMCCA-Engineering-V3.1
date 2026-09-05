@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 383
-**Total bytes:** 2361364
+**Files:** 386
+**Total bytes:** 2383956
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -93,7 +93,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SPEC/02_RUNTIME.md` | `4d9053f1ff8176b373f4643dd0e7d5721ef11c23b240711af56772a351415489` | 2524 |
 | `SPEC/03_CONFIGURATION.md` | `369a3a08f0e8caa9f42506c694fe0847c1fd923e26cf9409b71ad51a29769e5d` | 3085 |
 | `SPEC/04_CONTRACTS.md` | `37aaf7ef03fec250fc4ca1ac05a03162dd5e633abd43f5426ef2bae99708615a` | 3199 |
-| `SPEC/05_ERROR_MODEL.md` | `2651c06214a72b0c6509c96987e9b87d3b1847dfc7f33dc97d6a4f49c87035e7` | 8415 |
+| `SPEC/05_ERROR_MODEL.md` | `3f9c9f3e1f5b30eee1f42c898b62789863bc95b4aba6c27870163d6a319d2230` | 8692 |
 | `SPEC/06_AGENT_SYSTEM.md` | `6c39018c3f550a8cb413be2326aedb807977b0227713ec849ac4242128281e8e` | 2723 |
 | `SPEC/07_TOOL_REGISTRY.md` | `a41f18c333253307e3e5d60c7331051c47e7105b36e9e5cc48b3bd8419d6eaf2` | 2117 |
 | `SPEC/08_POLICY_ENGINE.md` | `7bc7098df75726473aacf31dc44755534d740ccf5763ce4295403bce4f637bd4` | 1879 |
@@ -241,11 +241,13 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Views/SettingsView.xaml.cs` | `fac04c67cd6f79f265f04600c886f284ce1351337dce2cee5884b3c52f98c6bb` | 185 |
 | `src/AMCCA.Core/AMCCA.Core.csproj` | `fb29e03602ce2c85da85df8394033097c60be73fc1d0be5823231d649ba2a29e` | 1384 |
 | `src/AMCCA.Core/Agents/AgentContract.cs` | `611dfbf5ed92c13d5e73a43ad0ac7cbb457e064cc1aabdc67feaf78d7209f9bd` | 338 |
+| `src/AMCCA.Core/Agents/AgentLoopModels.cs` | `c252cf79e8cd2528eec7df38b8e0979f18b1fc9df51c000f5716ee21ac5a9450` | 1262 |
+| `src/AMCCA.Core/Agents/AgentProtocol.cs` | `e8cc7d1d9aea940d9f383415ab4dcb28e94f39b3b3b3ff3a4b5a3480e3ff934e` | 5129 |
 | `src/AMCCA.Core/Agents/AgentRunSession.cs` | `01ae68f19d75ec8b51fbeb2a534362031f66f8a6e75f10d2e69f6d9b6612c0d3` | 1082 |
-| `src/AMCCA.Core/Agents/AgentRuntime.cs` | `26b7153ec49755f74e6952661f28308e91e930f84d73001b83161cebf91ebbc2` | 9665 |
+| `src/AMCCA.Core/Agents/AgentRuntime.cs` | `0620eb5a4835136ab4df8036740bdf418d3f928b332b03ecc4c15c4b6c8938c1` | 16263 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `1f710a275f7fb5336cc1d11717ba87a09d848ecbf84f0d3e81764aef161838bf` | 8094 |
-| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `8dcf06974b080452c0890c199dbcab5e49a64fae5d7d7b36e96da67a262ff5ea` | 5458 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `bf525e226b51018b187c19997439b0c2054d42a4873c9bd27e49a1825a48165f` | 5629 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
@@ -337,6 +339,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `1b33c8dc38dea5a890a7aadfe6fc27a063cf60ceea363d6be4f2afcc5e341d3f` | 960 |
 | `tests/AMCCA.Core.Tests/AgentContractEnforcementRegressionTests.cs` | `eb8d0928b96537fc2a66be35b3c8e62e99417c561c763feafd4050b8db0425c4` | 8244 |
 | `tests/AMCCA.Core.Tests/AgentCostReservationOrderRegressionTests.cs` | `47ac5a937cc5a3c781bbb98f5948c46f7ea44a0d80de2fedfdb84576eb61a42e` | 6805 |
+| `tests/AMCCA.Core.Tests/AgentLoopContractTests.cs` | `73697ec2d07577f32cc1943740807d68a429763ac2e5234fddb7fded0afc9fb0` | 8991 |
 | `tests/AMCCA.Core.Tests/AgentOutputResourceLimitRegressionTests.cs` | `963a7f00f2131596f8929edfebd2808822934b33118b6f06af0dbd96577d2c86` | 4320 |
 | `tests/AMCCA.Core.Tests/AiProviderRealIntegrationTests.cs` | `99a3dfb1e6d40ed4a1daa60d33b44eec29522b6284646634806505775fb30f81` | 11414 |
 | `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs` | `fba53fdfba4914ac6f5c49875a06e96c4734ccf474353d3d20f3efe7eb83ae46` | 8512 |
@@ -358,7 +361,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `e4fc7fdc62f2b271431b646594d3a22207e6725ae94d74a43c74b496b0f45d7d` | 12154 |
 | `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `b330ad40f3b83fafee83d8b73ef2055a937cfc09f8a7887b19803c6f0b730bb5` | 10739 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `e25244feb670676f404fd38c530587870ddbf4e14f8e62dcf1d943215542337d` | 5248 |
-| `tests/AMCCA.Core.Tests/JobWorkerEngineContractTests.cs` | `c1896d46a0ecd7819b1a1bf6b4009ee7e2953d2aafeb9806e09ea49c46c89cee` | 7784 |
+| `tests/AMCCA.Core.Tests/JobWorkerEngineContractTests.cs` | `691a6ef1a1cf6a9d0c737cb8b83c5d53d9241a35acb30df5bced60bd86270458` | 7948 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `c774944bf34c00fda37d2f4450006d5e5f05b480ee687538e884b2438251ba26` | 9491 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
 | `tests/AMCCA.Core.Tests/MemoryGenomeExperimentContractTests.cs` | `ebd6cbe432c9dc4d1e9c8aa2877bd214b97e3ad42d48997a3adf74a926d2e33a` | 23899 |

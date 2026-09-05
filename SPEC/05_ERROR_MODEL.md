@@ -57,6 +57,7 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-AI-002` | UNKNOWN_EXTERNAL_STATE | No | Reconcile before any retry |
 | `AMCCA-AI-003` | VALIDATION | No | Agent output failed its declared schema |
 | `AMCCA-AI-004` | POLICY | No | Agent attempted a forbidden tool |
+| `AMCCA-AI-006` | INTERNAL | No | The agent reasoning loop ran `max_iterations` without emitting a final answer, or repeatedly failed to produce a parseable tool-call / final envelope. Returned as an `AgentRunResult` reason code by `AgentRuntime.RunAgentAsync`, not thrown. |
 | `AMCCA-AI-005` | BUDGET | No | Reserved; not currently thrown. Its cost-ceiling half is a duplicate of `AMCCA-BUD-002` (`AgentRuntime.ExecuteToolCallAsync` throws that instead, DEF-004); its timeout half deliberately surfaces as a raw, unwrapped `OperationCanceledException` — an established, tested contract (`TimeoutSeconds_CancelsExecutionWhenExceeded`) that matches .NET's own cancellation convention and should not be wrapped. |
 | `AMCCA-RES-001` | VALIDATION | No | Material claim lacks sufficient independent sources |
 | `AMCCA-RES-002` | TRANSIENT | Yes | Research source unavailable |
