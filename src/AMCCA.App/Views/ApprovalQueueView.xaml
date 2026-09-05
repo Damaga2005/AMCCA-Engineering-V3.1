@@ -15,8 +15,8 @@
         <!-- Header -->
         <TextBlock Text="Human Approval Queue (SPEC/09)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
 
-        <!-- Approvals Grid: SPEC/60 obligation 5 -- every approval request shows the exact action,
-             subject, cost ceiling and expiry being approved, not just its id and timestamps. -->
+        <!-- Approvals Grid: SPEC/60 obligation 5 requires every approval request to show the exact
+             action, subject, cost ceiling and expiry being approved, not just its id and timestamps. -->
         <DataGrid Grid.Row="1" ItemsSource="{Binding Approvals}" SelectedItem="{Binding SelectedApproval}" AutoGenerateColumns="False" CanUserAddRows="False" Background="#313244" Foreground="#CDD6F4" RowBackground="#1E1E2E" AlternatingRowBackground="#181825" BorderThickness="0" HeadersVisibility="Column" Margin="0,0,0,15">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Approval ID" Binding="{Binding Id}" Width="140"/>

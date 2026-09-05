@@ -5,8 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="1000">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
     <Grid Background="#1E1E2E" Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -16,8 +20,26 @@
         <!-- Header -->
         <TextBlock Text="Job Queue (SPEC/14)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
 
+        <!-- SPEC/60 obligation 7: a long-running load shows progress and can be cancelled, not just
+             superseded by the next click. -->
+        <Border Grid.Row="1" Background="#313244" CornerRadius="8" Padding="10,8" Margin="0,0,0,10"
+                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True" Width="120" Height="6" Margin="0,0,10,0"/>
+                    <TextBlock Text="Loading..." Foreground="#A6ADC8" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelLoadCommand}"
+                        Background="#F38BA8" Foreground="#11111B" FontWeight="Bold" Padding="12,4"/>
+            </Grid>
+        </Border>
+
         <!-- Toolbar -->
-        <Border Grid.Row="1" Background="#313244" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+        <Border Grid.Row="2" Background="#313244" CornerRadius="8" Padding="15" Margin="0,0,0,15">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="240"/>
@@ -43,7 +65,7 @@
         </Border>
 
         <!-- Job Grid -->
-        <DataGrid Grid.Row="2" ItemsSource="{Binding Jobs}" SelectedItem="{Binding SelectedJob}"
+        <DataGrid Grid.Row="3" ItemsSource="{Binding Jobs}" SelectedItem="{Binding SelectedJob}"
                   AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
                   EnableRowVirtualization="True"
                   Background="#313244" Foreground="#CDD6F4" RowBackground="#1E1E2E"
@@ -68,7 +90,7 @@
         </DataGrid>
 
         <!-- Paging -->
-        <Border Grid.Row="3" Background="#313244" CornerRadius="8" Padding="10" Margin="0,15,0,0">
+        <Border Grid.Row="4" Background="#313244" CornerRadius="8" Padding="10" Margin="0,15,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Button Content="&#x2190; Previous" Command="{Binding PreviousPageCommand}"
                         Background="#45475A" Foreground="#CDD6F4" Padding="15,6" Margin="0,0,10,0"/>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
@@ -25,7 +26,10 @@ public record InspectorApprovalItem(string Id, string Action, string State, stri
 
 public record InspectorJobItem(string Id, string Type, string State, long Attempt, long MaxAttempts, string UpdatedAt);
 
-public record InspectorCostEventItem(string Id, string Kind, string Amount, string Currency, string OccurredAt);
+// SPEC/60 obligation 3: "Every number carries its provenance; measured and estimated are visually
+// distinct." reconciliation_state is that provenance for a cost amount -- ESTIMATED until a provider
+// statement reconciles it -- and DataGridStyle in the view colors this column by value.
+public record InspectorCostEventItem(string Id, string Kind, string Amount, string Currency, string ReconciliationState, string OccurredAt);
 
 public record InspectorPublicationItem(
     string Id,
@@ -77,6 +81,25 @@ public record InspectorArtifactEdgeItem(
     string CreatedAt);
 
 /// <summary>
+/// SPEC/60 obligation 4: "Every blocked element indicates which rule blocked it, which policy version,
+/// and what would unblock it." The reason/policy-version half comes from the one place this codebase
+/// records why an action was blocked -- an audit_log row with a reason_code and (if a policy engine ever
+/// persists one) a policy_decision_id -- looked up by subject_id against this production. Nothing writes
+/// policy_decisions today (verified: no INSERT anywhere in src/AMCCA.Core), so PolicyDecisionId is always
+/// null in practice; this is disclosed via UnblockHint rather than invented. The "what would unblock it"
+/// half is not a guess: StateMachineRegistry enforces (AMCCA-STM-002) that resuming from BLOCKED is only
+/// ever legal back to the recorded blocked_from state, so that is the literal, code-enforced answer.
+/// </summary>
+public record InspectorBlockInfo(string? ReasonCode, string? PolicyDecisionId, string? OccurredAt, string? ResumesTo)
+{
+    public string ReasonDisplay => ReasonCode ?? "(no reason code recorded for this block)";
+    public string PolicyVersionDisplay => PolicyDecisionId ?? "(no policy decision recorded for this block)";
+    public string UnblockHint => ResumesTo is { Length: > 0 }
+        ? $"Resolve the blocking condition, then resume to '{ResumesTo}' (the only legal target per AMCCA-STM-002)."
+        : "No prior state was recorded to resume to.";
+}
+
+/// <summary>
 /// SPEC/60 Production Inspector: a read-only aggregate view across production state, versions,
 /// artifacts, QA, approvals, jobs, costs and publications for one production. Reads only -- it never
 /// mutates, so unlike the DEF-001 fix in Productions/Settings there is no domain service to bypass;
@@ -100,6 +123,13 @@ public class ProductionInspectorViewModel : ViewModelBase
     // The picker list has its own token: it is refilled by a different pair of callers (the constructor
     // and Refresh) and must not invalidate an inspection load, nor be invalidated by one.
     private int _pickerRequestToken;
+
+    // SPEC/60 obligation 7: cancelling this actually stops the in-flight queries via the
+    // CancellationToken threaded through every call below, instead of merely discarding results the
+    // queries would still finish computing.
+    private CancellationTokenSource? _loadCts;
+
+    private InspectorBlockInfo? _blockInfo;
 
     public ObservableCollection<InspectorProductionSummary> AvailableProductions { get; } = new();
     public ObservableCollection<InspectorTransitionItem> StateTransitions { get; } = new();
@@ -139,7 +169,22 @@ public class ProductionInspectorViewModel : ViewModelBase
         private set => SetProperty(ref _isLoading, value);
     }
 
+    public InspectorBlockInfo? BlockInfo
+    {
+        get => _blockInfo;
+        private set
+        {
+            if (SetProperty(ref _blockInfo, value))
+            {
+                OnPropertyChanged(nameof(HasBlockInfo));
+            }
+        }
+    }
+
+    public bool HasBlockInfo => BlockInfo != null;
+
     public ICommand RefreshCommand { get; }
+    public ICommand CancelLoadCommand { get; }
 
     public ProductionInspectorViewModel(
         ProductionService productionService,
@@ -151,6 +196,7 @@ public class ProductionInspectorViewModel : ViewModelBase
         _notificationService = notificationService;
 
         RefreshCommand = new AsyncRelayCommand(LoadAvailableProductionsAsync);
+        CancelLoadCommand = new RelayCommand(() => _loadCts?.Cancel());
 
         _ = LoadAvailableProductionsAsync();
     }
@@ -215,6 +261,7 @@ public class ProductionInspectorViewModel : ViewModelBase
         PolicyDecisions.Clear();
         QaFindings.Clear();
         ArtifactEdges.Clear();
+        BlockInfo = null;
         return Task.CompletedTask;
     }
 
@@ -227,88 +274,97 @@ public class ProductionInspectorViewModel : ViewModelBase
         }
 
         var token = ++_loadRequestToken;
+        _loadCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _loadCts = cts;
+        var ct = cts.Token;
         IsLoading = true;
         var productionId = SelectedProduction.Id;
         try
         {
             // Everything is fetched first and applied in one guarded block, so a load that is superseded
             // mid-flight can never leave the tabs holding a mixture of two productions.
-            var detail = await _productionService.GetProductionAsync(productionId);
-            var transitions = await _productionService.GetStateTransitionsAsync(productionId);
+            var detail = await _productionService.GetProductionAsync(productionId, ct);
+            var transitions = await _productionService.GetStateTransitionsAsync(productionId, ct);
 
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
+            using var conn = await _connectionFactory.CreateOpenConnectionAsync(ct);
             var parameters = new { ProductionId = productionId };
+            CommandDefinition Cmd(string sql) => new(sql, parameters, cancellationToken: ct);
 
-            var artifacts = await conn.QueryAsync<InspectorArtifactItem>(
-                "SELECT id AS Id, kind AS Kind, current_version_id AS CurrentVersionId, created_at AS CreatedAt FROM artifacts WHERE production_id = @ProductionId ORDER BY created_at ASC;",
-                parameters);
+            var artifacts = await conn.QueryAsync<InspectorArtifactItem>(Cmd(
+                "SELECT id AS Id, kind AS Kind, current_version_id AS CurrentVersionId, created_at AS CreatedAt FROM artifacts WHERE production_id = @ProductionId ORDER BY created_at ASC;"));
 
-            var versions = await conn.QueryAsync<InspectorArtifactVersionItem>(@"
+            var versions = await conn.QueryAsync<InspectorArtifactVersionItem>(Cmd(@"
                 SELECT av.id AS Id, av.artifact_id AS ArtifactId, av.version_no AS VersionNo, av.sha256 AS Sha256, av.state AS State, av.created_at AS CreatedAt
                 FROM artifact_versions av
                 INNER JOIN artifacts a ON a.id = av.artifact_id
                 WHERE a.production_id = @ProductionId
-                ORDER BY av.created_at ASC;",
-                parameters);
+                ORDER BY av.created_at ASC;"));
 
-            var qaReports = await conn.QueryAsync<InspectorQaReportItem>(
-                "SELECT report_id AS ReportId, stage AS Stage, overall_score AS OverallScore, verdict AS Verdict, evaluated_at AS EvaluatedAt FROM qa_reports WHERE production_id = @ProductionId ORDER BY evaluated_at ASC;",
-                parameters);
+            var qaReports = await conn.QueryAsync<InspectorQaReportItem>(Cmd(
+                "SELECT report_id AS ReportId, stage AS Stage, overall_score AS OverallScore, verdict AS Verdict, evaluated_at AS EvaluatedAt FROM qa_reports WHERE production_id = @ProductionId ORDER BY evaluated_at ASC;"));
 
-            var approvals = await conn.QueryAsync<InspectorApprovalItem>(
-                "SELECT id AS Id, action AS Action, state AS State, expires_at AS ExpiresAt, created_at AS CreatedAt FROM approvals WHERE production_id = @ProductionId ORDER BY created_at ASC;",
-                parameters);
+            var approvals = await conn.QueryAsync<InspectorApprovalItem>(Cmd(
+                "SELECT id AS Id, action AS Action, state AS State, expires_at AS ExpiresAt, created_at AS CreatedAt FROM approvals WHERE production_id = @ProductionId ORDER BY created_at ASC;"));
 
-            var jobs = await conn.QueryAsync<InspectorJobItem>(
-                "SELECT id AS Id, type AS Type, state AS State, attempt AS Attempt, max_attempts AS MaxAttempts, updated_at AS UpdatedAt FROM jobs WHERE production_id = @ProductionId ORDER BY updated_at DESC;",
-                parameters);
+            var jobs = await conn.QueryAsync<InspectorJobItem>(Cmd(
+                "SELECT id AS Id, type AS Type, state AS State, attempt AS Attempt, max_attempts AS MaxAttempts, updated_at AS UpdatedAt FROM jobs WHERE production_id = @ProductionId ORDER BY updated_at DESC;"));
 
-            var costs = await conn.QueryAsync<InspectorCostEventItem>(
-                "SELECT id AS Id, kind AS Kind, amount AS Amount, currency AS Currency, occurred_at AS OccurredAt FROM cost_events WHERE production_id = @ProductionId ORDER BY occurred_at ASC;",
-                parameters);
+            var costs = await conn.QueryAsync<InspectorCostEventItem>(Cmd(
+                "SELECT id AS Id, kind AS Kind, amount AS Amount, currency AS Currency, reconciliation_state AS ReconciliationState, occurred_at AS OccurredAt FROM cost_events WHERE production_id = @ProductionId ORDER BY occurred_at ASC;"));
 
-            var publications = await conn.QueryAsync<InspectorPublicationItem>(
-                "SELECT id AS Id, platform AS Platform, state AS State, external_url AS ExternalUrl, evidence_source AS EvidenceSource, evidence_retrieved_at AS EvidenceRetrievedAt, updated_at AS UpdatedAt FROM publications WHERE production_id = @ProductionId ORDER BY updated_at DESC;",
-                parameters);
+            var publications = await conn.QueryAsync<InspectorPublicationItem>(Cmd(
+                "SELECT id AS Id, platform AS Platform, state AS State, external_url AS ExternalUrl, evidence_source AS EvidenceSource, evidence_retrieved_at AS EvidenceRetrievedAt, updated_at AS UpdatedAt FROM publications WHERE production_id = @ProductionId ORDER BY updated_at DESC;"));
 
             // SPEC/60: claims with their sources and retrieval timestamps. LEFT JOINed so a claim with
             // no source recorded yet still shows a row instead of vanishing from the inspector.
-            var claims = await conn.QueryAsync<InspectorClaimItem>(@"
+            var claims = await conn.QueryAsync<InspectorClaimItem>(Cmd(@"
                 SELECT c.id AS ClaimId, c.text AS Text, c.status AS Status, c.materiality AS Materiality, c.subject_class AS SubjectClass,
                        s.url AS SourceUrl, s.publisher AS Publisher, s.retrieved_at AS RetrievedAt, cs.relation AS Relation
                 FROM claims c
                 LEFT JOIN claim_sources cs ON cs.claim_id = c.id
                 LEFT JOIN sources s ON s.id = cs.source_id
                 WHERE c.production_id = @ProductionId
-                ORDER BY c.created_at ASC;",
-                parameters);
+                ORDER BY c.created_at ASC;"));
 
-            var policyDecisions = await conn.QueryAsync<InspectorPolicyDecisionItem>(
-                "SELECT id AS Id, action AS Action, decision AS Decision, rule_key AS RuleKey, policy_version_id AS PolicyVersionId, correlation_id AS CorrelationId, decided_at AS DecidedAt FROM policy_decisions WHERE production_id = @ProductionId ORDER BY decided_at ASC;",
-                parameters);
+            var policyDecisions = await conn.QueryAsync<InspectorPolicyDecisionItem>(Cmd(
+                "SELECT id AS Id, action AS Action, decision AS Decision, rule_key AS RuleKey, policy_version_id AS PolicyVersionId, correlation_id AS CorrelationId, decided_at AS DecidedAt FROM policy_decisions WHERE production_id = @ProductionId ORDER BY decided_at ASC;"));
 
             // qa_findings has no production_id of its own; it is scoped to a production through the
             // qa_reports row it belongs to.
-            var qaFindings = await conn.QueryAsync<InspectorQaFindingItem>(@"
+            var qaFindings = await conn.QueryAsync<InspectorQaFindingItem>(Cmd(@"
                 SELECT qf.id AS Id, qr.stage AS Stage, qf.check_id AS CheckId, qf.check_kind AS CheckKind, qf.status AS Status,
                        qf.severity AS Severity, qf.responsible_artifact_version_id AS ResponsibleArtifactVersionId,
                        qf.remediation_code AS RemediationCode, qf.message AS Message
                 FROM qa_findings qf
                 INNER JOIN qa_reports qr ON qr.report_id = qf.report_id
                 WHERE qr.production_id = @ProductionId
-                ORDER BY qr.evaluated_at ASC;",
-                parameters);
+                ORDER BY qr.evaluated_at ASC;"));
 
             // Same scoping problem as qa_findings: artifact_edges has no production_id, so it is joined
             // through its parent version's artifact.
-            var artifactEdges = await conn.QueryAsync<InspectorArtifactEdgeItem>(@"
+            var artifactEdges = await conn.QueryAsync<InspectorArtifactEdgeItem>(Cmd(@"
                 SELECT ae.parent_version_id AS ParentVersionId, ae.child_version_id AS ChildVersionId, ae.edge_kind AS EdgeKind, ae.created_at AS CreatedAt
                 FROM artifact_edges ae
                 INNER JOIN artifact_versions pv ON pv.id = ae.parent_version_id
                 INNER JOIN artifacts pa ON pa.id = pv.artifact_id
                 WHERE pa.production_id = @ProductionId
-                ORDER BY ae.created_at ASC;",
-                parameters);
+                ORDER BY ae.created_at ASC;"));
+
+            // SPEC/60 obligation 4: the most recent audit_log row explaining a block against this
+            // production, if any writer ever recorded one (see InspectorBlockInfo's own remarks on why
+            // this is often absent today rather than always populated).
+            InspectorBlockInfo? blockInfo = null;
+            if (string.Equals(detail?.State, "BLOCKED", StringComparison.OrdinalIgnoreCase))
+            {
+                var blockRow = await conn.QuerySingleOrDefaultAsync<(string? ReasonCode, string? PolicyDecisionId, string? OccurredAt)>(Cmd(
+                    @"SELECT reason_code AS ReasonCode, policy_decision_id AS PolicyDecisionId, occurred_at AS OccurredAt
+                      FROM audit_log
+                      WHERE subject_id = @ProductionId AND outcome IN ('BLOCKED','DENIED','REJECTED','ERROR')
+                      ORDER BY occurred_at DESC
+                      LIMIT 1;"));
+                blockInfo = new InspectorBlockInfo(blockRow.ReasonCode, blockRow.PolicyDecisionId, blockRow.OccurredAt, detail!.BlockedFrom);
+            }
 
             if (token != _loadRequestToken)
             {
@@ -316,6 +372,7 @@ public class ProductionInspectorViewModel : ViewModelBase
             }
 
             ProductionDetail = detail;
+            BlockInfo = blockInfo;
 
             StateTransitions.Clear();
             foreach (var t in transitions)
@@ -356,6 +413,11 @@ public class ProductionInspectorViewModel : ViewModelBase
             ArtifactEdges.Clear();
             foreach (var e in artifactEdges) ArtifactEdges.Add(e);
         }
+        catch (OperationCanceledException)
+        {
+            // The operator cancelled this load deliberately (SPEC/60 obligation 7); a newer load already
+            // took over, or nothing has -- either way this is not an error.
+        }
         catch (Exception ex)
         {
             _notificationService.AddNotification($"Failed to load inspection for {productionId}: {ex.Message}", "Error");
@@ -366,6 +428,11 @@ public class ProductionInspectorViewModel : ViewModelBase
             {
                 IsLoading = false;
             }
+            if (ReferenceEquals(_loadCts, cts))
+            {
+                _loadCts = null;
+            }
+            cts.Dispose();
         }
     }
 }

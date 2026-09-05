@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
@@ -40,6 +41,11 @@ public class JobQueueViewModel : ViewModelBase
     // results if no newer load has started since -- otherwise a slow earlier query could overwrite the
     // grid with rows for a filter the operator has already moved off.
     private int _loadRequestToken;
+
+    // SPEC/60 obligation 7: a long-running load must be cancelable, not just superseded. Cancelling this
+    // actually stops the in-flight query via the CancellationToken passed to OperatorControlService,
+    // instead of merely discarding results the query would still finish computing.
+    private CancellationTokenSource? _loadCts;
 
     public ObservableCollection<JobQueueEntry> Jobs { get; } = new();
     public ObservableCollection<string> AvailableStates { get; } = new();
@@ -144,6 +150,7 @@ public class JobQueueViewModel : ViewModelBase
     public ICommand NextPageCommand { get; }
     public ICommand PreviousPageCommand { get; }
     public ICommand RequeueDeadLetterJobCommand { get; }
+    public ICommand CancelLoadCommand { get; }
 
     public JobQueueViewModel(
         OperatorControlService operatorControlService,
@@ -158,6 +165,7 @@ public class JobQueueViewModel : ViewModelBase
         NextPageCommand = new AsyncRelayCommand(GoToNextPageAsync, () => CanGoToNextPage);
         PreviousPageCommand = new AsyncRelayCommand(GoToPreviousPageAsync, () => CanGoToPreviousPage);
         RequeueDeadLetterJobCommand = new AsyncRelayCommand(RequeueSelectedJobAsync, () => CanRequeueSelectedJob);
+        CancelLoadCommand = new RelayCommand(() => _loadCts?.Cancel());
 
         _ = RefreshAsync();
     }
@@ -199,20 +207,23 @@ public class JobQueueViewModel : ViewModelBase
     public async Task LoadJobsAsync()
     {
         var token = ++_loadRequestToken;
+        _loadCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _loadCts = cts;
         IsLoading = true;
         try
         {
             var stateFilter = SelectedState == AllStatesLabel ? null : SelectedState;
             var pageSize = PageSize;
 
-            var total = await _operatorControlService.CountJobsAsync(stateFilter);
+            var total = await _operatorControlService.CountJobsAsync(stateFilter, cts.Token);
 
             // A page that no longer exists (rows drained since the last load) lands on the last page
             // rather than showing an empty grid with no explanation.
             var totalPages = total <= 0 ? 1 : (total + pageSize - 1) / pageSize;
             var pageIndex = PageIndex >= totalPages ? totalPages - 1 : PageIndex;
 
-            var entries = await _operatorControlService.ListJobsAsync(stateFilter, pageSize, pageIndex * pageSize);
+            var entries = await _operatorControlService.ListJobsAsync(stateFilter, pageSize, pageIndex * pageSize, cts.Token);
 
             if (token != _loadRequestToken)
             {
@@ -230,6 +241,11 @@ public class JobQueueViewModel : ViewModelBase
 
             SelectedJob = null;
         }
+        catch (OperationCanceledException)
+        {
+            // The operator cancelled this load deliberately (SPEC/60 obligation 7); a newer load or
+            // page/filter change already took over, or nothing has -- either way this is not an error.
+        }
         catch (Exception ex)
         {
             _notificationService.AddNotification($"Failed to load job queue: {ex.Message}", "Error");
@@ -240,6 +256,11 @@ public class JobQueueViewModel : ViewModelBase
             {
                 IsLoading = false;
             }
+            if (ReferenceEquals(_loadCts, cts))
+            {
+                _loadCts = null;
+            }
+            cts.Dispose();
         }
     }
 

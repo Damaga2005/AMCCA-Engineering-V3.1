@@ -51,9 +51,9 @@
                     <TextBlock Text="Engineering V3.1" FontSize="12" Foreground="#A6ADC8"/>
                 </StackPanel>
 
-                <!-- Footer / Status: SPEC/60 obligations 1-2 -- the kill switch is reachable in one
-                     action from every screen, and autonomy mode / publishing state are visible on every
-                     screen rather than buried in Settings. This panel is chrome shared by all six
+                <!-- Footer / Status: SPEC/60 obligations 1 and 2 require the kill switch to be reachable
+                     in one action from every screen, and autonomy mode / publishing state to be visible
+                     on every screen rather than buried in Settings. This panel is chrome shared by all six
                      screens (it sits outside the ContentControl below), so it never needs repeating. -->
                 <StackPanel DockPanel.Dock="Bottom">
                     <Separator Background="#313244" Margin="0,15"/>

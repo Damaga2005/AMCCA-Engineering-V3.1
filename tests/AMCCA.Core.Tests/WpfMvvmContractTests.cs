@@ -474,6 +474,48 @@ public class WpfMvvmContractTests : IDisposable
         finding.ResponsibleArtifactVersionId.Should().Be("artv-1");
 
         inspectorVm.ArtifactEdges.Should().ContainSingle(e => e.ParentVersionId == "artv-1" && e.ChildVersionId == "artv-2" && e.EdgeKind == "DERIVED_FROM");
+
+        var costEvent = inspectorVm.CostEvents.Should().ContainSingle(c => c.Id == "cost-1").Subject;
+        costEvent.ReconciliationState.Should().Be("ESTIMATED", "SPEC/60 obligation 3: a cost figure's provenance must be visible, not just its amount");
+
+        // SPEC/60 obligation 4 is scoped to a *blocked* production; RESEARCHING is not one.
+        inspectorVm.HasBlockInfo.Should().BeFalse();
+        inspectorVm.BlockInfo.Should().BeNull();
+    }
+
+    /// <summary>
+    /// SPEC/60 obligation 4: "Every blocked element indicates which rule blocked it, which policy
+    /// version, and what would unblock it." The rule/policy half comes from whatever audit_log row
+    /// recorded the block (subject_id = the production); the unblock half is not a guess -- it is the
+    /// literal state StateMachineRegistry enforces resuming is only ever legal back to (AMCCA-STM-002).
+    /// </summary>
+    [Fact]
+    public async Task ProductionInspectorViewModel_BlockedProduction_ShowsRuleAndUnblockPath()
+    {
+        var correlationId = Guid.NewGuid().ToString("N");
+        var prod = await _productionService.CreateProductionAsync("Blocked Target", "en", "ASSISTED", correlationId, nicheId: "tech");
+        await _productionService.TransitionAsync(prod.Id, "BLOCKED", "ORCHESTRATOR", correlationId);
+
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            await conn.ExecuteAsync(@"
+                INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
+                VALUES ('aud-block-1', 'production.blocked', 'ORCHESTRATOR', 'orchestrator', 'PRODUCTION', @ProductionId, 'BLOCKED', 'AMCCA-BUD-002', @CorrId, '3.1.0', datetime('now'));
+            ", new { ProductionId = prod.Id, CorrId = correlationId });
+        }
+
+        var inspectorVm = new ProductionInspectorViewModel(_productionService, _factory, _notificationService);
+        await inspectorVm.LoadAvailableProductionsAsync();
+        inspectorVm.SelectedProduction = inspectorVm.AvailableProductions.First(p => p.Id == prod.Id);
+        await inspectorVm.LoadInspectionAsync();
+
+        inspectorVm.ProductionDetail!.State.Should().Be("BLOCKED");
+        inspectorVm.HasBlockInfo.Should().BeTrue();
+        var blockInfo = inspectorVm.BlockInfo!;
+        blockInfo.ReasonCode.Should().Be("AMCCA-BUD-002");
+        blockInfo.PolicyDecisionId.Should().BeNull("nothing in this codebase writes policy_decisions today -- disclosed, not fabricated");
+        blockInfo.ResumesTo.Should().Be("INIT", "AMCCA-STM-002: resuming from BLOCKED is only ever legal back to blocked_from");
+        blockInfo.UnblockHint.Should().Contain("INIT");
     }
 
     private async Task<string> CreateDeadLetteredJobAsync(string idempotencyKey)

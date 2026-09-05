@@ -6,6 +6,7 @@
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="1000">
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style x:Key="SectionHeader" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#89B4FA"/>
             <Setter Property="FontSize" Value="14"/>
@@ -23,10 +24,34 @@
             <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
+        <!-- SPEC/60 obligation 3: measured and estimated numbers must be visually distinct, not just
+             textually labeled. ESTIMATED reads as a warning amber; a reconciled/measured value reads in
+             the same neutral foreground as everything else. -->
+        <Style x:Key="ReconciliationStateStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="ESTIMATED">
+                    <Setter Property="Foreground" Value="#F9E2AF"/>
+                    <Setter Property="FontStyle" Value="Italic"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="ESTIMATED_UNRECONCILED">
+                    <Setter Property="Foreground" Value="#F9E2AF"/>
+                    <Setter Property="FontStyle" Value="Italic"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="DISPUTED">
+                    <Setter Property="Foreground" Value="#F38BA8"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="RECONCILED">
+                    <Setter Property="Foreground" Value="#A6E3A1"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid Background="#1E1E2E" Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -60,8 +85,40 @@
             </Grid>
         </Border>
 
+        <!-- SPEC/60 obligation 7 (progress + cancel) and obligation 4 (why a blocked production is
+             blocked, which policy version, and what would unblock it). -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+            <Border Background="#313244" CornerRadius="8" Padding="10,8" Margin="0,0,0,10"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Width="120" Height="6" Margin="0,0,10,0"/>
+                        <TextBlock Text="Loading..." Foreground="#A6ADC8" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelLoadCommand}"
+                            Background="#F38BA8" Foreground="#11111B" FontWeight="Bold" Padding="12,4"/>
+                </Grid>
+            </Border>
+
+            <Border Background="#45301A" CornerRadius="8" Padding="12,10"
+                    Visibility="{Binding HasBlockInfo, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Blocked" Foreground="#F9E2AF" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Foreground="#F9E2AF" TextWrapping="Wrap">
+                        <Run Text="Reason: "/><Run Text="{Binding BlockInfo.ReasonDisplay}"/>
+                        <Run Text="  |  Policy version: "/><Run Text="{Binding BlockInfo.PolicyVersionDisplay}"/>
+                    </TextBlock>
+                    <TextBlock Foreground="#F9E2AF" TextWrapping="Wrap" Margin="0,4,0,0" Text="{Binding BlockInfo.UnblockHint}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
         <!-- Detail Tabs -->
-        <TabControl Grid.Row="2" Background="#1E1E2E" BorderThickness="0">
+        <TabControl Grid.Row="3" Background="#1E1E2E" BorderThickness="0">
             <TabItem Header="State Transitions">
                 <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding StateTransitions}">
                     <DataGrid.Columns>
@@ -137,8 +194,14 @@
                 <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding CostEvents}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="140"/>
-                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="120"/>
+                        <!-- SPEC/60 obligation 3: the number's provenance (estimated vs. reconciled) is
+                             not just a separate column; the amount itself is styled by it, so an
+                             estimated figure cannot be mistaken for a settled one at a glance. -->
+                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="120"
+                                             ElementStyle="{StaticResource ReconciliationStateStyle}"/>
                         <DataGridTextColumn Header="Currency" Binding="{Binding Currency}" Width="80"/>
+                        <DataGridTextColumn Header="Reconciliation" Binding="{Binding ReconciliationState}" Width="140"
+                                             ElementStyle="{StaticResource ReconciliationStateStyle}"/>
                         <DataGridTextColumn Header="Occurred At" Binding="{Binding OccurredAt}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>

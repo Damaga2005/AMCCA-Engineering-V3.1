@@ -399,11 +399,11 @@ Estado real tras el trabajo P0:
 | — | «*The UI thread performs no I/O, no database access and no waiting*» | ❌ el arranque bloquea el hilo de UI sobre el preflight |
 | 1 | Kill switch alcanzable en una acción **desde cada pantalla** | ✅ **Resuelto** (`ToggleKillSwitchCommand`/`IsKillSwitchActive` en el chrome compartido de `MainWindow.xaml`, corregido esta sesión: fila desactualizada) |
 | 2 | Modo de autonomía y estado de publicación visibles en cada pantalla | ✅ **Resuelto** (`AutonomyMode`/`PublishingEnabled` en el mismo chrome compartido, corregido esta sesión: fila desactualizada) |
-| 3 | Todo número lleva su procedencia; medido y estimado visualmente distintos | ❌ no implementado |
-| 4 | Todo elemento bloqueado indica qué regla lo bloqueó, de qué versión de política y qué lo desbloquearía | ❌ no implementado |
+| 3 | Todo número lleva su procedencia; medido y estimado visualmente distintos | ✅ **Resuelto** |
+| 4 | Todo elemento bloqueado indica qué regla lo bloqueó, de qué versión de política y qué lo desbloquearía | ✅ **Resuelto** (parcial por diseño: ver nota) |
 | 5 | Toda solicitud de aprobación muestra acción, **sujeto, techo de coste y expiración** | ✅ **Resuelto** |
 | 6 | Ninguna pantalla muestra un fallo sin código de error y acción del operador | 🟡 solo en el requeue de Job Queue |
-| 7 | Operaciones largas muestran progreso y son cancelables | ❌ no implementado |
+| 7 | Operaciones largas muestran progreso y son cancelables | ✅ **Resuelto** |
 
 **Corregido esta sesión (revisión de la propia auditoría, no trabajo nuevo):** la fila de la obligación 5
 estaba desactualizada — `ApprovalManager.GetPendingApprovalsAsync` ya deserializa `scope_json` a
@@ -415,6 +415,52 @@ proyecta eso en `ApprovalItem.SubjectDisplay`/`CostCeilingDisplay` (con el texto
 esos cuatro bindings y pasa en verde. Cubierto además por
 `ApprovalQueueViewModel_ExposesScopeSubjectCostCeilingAndExpiry` en `WpfMvvmContractTests.cs`, que
 comprueba tanto el caso con scope como el caso heredado sin scope. Un operador ya no aprueba a ciegas.
+
+**Implementado esta sesión, obligación 3 (procedencia de los números):** el único número mostrado hoy en
+la UI con una procedencia real capturada en el dominio es `cost_events.amount` con su
+`reconciliation_state` (`ESTIMATED`/`RECONCILED`/`ESTIMATED_UNRECONCILED`/`DISPUTED`) — verificado que
+ninguna otra pantalla muestra todavía `analytics_snapshots`/`revenue_events` (sin escritor en
+`src/AMCCA.Core`, igual que "oportunidad" en §3.2), así que no había nada más que corregir sin inventar
+una pantalla para datos que no existen. La pestaña Costs del Inspector ahora incluye
+`reconciliation_state` como columna propia y, más importante, **el propio importe se estiliza según ese
+valor** (`ReconciliationStateStyle` en `ProductionInspectorView.xaml`: ámbar para `ESTIMATED`/
+`ESTIMATED_UNRECONCILED`, rojo y negrita para `DISPUTED`, verde para `RECONCILED`) — la exigencia literal
+de SPEC/60 es que medido y estimado sean *visualmente* distintos, no solo que exista una columna de texto
+adicional que el operador tenga que leer.
+
+**Implementado esta sesión, obligación 4 (elemento bloqueado → regla, versión de política, desbloqueo):**
+resuelta de forma honesta, no completa — el propio código confirma que hoy no existe ninguna tubería real
+que escriba en `policy_decisions` (`grep` de `INSERT INTO policy_decisions` en todo `src/AMCCA.Core`: cero
+resultados; `PolicyEngine.EvaluateAction` calcula una decisión en memoria y nunca la persiste, y además no
+lo llama nadie en el árbol de llamadas real), así que "de qué versión de política" no puede mostrarse como
+un dato siempre presente sin inventarlo. Lo que sí es real y se implementó: el Inspector, cuando la
+producción seleccionada está en `BLOCKED`, busca la fila de `audit_log` más reciente con
+`subject_id = production_id` y `outcome IN ('BLOCKED','DENIED','REJECTED','ERROR')` y muestra su
+`reason_code` (el código SPEC/05 real de la regla que bloqueó, cuando algo lo registró) y su
+`policy_decision_id` (siempre nulo hoy, mostrado como `"(no policy decision recorded for this block)"`
+en vez de un hueco en blanco — mismo patrón honesto que `SubjectDisplay` en la obligación 5). El "qué lo
+desbloquearía" no es una suposición: `StateMachineRegistry.ValidateTransition` exige literalmente
+(`AMCCA-STM-002`) que resumir desde `BLOCKED` solo sea legal de vuelta a `productions.blocked_from`, así
+que ese es el valor exacto que se muestra. Cubierto por
+`ProductionInspectorViewModel_BlockedProduction_ShowsRuleAndUnblockPath` en `WpfMvvmContractTests.cs`.
+
+**Implementado esta sesión, obligación 7 (progreso y cancelación):** `JobQueueViewModel.IsLoading` y
+`ProductionInspectorViewModel.IsLoading` ya existían pero no estaban enlazados a ningún control en las
+vistas correspondientes — trabajo previo sin terminar, no un hueco nuevo. Se añadió una barra de progreso
+indeterminada visible mientras `IsLoading` es verdadero en ambas pantallas. La cancelación es real, no
+cosmética: cada carga crea su propio `CancellationTokenSource`, cancela el anterior si sigue en marcha, y
+pasa el token a cada llamada de dominio y cada consulta Dapper (`CommandDefinition` con
+`cancellationToken`) en vez de limitarse a descartar un resultado que la consulta original habría seguido
+computando de todos modos — la distinción que el propio patrón de "token de carga" ya usado en este
+código (para ignorar resultados obsoletos) nunca resolvía por sí solo.
+
+**Hallazgo colateral al verificar estos cambios:** `MainWindow.xaml` y `ApprovalQueueView.xaml` tenían un
+comentario XML con `--` dentro del cuerpo del comentario (`<!-- ... obligation 5 -- every ... -->`), lo
+cual es XML inválido — un doble guión dentro de un comentario rompe el parseo. Verificado con un parser
+XML real que **ambos ficheros llevaban rotos desde antes de esta sesión** (no introducido por el trabajo
+de las obligaciones 1/2/5 de turnos anteriores, pero tampoco detectado entonces). Corregida la redacción
+de ambos comentarios; los 9 ficheros `.xaml` de `src/AMCCA.App` parsean ahora limpiamente con un parser
+XML estándar.
 
 ### 3.2 El Production Inspector cubre aproximadamente la mitad de lo que SPEC/60 exige — **Resuelto salvo la oportunidad (subsistema inexistente)**
 
@@ -495,11 +541,15 @@ confirmados por los hallazgos anteriores:
    tabla. `contracts.fields_have_columns` pasa en verde por primera vez desde que existe.
 
 Los cuatro puntos ciegos que esta auditoría nombró están ahora cerrados como checks del gate. Las
-obligaciones 3, 4 y 7 de
-SPEC/60, y la otra mitad de la 6 (que todo fallo real muestre su código de SPEC/05, no solo que no aparezca
-una frase prohibida), siguen sin comprobación mecánica posible sin ejecutar la UI — documentarlas como
-"comprobadas" sería exactamente el tipo de gate que pasa en verde sin significar nada, que es lo que esta
-sección entera existe para evitar.
+obligaciones 3, 4 y 7 de SPEC/60 están implementadas (§3.1), pero — a diferencia de las obligaciones 1, 2
+y 5, que sí tienen firma verificable por `validate_package.py` — no se les añadió un check mecánico
+equivalente: verificar visualmente que un color se aplica correctamente, o que una cancelación detiene de
+verdad una consulta en marcha, no es un `grep` de texto en un `.xaml` como los de la obligación 1/2/5,
+sino una propiedad de comportamiento en tiempo de ejecución del mismo tipo que ya motivó dejar sin
+comprobación mecánica las obligaciones 3/4/7 en el resto de este informe. La otra mitad de la 6 (que todo
+fallo real muestre su código de SPEC/05, no solo que no aparezca una frase prohibida) sigue igual de sin
+comprobación mecánica posible sin ejecutar la UI — documentarla como "comprobada" sería exactamente el
+tipo de gate que pasa en verde sin significar nada, que es lo que esta sección entera existe para evitar.
 
 ---
 
@@ -538,6 +588,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P2 | ~~Migración del kill switch desde `settings`~~ **Resuelto** (migración 005) | Regresión en actualización (§3.3) |
 | P2 | ~~Fijar rango de FFmpeg~~, ~~semántica de requeue~~ y ~~ruta de config~~ **Resueltos**, ver §2.5 | Contratos incompletos (§2.5) |
 | P2 | ~~Kill switch y modo de autonomía en todas las pantallas~~ **Resuelto** | Obligaciones 1 y 2 (§3.1) |
+| P1 | ~~Procedencia visual de los números, elemento bloqueado → regla/desbloqueo, progreso y cancelación~~ **Resuelto** (sin check mecánico en el gate, ver §4) | Obligaciones 3, 4 y 7 de SPEC/60 (§3.1) |
 
 ---
 
