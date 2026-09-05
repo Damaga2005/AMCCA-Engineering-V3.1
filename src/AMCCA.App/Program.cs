@@ -5,6 +5,7 @@ using AMCCA.App.Orchestration;
 using AMCCA.Core.Database;
 using AMCCA.Core.Jobs;
 using AMCCA.Core.Orchestration;
+using AMCCA.Core.Orchestration.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -52,11 +53,20 @@ public static class Program
 
         builder.Services.AddSingleton(sp =>
         {
+            var cf = sp.GetRequiredService<DatabaseConnectionFactory>();
             var registry = new StageHandlerRegistry();
             registry.Register("INIT", new InitStageHandler());
-            // Handlers for RESEARCHING, SCRIPTING, ASSET_GENERATION, the QA stages, etc. are added as
-            // they are built (P0.2 / P0.3). Until then the engine drives a production to the first
-            // unhandled state and blocks it for an operator (AMCCA-ORC-001).
+            // RESEARCHING / SCRIPTING run their deterministic verification now; the generative agent
+            // (model provider + tools) is passed in once wired — until then they block for an operator.
+            registry.Register("RESEARCHING", new ResearchStageHandler(cf, agent: null));
+            registry.Register("SCRIPTING", new ScriptStageHandler(cf, agent: null));
+            // Pure bookkeeping states between producing stages.
+            var advance = new NoWorkAdvanceHandler();
+            registry.Register("RESEARCH_VERIFIED", advance);
+            registry.Register("CONCEPT_SELECTED", advance);
+            registry.Register("SCRIPT_VERIFIED", advance);
+            // STORYBOARDING onward are added as their stages are built; the engine blocks a production
+            // at the first unhandled state (AMCCA-ORC-001).
             return registry;
         });
         builder.Services.AddSingleton<OrchestratorEngine>();

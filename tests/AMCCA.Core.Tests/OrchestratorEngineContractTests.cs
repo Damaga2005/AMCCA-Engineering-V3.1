@@ -242,6 +242,42 @@ public class OrchestratorEngineContractTests : IDisposable
     }
 
     [Fact]
+    public async Task Autonomous_WithVerifiedResearch_DrivesThroughToScripting_ThenBlocksWithoutAScriptAgent()
+    {
+        var id = await CreateProductionAsync("AUTONOMOUS");
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                await conn.ExecuteAsync(
+                    @"INSERT INTO claims (id, production_id, text, status, materiality, subject_class, contains_personal_data, schema_version, created_at)
+                      VALUES (@Id, @Pid, 'fact', 'VERIFIED', 'MATERIAL', 'GENERAL', 0, '3.1.0', @Now);",
+                    new { Id = AMCCA.Core.Database.UlidGenerator.NewUlid(), Pid = id, Now = DateTimeOffset.UtcNow.ToString("O") });
+            }
+        }
+
+        var advance = new AMCCA.Core.Orchestration.Handlers.NoWorkAdvanceHandler();
+        var handlers = new StageHandlerRegistry()
+            .Register("INIT", new InitStageHandler())
+            .Register("RESEARCHING", new AMCCA.Core.Orchestration.Handlers.ResearchStageHandler(_factory))
+            .Register("RESEARCH_VERIFIED", advance)
+            .Register("CONCEPT_SELECTED", advance)
+            .Register("SCRIPTING", new AMCCA.Core.Orchestration.Handlers.ScriptStageHandler(_factory));
+        var engine = Engine(handlers);
+
+        for (int i = 0; i < 8; i++) await engine.RunTickAsync();
+
+        var prod = await _productions.GetProductionAsync(id);
+        prod!.State.Should().Be("BLOCKED");
+        prod.BlockedFrom.Should().Be("SCRIPTING", "research verified and advanced; scripting needs an agent");
+
+        using var conn2 = await _factory.CreateOpenConnectionAsync();
+        var transitions = await conn2.QueryAsync<string>(
+            "SELECT to_state FROM state_transitions WHERE production_id = @Id ORDER BY occurred_at ASC;", new { Id = id });
+        transitions.Should().ContainInOrder("RESEARCHING", "RESEARCH_VERIFIED", "CONCEPT_SELECTED", "SCRIPTING", "BLOCKED");
+    }
+
+    [Fact]
     public async Task PolicyGate_SeedsExactlyOneBuiltInPolicyVersion_EvenAcrossCalls()
     {
         var v1 = await _policyGate.EnsureBuiltInPolicyVersionAsync();
