@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 386
-**Total bytes:** 2383956
+**Files:** 387
+**Total bytes:** 2398498
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -208,7 +208,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Common/RelayCommand.cs` | `7cbfae6aaac6658c5cd498d8d322c1b11164440001a42e9492640b7508472071` | 2354 |
 | `src/AMCCA.App/Common/StatusConverters.cs` | `d0d25931faf195950b92cda8285c7ef5a77718873b0cb4fcf0052e417f85eac9` | 1241 |
 | `src/AMCCA.App/Common/ViewModelBase.cs` | `2446920133a472d99e9ab606a65aa38451d07b9385894823343179d01df16e84` | 689 |
-| `src/AMCCA.App/Composition.cs` | `9d1b2b812881c8322d1e41831ec7fd065f3f4e48e79c1c630ef5cf899104b915` | 2686 |
+| `src/AMCCA.App/Composition.cs` | `cc5272d453aad6ae8a9d49209db1469a143580560517119f32bd8e23cda4480b` | 2731 |
 | `src/AMCCA.App/Jobs/JobWorkerHostedService.cs` | `046e0a8d8d676c46ed9b02c5182ea95d5028028cd17c5b871d57b5ab709fad8e` | 3580 |
 | `src/AMCCA.App/MainWindow.xaml` | `4375696d75f5da51464e7861cfeaf581c738e9fb7a1014fcad8e0e448b50f4fd` | 7857 |
 | `src/AMCCA.App/MainWindow.xaml.cs` | `d4a6f13a7e43f9c71ac06a9ba23bf0a17df3a8661211cbe25bd2e0358c502f50` | 245 |
@@ -280,14 +280,15 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `d35899e1e11d5ab4b5abf453f3916af3a3d1c8087f81e006568499ef3718a815` | 224 |
 | `src/AMCCA.Core/Orchestration/IStageHandler.cs` | `e24edded3ebe61d70488c122f1df59252b272ef61e3b762c04227206a097a73a` | 527 |
 | `src/AMCCA.Core/Orchestration/InitStageHandler.cs` | `bc4ed724c702a355c05c49d9ad5a3a157c06e81aaf1ecb91f8c41e6a7e773679` | 713 |
-| `src/AMCCA.Core/Orchestration/OrchestratorEngine.cs` | `6928df245c90133319bfb84d86e61ff9c335cb0a79e8f5628a85eca21b5b3c59` | 8933 |
+| `src/AMCCA.Core/Orchestration/OrchestratorEngine.cs` | `f17a7b75cb5718ccf5b61bbafe1baa31fb73568879df74af796aa5618eef4510` | 10422 |
 | `src/AMCCA.Core/Orchestration/OrchestratorTickReport.cs` | `c8722a129203d2d7654298458d78ed620ea48d43572f1bef1048a5c043dac503` | 1367 |
 | `src/AMCCA.Core/Orchestration/StageHandlerRegistry.cs` | `e5e2c009851a7d5ab87ff286203e96e58e4335f21d1480d49c14fbcc9fb21743` | 1673 |
 | `src/AMCCA.Core/Orchestration/StageModels.cs` | `0cc3c4a46b4c8c906e088f58c6d3b97a28d1a835c005a10780dd19cad9005892` | 2127 |
 | `src/AMCCA.Core/Packaging/PeBinaryValidator.cs` | `8044d308f0f0e0e86566ce5885b57c45028eb6a7d8e03b1f2688e57cd6817d17` | 5204 |
-| `src/AMCCA.Core/Policy/ApprovalManager.cs` | `c9446c6cd4a46d7669846d8f762a75c367b61d2b57777ede6bb5ef8e643ab678` | 11413 |
+| `src/AMCCA.Core/Policy/ApprovalManager.cs` | `3afbe334a50bfbcdcc16839ebadfd4faa56722661405004d70e7dc16a7e02977` | 12426 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `09d8fdd116101605750dd819363c1dbafdeead63bc80fa06a7371ac50b2f8915` | 9282 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `5f9bfae618e0805f451aaec48fe341e3fae1288024a8512cfffea13eb60df90c` | 5750 |
+| `src/AMCCA.Core/Policy/PolicyGate.cs` | `81ab006c80adf750431a0d2a6b70e55fafb9b930f29b557fc76b054a2486ed27` | 7074 |
 | `src/AMCCA.Core/Policy/PolicyModels.cs` | `f10206e6479d7cb8a7657c076a1f05ff5fc281d7fd3725ab7498f0c77b34a1da` | 1692 |
 | `src/AMCCA.Core/Preflight/PreflightReport.cs` | `444a11ee9eeeefeefb6212ab3b70433c6b081488842d4d7cdff31da4bbf29482` | 468 |
 | `src/AMCCA.Core/Preflight/PreflightService.cs` | `e9d3a9a5925ce0225b7316072c95f4400bc34ffad5f1954e1cd52753197e0191` | 10920 |
@@ -372,7 +373,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/OperatorControlAndAuditContractTests.cs` | `f4198bcd0b2e8768312a1e2a428c646d0ae539cca361c44ddc66a47ffdcf66bc` | 14347 |
 | `tests/AMCCA.Core.Tests/OperatorJourneyEndToEndTests.cs` | `372cfdabebc9558ef2df187713aabc4f9f623d0e155d635b9fa49dce95dde0d8` | 16973 |
 | `tests/AMCCA.Core.Tests/OrchestratorAndStateResumeRegressionTests.cs` | `258b9a3832da651fa86f22772d6365ca1598b270629947001c74673cc95d0e4a` | 5447 |
-| `tests/AMCCA.Core.Tests/OrchestratorEngineContractTests.cs` | `f93a7ce5cc8ec744f22746e3dfd8f645aebed7c342587daeb2dea3e4c82a3dc0` | 7145 |
+| `tests/AMCCA.Core.Tests/OrchestratorEngineContractTests.cs` | `ef82195ad9dd266a282b87109c7df2996a6a19995673137c7522b72a1247ae1b` | 12066 |
 | `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` | `929f5355858ce242cd4306d8d49b35160e21b5ed84942820cb363b8384e33f73` | 1964 |
 | `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` | `14397a80221e364fd787ecbc4d4665c025bd2aa810ff2cac278ed46997c24f19` | 5999 |
 | `tests/AMCCA.Core.Tests/PlatformAdapterSsrfRegressionTests.cs` | `19bc82bdd85316f132be96be49a2161caed87f0e6cf9293b671d6b1a3337b92d` | 7440 |

@@ -58,6 +58,7 @@ internal static class Composition
         services.AddSingleton<BudgetManager>();
         services.AddSingleton<ApprovalManager>();
         services.AddSingleton<PolicyEngine>();
+        services.AddSingleton<PolicyGate>();
         services.AddSingleton<JobManager>();
         services.AddSingleton<OperatorControlService>();
     }

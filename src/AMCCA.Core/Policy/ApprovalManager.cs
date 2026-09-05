@@ -252,6 +252,23 @@ public class ApprovalManager
         }
     }
 
+    /// <summary>
+    /// Whether an unexpired APPROVED approval exists for this production+action, without consuming it.
+    /// The orchestrator uses this to decide whether a protected action is cleared to proceed;
+    /// <see cref="ValidateAndConsumeApprovalAsync"/> still does the single-use consume at dispatch time.
+    /// </summary>
+    public async Task<bool> HasApprovedGateAsync(string productionId, string action, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var count = await connection.ExecuteScalarAsync<int>(new Dapper.CommandDefinition(
+            @"SELECT COUNT(*) FROM approvals
+              WHERE production_id = @ProductionId AND action = @Action
+                AND state = 'APPROVED' AND expires_at > @Now;",
+            new { ProductionId = productionId, Action = action, Now = now }, cancellationToken: ct));
+        return count > 0;
+    }
+
     public async Task<bool> ValidateAndConsumeApprovalAsync(
         string productionId,
         string action,

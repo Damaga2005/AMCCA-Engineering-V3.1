@@ -12,6 +12,7 @@ using AMCCA.Core.Operator;
 using AMCCA.Core.Orchestration;
 using AMCCA.Core.Policy;
 using AMCCA.Core.StateMachine;
+using Dapper;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -24,6 +25,8 @@ public class OrchestratorEngineContractTests : IDisposable
     private readonly DatabaseConnectionFactory _factory;
     private readonly ProductionService _productions;
     private readonly OperatorControlService _operatorControl;
+    private readonly PolicyGate _policyGate;
+    private readonly ApprovalManager _approvals;
     private readonly StateMachineRegistry _registry;
 
     public OrchestratorEngineContractTests()
@@ -38,12 +41,13 @@ public class OrchestratorEngineContractTests : IDisposable
         _productions = new ProductionService(_factory, _registry, new EventStore(_factory));
 
         var jobManager = new JobManager(_factory);
-        var approvalManager = new ApprovalManager(_factory);
+        _approvals = new ApprovalManager(_factory);
         var budgetManager = new BudgetManager(_factory);
+        var auditStore = new AuditStore(_factory);
+        var policyEngine = new PolicyEngine(_factory, budgetManager, _approvals);
         _operatorControl = new OperatorControlService(
-            _factory, new AuditStore(_factory),
-            new PolicyEngine(_factory, budgetManager, approvalManager),
-            approvalManager, jobManager);
+            _factory, auditStore, policyEngine, _approvals, jobManager);
+        _policyGate = new PolicyGate(_factory, policyEngine, auditStore);
     }
 
     public void Dispose()
@@ -63,7 +67,7 @@ public class OrchestratorEngineContractTests : IDisposable
     }
 
     private OrchestratorEngine Engine(StageHandlerRegistry handlers)
-        => new(_registry, _productions, handlers, _operatorControl);
+        => new(_registry, _productions, handlers, _operatorControl, _policyGate, _approvals);
 
     private async Task<string> CreateProductionAsync(string autonomy)
         => (await _productions.CreateProductionAsync("t", "en", autonomy, "corr-test")).Id;
@@ -155,6 +159,100 @@ public class OrchestratorEngineContractTests : IDisposable
         for (int i = 0; i < 5; i++) await engine.RunTickAsync();
 
         (await _productions.GetProductionAsync(id))!.State.Should().Be("REWORK");
+    }
+
+    private static readonly string[] StagesToPublish =
+    {
+        "INIT", "RESEARCHING", "RESEARCH_VERIFIED", "CONCEPT_SELECTED", "SCRIPTING", "SCRIPT_VERIFIED",
+        "STORYBOARDING", "STORYBOARD_VERIFIED", "ASSET_GENERATION", "ASSETS_READY", "AUDIO_GENERATION",
+        "AUDIO_READY", "EDITING", "CANDIDATE_RENDERED", "TECHNICAL_QA", "VISUAL_QA", "AUDIO_QA",
+        "CONTENT_QA", "RETENTION_QA", "COMPLIANCE_QA", "SCORING", "FINAL_VERIFIED",
+    };
+
+    private async Task DriveToAsync(OrchestratorEngine engine, string id, string target, int maxTicks = 40)
+    {
+        for (int i = 0; i < maxTicks; i++)
+        {
+            if ((await _productions.GetProductionAsync(id))!.State == target) return;
+            await engine.RunTickAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Autonomous_AtPublishBoundary_RecordsAPolicyDecision_AndBlocksWithoutAnApproval()
+    {
+        var id = await CreateProductionAsync("AUTONOMOUS");
+        var engine = Engine(Advancing(StagesToPublish));
+
+        await DriveToAsync(engine, id, "READY_TO_PUBLISH");
+        (await _productions.GetProductionAsync(id))!.State.Should().Be("READY_TO_PUBLISH");
+
+        await engine.RunTickAsync(); // hits the publish boundary
+
+        var prod = await _productions.GetProductionAsync(id);
+        prod!.State.Should().Be("BLOCKED");
+        prod.BlockedFrom.Should().Be("READY_TO_PUBLISH");
+
+        using var conn = await _factory.CreateOpenConnectionAsync();
+        var decision = await conn.QuerySingleAsync<(string Decision, string RuleKey, string VersionId)>(
+            @"SELECT decision AS Decision, rule_key AS RuleKey, policy_version_id AS VersionId
+              FROM policy_decisions WHERE production_id = @Id AND action = 'publication.dispatch'
+              ORDER BY decided_at DESC LIMIT 1;", new { Id = id });
+        decision.Decision.Should().Be("REQUIRE_APPROVAL");
+        decision.VersionId.Should().NotBeNullOrEmpty();
+
+        var audit = await conn.QuerySingleAsync<(string ReasonCode, string PolicyDecisionId)>(
+            @"SELECT reason_code AS ReasonCode, policy_decision_id AS PolicyDecisionId
+              FROM audit_log WHERE subject_id = @Id AND outcome IN ('BLOCKED','DENIED')
+              ORDER BY occurred_at DESC LIMIT 1;", new { Id = id });
+        audit.ReasonCode.Should().Be(AmccaErrors.Pol004);
+        audit.PolicyDecisionId.Should().NotBeNullOrEmpty("SPEC/60 obligation 4: the Inspector resolves this id");
+    }
+
+    [Fact]
+    public async Task Autonomous_AtPublishBoundary_WithAnApprovedGate_IsAllowed_AndDrivesPublishing()
+    {
+        var id = await CreateProductionAsync("AUTONOMOUS");
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            await conn.ExecuteAsync(
+                @"INSERT INTO approvals (id, production_id, action, scope_json, state, single_use, expires_at, created_at)
+                  VALUES (@Aid, @Id, 'publication.dispatch', '{}', 'APPROVED', 1, @Exp, @Now);",
+                new
+                {
+                    Aid = "app-pub-1", Id = id,
+                    Exp = DateTimeOffset.UtcNow.AddDays(1).ToString("O"),
+                    Now = DateTimeOffset.UtcNow.ToString("O"),
+                });
+        }
+
+        var handlers = Advancing(StagesToPublish);
+        handlers.Register("READY_TO_PUBLISH", new FnHandler(_ => StageResult.Advance()));
+        var engine = Engine(handlers);
+
+        await DriveToAsync(engine, id, "PUBLISHING", maxTicks: 45);
+
+        (await _productions.GetProductionAsync(id))!.State.Should().Be("PUBLISHING");
+
+        using var conn2 = await _factory.CreateOpenConnectionAsync();
+        var lastDecision = await conn2.QuerySingleAsync<string>(
+            @"SELECT decision FROM policy_decisions WHERE production_id = @Id AND action = 'publication.dispatch'
+              ORDER BY decided_at DESC LIMIT 1;", new { Id = id });
+        lastDecision.Should().Be("ALLOW", "an approved gate lets the protected action proceed");
+    }
+
+    [Fact]
+    public async Task PolicyGate_SeedsExactlyOneBuiltInPolicyVersion_EvenAcrossCalls()
+    {
+        var v1 = await _policyGate.EnsureBuiltInPolicyVersionAsync();
+        var v2 = await _policyGate.EnsureBuiltInPolicyVersionAsync();
+        v1.Should().Be(v2);
+
+        using var conn = await _factory.CreateOpenConnectionAsync();
+        (await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM policy_versions;")).Should().Be(1);
+        (await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM policies;")).Should().Be(1);
+        (await conn.ExecuteScalarAsync<string>("SELECT body_sha256 FROM policy_versions;"))
+            .Should().MatchRegex("^[0-9a-f]{64}$");
     }
 
     [Fact]

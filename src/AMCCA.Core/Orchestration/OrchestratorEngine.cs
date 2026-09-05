@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Domain;
 using AMCCA.Core.Operator;
+using AMCCA.Core.Policy;
 using AMCCA.Core.StateMachine;
 
 namespace AMCCA.Core.Orchestration;
@@ -24,7 +25,11 @@ public sealed class OrchestratorEngine
     private readonly ProductionService _productions;
     private readonly StageHandlerRegistry _handlers;
     private readonly OperatorControlService _operatorControl;
+    private readonly PolicyGate _policyGate;
+    private readonly ApprovalManager _approvals;
     private readonly int _batchLimit;
+
+    private const string PublicationDispatchAction = "publication.dispatch";
 
     // Outbound Orchestrator transitions whose trigger means "something went wrong" rather than
     // "the happy path continues". Used to find the single forward transition for a state.
@@ -53,12 +58,16 @@ public sealed class OrchestratorEngine
         ProductionService productions,
         StageHandlerRegistry handlers,
         OperatorControlService operatorControl,
+        PolicyGate policyGate,
+        ApprovalManager approvals,
         int batchLimit = 100)
     {
         _registry = registry;
         _productions = productions;
         _handlers = handlers;
         _operatorControl = operatorControl;
+        _policyGate = policyGate;
+        _approvals = approvals;
         _batchLimit = batchLimit;
     }
 
@@ -102,19 +111,40 @@ public sealed class OrchestratorEngine
 
             var stateKind = _registry.States.FirstOrDefault(s => s.Name == prod.State)?.Kind ?? "";
             bool assisted = string.Equals(prod.AutonomyMode, "ASSISTED", StringComparison.OrdinalIgnoreCase);
+            var correlationId = $"orc-{Guid.NewGuid():N}";
 
-            // ASSISTED parks at decision gates for operator sign-off. Publishing is operator-gated in
-            // every mode for now.
-            // ponytail: the publish gate here is a stopgap — remove it once PolicyEngine + the approval
-            // record are wired so `publication.dispatch` is gated by a real REQUIRE_APPROVAL decision.
-            if ((assisted && string.Equals(stateKind, "gate", StringComparison.OrdinalIgnoreCase))
-                || IsPublishBoundary(forward))
+            // ASSISTED parks at decision gates for operator sign-off — an autonomy rule, not a policy
+            // decision.
+            if (assisted && string.Equals(stateKind, "gate", StringComparison.OrdinalIgnoreCase))
             {
                 report.AwaitingApproval++;
                 continue;
             }
 
-            var correlationId = $"orc-{Guid.NewGuid():N}";
+            // Publishing is a protected action (SPEC/08). Evaluate it through PolicyGate, which records
+            // the decision to policy_decisions + audit_log; only an ALLOW lets the transition proceed.
+            if (IsPublishBoundary(forward))
+            {
+                var hasGate = await _approvals.HasApprovedGateAsync(prod.Id, PublicationDispatchAction, ct);
+                var decision = await _policyGate.EvaluateAndRecordAsync(
+                    new PolicyEvaluationContext(prod.Id, PublicationDispatchAction, prod.AutonomyMode, HasApprovedHumanGate: hasGate),
+                    correlationId, ct: ct);
+
+                if (!decision.IsAllowed)
+                {
+                    if (_registry.FindTransition(prod.State, "BLOCKED") is null)
+                    {
+                        report.Errors.Add(new OrchestratorError(prod.Id, prod.State, "publish policy denied but no BLOCKED edge."));
+                        continue;
+                    }
+                    await _productions.TransitionAsync(prod.Id, "BLOCKED", "Orchestrator", correlationId, causationId: null, ct: ct);
+                    report.Actions.Add(new OrchestratorAction(
+                        prod.Id, prod.State, "BLOCKED", StageOutcomeKind.Blocked, decision.Result.ReasonCode));
+                    continue;
+                }
+                // ALLOWed: fall through and drive the publish transition.
+            }
+
             StageResult result;
             try
             {
