@@ -233,13 +233,19 @@ nunca se ha desplegado), pero es una regresión de seguridad en el camino de act
 El gate está bien construido, y precisamente por eso conviene nombrar sus puntos ciegos, todos
 confirmados por los hallazgos anteriores:
 
-1. No compara `enum` de contrato contra `CHECK` del DDL → §2.1 y §2.2 pasan en verde.
-2. No comprueba que los códigos lanzados por el código estén catalogados → §2.4 pasa en verde.
+1. ~~No compara `enum` de contrato contra `CHECK` del DDL~~ **Resuelto** (`contracts.enum_matches_ddl_check`) → §2.1 y §2.2 ahora son fallos visibles (las 16 columnas sin CHECK y las 2 que divergen).
+2. ~~No comprueba que los códigos lanzados por el código estén catalogados~~ **Resuelto**
+   (`refs.all_thrown_error_codes_catalogued`, con mutation test `mutation_17`) → resuelve cada
+   `AmccaErrors.Xxx` que aparece en un `throw new AmccaException(...)` real del código (incluyendo el alias
+   `Cst002 = Bud002`) a su valor `"AMCCA-..."` literal y exige que esté catalogado en `SPEC/05`, en vez de
+   solo escanear citas en prosa `.md` como hacía `refs.all_error_codes_catalogued`.
 3. No comprueba las obligaciones normativas de SPEC/60 → §3.1 pasa en verde.
 4. No detecta campos de contrato sin columna → `cost_events.reconciliation_state` pasa en verde.
 
-Las cuatro son automatizables. La primera es la de mayor rendimiento: convertiría §2.1–2.3 en fallos
-visibles en lugar de deuda invisible.
+Las dos restantes son automatizables igualmente. La tercera (obligaciones normativas de SPEC/60) es la de
+mayor rendimiento pendiente: convertiría §3.1 en fallos visibles en lugar de deuda invisible, pero requiere
+antes decidir cómo verificar mecánicamente algo tan poco estructurado como "el kill switch es alcanzable
+desde cada pantalla" — no es un simple grep ni una comparación de esquemas.
 
 ---
 
@@ -268,7 +274,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P0 | Compilar y ejecutar la suite .NET | Nada de esta rama ha sido compilado (§0) |
 | P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
 | P0 | Acotar `tool_runs.side_effect_class` con `CHECK` | La defensa de intent falla en abierto (§2.1) |
-| P1 | Añadir al gate la comparación enum ↔ `CHECK` | Convierte §2.1–2.3 en fallos visibles (§4) |
+| P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~ y ~~códigos lanzados ↔ catálogo~~ **Resueltos** | Convierte §2.1–2.3 y el punto ciego 2 de §4 en fallos visibles |
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | Aprobaciones: mostrar sujeto, techo de coste y expiración | Obligación 5, operador aprobando a ciegas (§3.1) |
 | P1 | Resolver `COMPLETED` vs `SUCCEEDED` | Contradicción contrato ↔ implementación (§2.3) |

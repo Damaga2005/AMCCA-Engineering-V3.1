@@ -404,6 +404,45 @@ def check_contract_enum_matches_ddl_check():
           "; ".join(mismatches) if mismatches else "")
 
 
+def check_thrown_error_codes_catalogued():
+    """refs.all_error_codes_catalogued (in check_references) only scans .md prose for
+    `AMCCA-XXX-NNN`-shaped citations -- it never looks at the .cs that actually throws a
+    code, so a code thrown by real code but never once mentioned in a SPEC file passes it
+    silently (fourth audit, section 2.4: this blind spot was found by accident while
+    writing the audit itself, when citing the six codes it found put the citation check
+    into red). This closes that gap: it resolves every `AmccaErrors.Xxx` a
+    `throw new AmccaException(...)` call site actually uses -- including a `= OtherConstant;`
+    alias like Cst002 -- back to its literal "AMCCA-..." value, and requires that value be
+    catalogued in SPEC/05."""
+    errors_cs = read("src", "AMCCA.Core", "Contracts", "AmccaErrors.cs")
+    const_map = {}
+    aliases = {}
+    for name, val in re.findall(r'public const string (\w+)\s*=\s*(".*?"|\w+)\s*;', errors_cs):
+        if val.startswith('"'):
+            const_map[name] = val.strip('"')
+        else:
+            aliases[name] = val
+    for name, ref in aliases.items():
+        const_map[name] = const_map.get(ref)
+
+    src_dir = os.path.join(ROOT, "src")
+    thrown_consts = set()
+    for dirpath, dirnames, filenames in os.walk(src_dir):
+        dirnames[:] = [d for d in dirnames if d not in (".git", "bin", "obj")]
+        for fn in filenames:
+            if not fn.endswith(".cs"):
+                continue
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                text = f.read()
+            thrown_consts |= set(re.findall(
+                r'throw\s+(?:new\s+)?AmccaException\(\s*AmccaErrors\.(\w+)', text))
+
+    thrown_codes = {const_map[c] for c in thrown_consts if const_map.get(c)}
+    catalogued = set(re.findall(r"`(AMCCA-[A-Z]{2,4}-\d{3})`", read("SPEC", "05_ERROR_MODEL.md")))
+    check("refs.all_thrown_error_codes_catalogued", thrown_codes <= catalogued,
+          f"thrown by code but uncatalogued: {sorted(thrown_codes - catalogued)}")
+
+
 def check_spec():
     spec_dir = os.path.join(ROOT, "SPEC")
     files = sorted(f for f in os.listdir(spec_dir) if f.endswith(".md"))
@@ -665,6 +704,7 @@ def main():
     check_state_machine()
     check_database()
     check_contract_enum_matches_ddl_check()
+    check_thrown_error_codes_catalogued()
     check_spec()
     check_references()
     check_config()

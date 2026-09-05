@@ -737,6 +737,56 @@ def mutation_16_ddl_check_regresses_from_contract_enum():
     return ok
 
 
+def mutation_17_thrown_error_code_regresses_from_spec_catalogue():
+    import shutil, tempfile
+    import validate_package as vp
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut17_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        shutil.copytree(os.path.join(ROOT, "src"), os.path.join(scratch, "src"))
+        os.makedirs(os.path.join(scratch, "SPEC"), exist_ok=True)
+        spec_path = os.path.join(scratch, "SPEC", "05_ERROR_MODEL.md")
+        shutil.copy2(os.path.join(ROOT, "SPEC", "05_ERROR_MODEL.md"), spec_path)
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_thrown_error_codes_catalogued()
+        baseline_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation17.baseline_scratch_copy_is_clean",
+                    vp.RESULTS[0]["ok"] and "AMCCA-STM-003" not in baseline_detail,
+                    baseline_detail)
+
+        with open(spec_path, encoding="utf-8") as f:
+            spec_source = f.read()
+        needle = "| `AMCCA-STM-003` | INTERNAL | No | Outbound transition attempted from a terminal state |\n"
+        assert needle in spec_source, "test fixture assumption violated: SPEC/05's AMCCA-STM-003 row text has changed"
+        with open(spec_path, "w", encoding="utf-8") as f:
+            f.write(spec_source.replace(needle, "", 1))
+
+        vp.RESULTS = []
+        vp.check_thrown_error_codes_catalogued()
+        mutated_ok = vp.RESULTS[0]["ok"]
+        mutated_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation17.check_goes_red_when_a_thrown_code_is_removed_from_the_catalogue",
+                    not mutated_ok and "AMCCA-STM-003" in mutated_detail,
+                    mutated_detail) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, still catalogues every
+    # code the real code throws.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_thrown_error_codes_catalogued()
+    real_ok = vp.RESULTS[0]["ok"]
+    real_detail = vp.RESULTS[0]["detail"]
+    vp.RESULTS = saved
+    ok = record("mutation17.real_package_unaffected_by_mutation", real_ok, real_detail) and ok
+    return ok
+
+
 def read_decisions_declared_and_check():
     import re
     dec_path = os.path.join(ROOT, "DECISIONS.md")
@@ -763,6 +813,7 @@ def run():
         mutation_14_reference_to_nonexistent_decision_id,
         mutation_15_walk_files_oversensitive_filter,
         mutation_16_ddl_check_regresses_from_contract_enum,
+        mutation_17_thrown_error_code_regresses_from_spec_catalogue,
     ]
     results = []
     for m in mutations:
