@@ -167,14 +167,18 @@ solo exige que el relleno sea un valor real del contrato.
 
 | Columna | Contrato permite y el DDL rechaza | DDL permite y el contrato rechaza |
 |---|---|---|
-| `audit_log.actor_type` | `ORCHESTRATOR`, `RECONCILER`, `SCHEDULER` | — |
+| ~~`audit_log.actor_type`~~ | ~~`ORCHESTRATOR`, `RECONCILER`, `SCHEDULER`~~ | — **Resuelto (migración 004)** |
 | ~~`cost_events.kind`~~ | ~~`ESTIMATE`, `RELEASE`~~ | ~~`REFUND`~~ **Resuelto (migración 010)** |
 | ~~`publications.state`~~ | — | ~~`QUEUED`, `RECONCILING`, `RETRACTED`, `SUBMITTED`~~ **Resuelto (migración 010)** |
 
-La primera es la más grave: `audit.schema.json` admite cinco tipos de actor y el DDL solo dos
-(`'OPERATOR','SYSTEM'`). SPEC/12 designa al **orquestador** como único committer de estado; si algún
-día escribe su propia entrada de auditoría con `actor_type='ORCHESTRATOR'` —que el contrato autoriza
-explícitamente— **la base de datos la rechazará**.
+**Corregido esta sesión (revisión de la propia auditoría, no trabajo nuevo):** esta entrada estaba
+desactualizada. `audit_log.actor_type` ya lleva `CHECK(actor_type IN ('OPERATOR','SCHEDULER','ORCHESTRATOR','RECONCILER','SYSTEM'))`
+desde la migración 4 (verificado leyendo el DDL real vía `_extract_migrations_from_csharp` +
+SQLite, no solo la migración 1 que sí tenía el `CHECK` de dos valores que describía esta sección).
+Ningún escritor actual usa `SCHEDULER`/`ORCHESTRATOR`/`RECONCILER` todavía (`grep` de `ActorType\s*[:=]`
+en `src/AMCCA.Core` solo encuentra `OPERATOR` y `SYSTEM`), pero la columna ya está lista para cuando
+exista ese escritor — el mismo tratamiento honesto que `analytics_snapshots.source_account_id` en la
+migración 007: hueco de contrato cerrado en el esquema, sin fingir un caso de uso que aún no existe.
 
 Además, `cost_events.reconciliation_state` está declarado en el contrato y **la columna no existe** en
 el DDL: un campo de contrato sin almacenamiento.
@@ -264,11 +268,16 @@ estructurado de un fallo son funcionalidades que no existen todavía, no columna
 
 `contracts.fields_have_columns` pasa en verde por primera vez desde que se creó.
 
-### 2.3 Contradicción contrato ↔ implementación
+### 2.3 Contradicción contrato ↔ implementación — **Resuelto (migración 006)**
 
-`job.schema.json` enumera `SUCCEEDED`; `JobManager.CompleteJobAsync` escribe `COMPLETED`. Como
-`jobs.state` no tiene `CHECK` (§2.1), nada lo detecta. Un test existente afirma `COMPLETED`, con lo que
-la implementación y su test están de acuerdo entre sí y en desacuerdo con el contrato.
+`job.schema.json` enumera `SUCCEEDED`; `JobManager.CompleteJobAsync` escribía `COMPLETED`. Como
+`jobs.state` no tenía `CHECK` (§2.1, resuelto en la migración 010), nada lo detectaba.
+
+**Corregido esta sesión (revisión de la propia auditoría, no trabajo nuevo):** esta sección estaba
+desactualizada — `JobManager.CompleteJobAsync` ya escribe `'SUCCEEDED'` (verificado con `grep`, dos
+sitios), desde la migración 6, que además renombra a `SUCCEEDED` cualquier fila `COMPLETED` grabada por
+una versión anterior del código antes de que la migración 010 pudiera añadir el `CHECK` que ahora lo
+haría imposible reintroducir.
 
 ### 2.4 Códigos de error
 
@@ -392,13 +401,20 @@ Estado real tras el trabajo P0:
 | 2 | Modo de autonomía y estado de publicación visibles en cada pantalla | ❌ no implementado |
 | 3 | Todo número lleva su procedencia; medido y estimado visualmente distintos | ❌ no implementado |
 | 4 | Todo elemento bloqueado indica qué regla lo bloqueó, de qué versión de política y qué lo desbloquearía | ❌ no implementado |
-| 5 | Toda solicitud de aprobación muestra acción, **sujeto, techo de coste y expiración** | ❌ la cola muestra Id, Producción, Acción, Estado, Creado |
+| 5 | Toda solicitud de aprobación muestra acción, **sujeto, techo de coste y expiración** | ✅ **Resuelto** |
 | 6 | Ninguna pantalla muestra un fallo sin código de error y acción del operador | 🟡 solo en el requeue de Job Queue |
 | 7 | Operaciones largas muestran progreso y son cancelables | ❌ no implementado |
 
-La obligación 5 afecta directamente a la corrección de DEF-002: la cola de aprobaciones pasa ahora por
-el dominio, pero **sigue sin mostrar al operador el alcance que está aprobando**. El `scope_json`
-contiene sujeto y techo de coste y no se lee. Un operador aprueba a ciegas.
+**Corregido esta sesión (revisión de la propia auditoría, no trabajo nuevo):** la fila de la obligación 5
+estaba desactualizada — `ApprovalManager.GetPendingApprovalsAsync` ya deserializa `scope_json` a
+`ApprovalScope` (sujeto, techo de coste) y lo expone en `PendingApproval`; `ApprovalQueueViewModel`
+proyecta eso en `ApprovalItem.SubjectDisplay`/`CostCeilingDisplay` (con el texto explícito
+`"(no scope recorded)"` para una aprobación heredada o sin scope, en vez de una celda en blanco);
+`ApprovalQueueView.xaml` tiene columnas de grid para `Action`, `SubjectDisplay`, `CostCeilingDisplay` y
+`ExpiresAt`. `spec60.obligation_5_approval_detail_columns` (`validate_package.py`) verifica exactamente
+esos cuatro bindings y pasa en verde. Cubierto además por
+`ApprovalQueueViewModel_ExposesScopeSubjectCostCeilingAndExpiry` en `WpfMvvmContractTests.cs`, que
+comprueba tanto el caso con scope como el caso heredado sin scope. Un operador ya no aprueba a ciegas.
 
 ### 3.2 El Production Inspector cubre aproximadamente la mitad de lo que SPEC/60 exige
 
@@ -480,7 +496,7 @@ introducidas en la superficie cubierta por la herramienta.
 |---|---|
 | Preflight completo | Cerrado (10 gates, invocado en arranque) |
 | Eliminar SQL directo de la UI | Cerrado para mutaciones; Dashboard y Audit Log siguen leyendo SQL directo |
-| Approval Queue vía dominio | Cerrado en la ruta; **incumple SPEC/60 obl. 5** (§3.1) |
+| Approval Queue vía dominio | Cerrado en la ruta; **cumple SPEC/60 obl. 5** (§3.1, corregido esta sesión: la auditoría estaba desactualizada) |
 | Kill switch operacional | Cerrado funcionalmente; sin ruta de actualización (§3.3); incumple obl. 1 |
 | Production Inspector | Parcial: ~50 % de SPEC/60 (§3.2) |
 | Job Queue | Cerrado, incluido el requeue de dead-letter que SPEC/14 exigía y no existía |
@@ -493,14 +509,14 @@ introducidas en la superficie cubierta por la herramienta.
 | Prioridad | Acción | Fundamento |
 |---|---|---|
 | P0 | Compilar y ejecutar la suite .NET | Nada de esta rama ha sido compilado (§0) |
-| P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
+| P0 | ~~Resolver `audit_log.actor_type` contrato ↔ DDL~~ **Ya resuelto** (migración 004; entrada de la auditoría desactualizada, corregido esta sesión) | El orquestador ya puede auditarse a sí mismo (§2.2) |
 | P0 | ~~Acotar `tool_runs.side_effect_class` con `CHECK`~~ **Resuelto** (migración 010) | La defensa de intent ya no falla en abierto (§2.1) |
 | P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
 | P2 | ~~13 campos de contrato sin columna (`cost_events`×6, `jobs`×7)~~ **Todos resueltos** (migración 009; `pricing_snapshot_id` deliberadamente nulable, ver §2.2) | `contracts.fields_have_columns` en verde |
 | P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`cost_events`/`jobs`.`schema_version`~~ **Resuelto** (migración 008, D-004); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
-| P1 | Aprobaciones: mostrar sujeto, techo de coste y expiración | Obligación 5, operador aprobando a ciegas (§3.1) |
-| P1 | Resolver `COMPLETED` vs `SUCCEEDED` | Contradicción contrato ↔ implementación (§2.3) |
+| P1 | ~~Aprobaciones: mostrar sujeto, techo de coste y expiración~~ **Ya resuelto** (entrada de la auditoría desactualizada, corregido esta sesión) | Obligación 5, `spec60.obligation_5_approval_detail_columns` en verde (§3.1) |
+| P1 | ~~Resolver `COMPLETED` vs `SUCCEEDED`~~ **Ya resuelto** (migración 006; entrada de la auditoría desactualizada, corregido esta sesión) | Contradicción contrato ↔ implementación (§2.3) |
 | P2 | Completar el Inspector con claims, decisiones de política, hallazgos de QA y aristas del DAG | Datos ya disponibles (§3.2) |
 | P2 | ~~Migración del kill switch desde `settings`~~ **Resuelto** (migración 005) | Regresión en actualización (§3.3) |
 | P2 | ~~Fijar rango de FFmpeg~~, ~~semántica de requeue~~ y ~~ruta de config~~ **Resueltos**, ver §2.5 | Contratos incompletos (§2.5) |
