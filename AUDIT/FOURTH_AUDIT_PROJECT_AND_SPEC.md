@@ -125,8 +125,8 @@ ninguna columna real:
 
 | Tabla | Campos sin columna (estado original) |
 |---|---|
-| `cost_events` | ~~`schema_version`~~ (migración 008), `agent_run_id`, `model_id`, `provider_request_id`, ~~`units`~~ **falso positivo, ver más abajo**, `pricing_snapshot_id`, `reconciliation_state`, `budget_id` (8 de 15 propiedades del contrato) |
-| `jobs` | ~~`schema_version`~~ (migración 008), `scheduled_at`, `deadline_at`, `estimated_cost`, `reserved_cost`, `currency`, `causation_id`, `last_error_code` |
+| `cost_events` | ~~`schema_version`~~ (mig. 008), ~~`agent_run_id`~~, ~~`model_id`~~, ~~`provider_request_id`~~, ~~`units`~~ **falso positivo**, ~~`pricing_snapshot_id`~~ (nulable, ver más abajo), ~~`reconciliation_state`~~, ~~`budget_id`~~ — **todo resuelto** (mig. 009) |
+| `jobs` | ~~`schema_version`~~ (mig. 008), ~~`scheduled_at`~~, ~~`deadline_at`~~, ~~`estimated_cost`~~, ~~`reserved_cost`~~, ~~`currency`~~, ~~`causation_id`~~, ~~`last_error_code`~~ — **todo resuelto** (mig. 009) |
 | ~~`referral_links`~~ | ~~`brand`, `commission_model`, `disclosure_required`~~ **No eran un hueco** |
 | ~~`analytics_snapshots`~~ | ~~`source_account_id`~~ **Resuelto** (migración 007) |
 
@@ -170,11 +170,36 @@ que también mira dentro de `oneOf`/`anyOf`. No se añadió ninguna columna `uni
 tuvo un campo llamado `units` esperando una columna homónima, así que no había nada que corregir en el
 esquema, solo en el check que lo mal interpretaba.
 
-Quedan **13** campos sin columna, no 20 ni 14 — `cost_events`×6 y `jobs`×7. Ninguno de los 13 restantes se
-corrigió aquí — igual que las 16 columnas sin `CHECK` de §2.1, cada uno es su propia unidad de riesgo
-(decidir si el campo se añade a la tabla, se normaliza en otra, o se retira del contrato) y corregirlos a
-ciegas en bloque sería exactamente el tipo de cambio grande y no verificado que esta sesión ha evitado
-deliberadamente en otros puntos.
+**Los 13 restantes, cerrados (migración 009):** `cost_events` ganó `agent_run_id` (FK a
+`agent_runs.run_id` — **no** `id`, verificado contra el DDL real en vez de asumido, ya que es la única
+tabla del paquete cuya PK no se llama `id`), `model_id`, `provider_request_id`, `budget_id` (FK a
+`budgets.id`), `pricing_snapshot_id` y `reconciliation_state`. `jobs` ganó `causation_id`, `currency`,
+`deadline_at`, `estimated_cost`/`reserved_cost` (con el mismo `CHECK` de no-negatividad que usa el resto
+del proyecto para dinero), `last_error_code` y `scheduled_at`.
+
+`reconciliation_state` es un campo **requerido** por el contrato, y sí se pudo cerrar sin trampas: un coste
+recién grabado siempre significa "aún no reconciliado contra el proveedor" — `DEFAULT 'ESTIMATED'` no es
+una suposición, es lo que `RecordCostAsync` ya significaba implícitamente. `RecordCostAsync` ahora lo fija
+explícitamente, verificado contra SQLite real que una fila anterior a la migración recibe el backfill
+correcto y que el `CHECK` rechaza un valor inválido.
+
+`pricing_snapshot_id` **también es requerido por el contrato, y aquí sí hubo que apartarse deliberadamente**:
+ninguna tabla `pricing_snapshots` tiene código que la escriba (esa tubería de ingesta de precios no existe
+todavía), así que un `NOT NULL` + FK real habría hecho fallar **toda** grabación de coste, rompiendo la
+funcionalidad para "corregir" un hueco documental. Se añadió como `NULL`able con FK activa — una divergencia
+contrato↔DDL real y deliberada (requerido vs nulable) que ningún check actual detecta, dejada aquí explícita
+en vez de disimulada. Es la dirección seguro-por-defecto: un valor que nada puede rellenar correctamente hoy
+no debe fingirse obligatorio con un centinela inventado.
+
+Los otros 10 campos (`model_id`, `provider_request_id`, `agent_run_id`, `budget_id` en `cost_events`;
+`causation_id`, `currency`, `deadline_at`, `estimated_cost`, `reserved_cost`, `last_error_code`,
+`scheduled_at` en `jobs`) se añaden nulables y sin escritor que los rellene todavía — mismo tratamiento
+honesto que `analytics_snapshots.source_account_id` en la migración 007: la columna existe y está lista
+para quien la necesite, pero ningún código la usa aún porque ninguno tiene ese dato disponible hoy
+(agendar un job con fecha límite, reservar presupuesto por adelantado, o etiquetar el código de error
+estructurado de un fallo son funcionalidades que no existen todavía, no columnas mal puestas).
+
+`contracts.fields_have_columns` pasa en verde por primera vez desde que se creó.
 
 ### 2.3 Contradicción contrato ↔ implementación
 
@@ -364,15 +389,14 @@ confirmados por los hallazgos anteriores:
    comportamiento en tiempo de ejecución. Lo que se comprueba es la firma concreta que ya existe, así que
    una regresión que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni
    menos que eso.
-4. ~~No detecta campos de contrato sin columna~~ **Resuelto** (`contracts.fields_have_columns`, con
-   mutation test `mutation_19`) → deja de pasar en verde: hoy señala 13 campos de contrato sin columna
-   real en `cost_events` y `jobs` (detalle completo en §2.2; el propio check tuvo un falso positivo, ya
-   corregido, con un objeto anidado envuelto en `oneOf`). El ejemplo original de la auditoría
-   (`cost_events.reconciliation_state`) era solo uno de ocho campos sin columna en esa misma tabla. De los
-   otros hallazgos que este check sacó a la luz, `referral_links.brand`/`commission_model`/
-   `disclosure_required` resultaron ser diseño correcto (normalizados en `referral_programs`), y
-   `analytics_snapshots.source_account_id` y `cost_events`/`jobs`.`schema_version` (D-004) eran huecos
-   reales que se cerraron (migraciones 007 y 008).
+4. ~~No detecta campos de contrato sin columna~~ **Resuelto y en verde de punta a punta**
+   (`contracts.fields_have_columns`, con mutation test `mutation_19`) → de los 20 campos que este check
+   sacó a la luz: `referral_links.brand`/`commission_model`/`disclosure_required` resultaron ser diseño
+   correcto (normalizados en `referral_programs`, no un hueco); `cost_events.units` era un falso positivo
+   del propio check (objeto anidado envuelto en `oneOf`, corregido con `_is_nested_shape()`); y los 16
+   restantes eran huecos reales, cerrados en tres migraciones (007, 008, 009) — el ejemplo original de la
+   auditoría, `cost_events.reconciliation_state`, era solo uno de ocho campos sin columna en esa misma
+   tabla. `contracts.fields_have_columns` pasa en verde por primera vez desde que existe.
 
 Los cuatro puntos ciegos que esta auditoría nombró están ahora cerrados como checks del gate. Las
 obligaciones 3, 4 y 7 de
@@ -409,7 +433,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
 | P0 | Acotar `tool_runs.side_effect_class` con `CHECK` | La defensa de intent falla en abierto (§2.1) |
 | P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
-| P2 | 13 campos de contrato sin columna (`cost_events`×6, `jobs`×7) — cada uno su propia unidad de riesgo | Ahora visibles vía `contracts.fields_have_columns` (§2.2, §4) |
+| P2 | ~~13 campos de contrato sin columna (`cost_events`×6, `jobs`×7)~~ **Todos resueltos** (migración 009; `pricing_snapshot_id` deliberadamente nulable, ver §2.2) | `contracts.fields_have_columns` en verde |
 | P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`cost_events`/`jobs`.`schema_version`~~ **Resuelto** (migración 008, D-004); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | Aprobaciones: mostrar sujeto, techo de coste y expiración | Obligación 5, operador aprobando a ciegas (§3.1) |

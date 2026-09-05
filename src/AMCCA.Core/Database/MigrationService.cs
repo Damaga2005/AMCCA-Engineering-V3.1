@@ -1172,6 +1172,76 @@ public class MigrationService
                 ALTER TABLE jobs DROP COLUMN schema_version;
                 ALTER TABLE cost_events DROP COLUMN schema_version;
             "
+        ),
+        (
+            9,
+            "009_remaining_cost_event_and_job_contract_columns",
+            @"
+                -- Closes the last 13 contract-fields-with-no-column entries from the fourth audit
+                -- (AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md section 2.2) that were not already handled by
+                -- migrations 7 and 8: cost-event.schema.json's agent_run_id, model_id,
+                -- provider_request_id, budget_id, pricing_snapshot_id, reconciliation_state, and
+                -- job.schema.json's causation_id, currency, deadline_at, estimated_cost, reserved_cost,
+                -- last_error_code, scheduled_at.
+                --
+                -- agent_run_id references agent_runs by its PK column agent_runs.run_id, not the usual
+                -- `id` -- verified against the real DDL rather than assumed, since every other table in
+                -- this package names its PK `id`. budget_id references budgets(id). Neither RecordCostAsync
+                -- nor any other writer sets either of these yet; they are added as nullable, FK-checked
+                -- columns for a future caller that can supply them, the same disclosed-but-unpopulated
+                -- treatment migration 7 already gave analytics_snapshots.source_account_id.
+                --
+                -- pricing_snapshot_id is declared REQUIRED (non-nullable) by cost-event.schema.json, but
+                -- is added here as NULLABLE, a deliberate, disclosed departure from that requirement: no
+                -- code anywhere writes a pricing_snapshots row (that ingestion pipeline does not exist
+                -- yet), so a NOT NULL + FK column would make RecordCostAsync fail on every call, breaking
+                -- cost recording entirely rather than fixing a documentation gap. Relaxing it to nullable
+                -- is the fail-safe direction for a column nothing can currently populate correctly; making
+                -- it falsely NOT NULL with a sentinel value would be worse, not better -- see the fourth
+                -- audit's section 2.2 for the full reasoning. This is a real, remaining contract/DDL
+                -- divergence (required vs nullable) that no current check catches, disclosed here rather
+                -- than silently matched to look compliant.
+                --
+                -- reconciliation_state is also REQUIRED, but unlike pricing_snapshot_id it is a state this
+                -- codebase can always answer correctly at insert time: a cost event that was just recorded
+                -- has not been reconciled against a provider statement yet, so DEFAULT 'ESTIMATED' is not a
+                -- guess, it is what every existing and future call to RecordCostAsync already means.
+                -- RecordCostAsync now sets it explicitly rather than relying only on the backfill default.
+                --
+                -- estimated_cost/reserved_cost keep the same non-negative CHECK job.schema.json's own
+                -- description requires ('a cost estimate/budget reservation cannot be negative', V31-04),
+                -- matching generate_artifacts.py's existing SPEC/11 model text for these two columns.
+                ALTER TABLE cost_events ADD COLUMN agent_run_id TEXT NULL REFERENCES agent_runs(run_id);
+                ALTER TABLE cost_events ADD COLUMN model_id TEXT NULL;
+                ALTER TABLE cost_events ADD COLUMN provider_request_id TEXT NULL;
+                ALTER TABLE cost_events ADD COLUMN budget_id TEXT NULL REFERENCES budgets(id);
+                ALTER TABLE cost_events ADD COLUMN pricing_snapshot_id TEXT NULL REFERENCES pricing_snapshots(id);
+                ALTER TABLE cost_events ADD COLUMN reconciliation_state TEXT NOT NULL DEFAULT 'ESTIMATED' CHECK(reconciliation_state IN ('ESTIMATED','RECONCILED','ESTIMATED_UNRECONCILED','DISPUTED'));
+
+                ALTER TABLE jobs ADD COLUMN causation_id TEXT NULL;
+                ALTER TABLE jobs ADD COLUMN currency TEXT NULL;
+                ALTER TABLE jobs ADD COLUMN deadline_at TEXT NULL;
+                ALTER TABLE jobs ADD COLUMN estimated_cost TEXT NULL CHECK(estimated_cost IS NULL OR estimated_cost NOT LIKE '-%');
+                ALTER TABLE jobs ADD COLUMN reserved_cost TEXT NULL CHECK(reserved_cost IS NULL OR reserved_cost NOT LIKE '-%');
+                ALTER TABLE jobs ADD COLUMN last_error_code TEXT NULL;
+                ALTER TABLE jobs ADD COLUMN scheduled_at TEXT NULL;
+            ",
+            @"
+                ALTER TABLE cost_events DROP COLUMN agent_run_id;
+                ALTER TABLE cost_events DROP COLUMN model_id;
+                ALTER TABLE cost_events DROP COLUMN provider_request_id;
+                ALTER TABLE cost_events DROP COLUMN budget_id;
+                ALTER TABLE cost_events DROP COLUMN pricing_snapshot_id;
+                ALTER TABLE cost_events DROP COLUMN reconciliation_state;
+
+                ALTER TABLE jobs DROP COLUMN causation_id;
+                ALTER TABLE jobs DROP COLUMN currency;
+                ALTER TABLE jobs DROP COLUMN deadline_at;
+                ALTER TABLE jobs DROP COLUMN estimated_cost;
+                ALTER TABLE jobs DROP COLUMN reserved_cost;
+                ALTER TABLE jobs DROP COLUMN last_error_code;
+                ALTER TABLE jobs DROP COLUMN scheduled_at;
+            "
         )
     };
 

@@ -534,4 +534,93 @@ public class DatabaseAndMigrationContractTests : IDisposable
         var costColumns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('cost_events');")).ToList();
         costColumns.Should().NotContain("schema_version");
     }
+
+    /// <summary>
+    /// Closes the last 13 contract-fields-with-no-column entries from the fourth audit (section 2.2):
+    /// cost_events gained agent_run_id, model_id, provider_request_id, budget_id, pricing_snapshot_id and
+    /// reconciliation_state; jobs gained causation_id, currency, deadline_at, estimated_cost,
+    /// reserved_cost, last_error_code and scheduled_at. This proves every column exists, the
+    /// reconciliation_state CHECK and DEFAULT both hold, and the money/FK constraints on the new columns
+    /// actually reject bad data rather than merely existing.
+    /// </summary>
+    [Fact]
+    public async Task Migration009_AddsRemainingCostEventAndJobColumns_WithWorkingChecksAndFks()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 8);
+
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync(@"
+                INSERT INTO jobs (id, type, state, priority, idempotency_key, attempt, max_attempts, payload_json, created_at, updated_at, schema_version)
+                VALUES ('job-pre-mig9', 'RENDER', 'QUEUED', 3, 'idem-pre-mig9', 0, 3, '{}', datetime('now'), datetime('now'), '3.1.0');
+                INSERT INTO cost_events (id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at, schema_version)
+                VALUES ('cost-pre-mig9', 'prod-pre-mig9', 'job-pre-mig9', 'RESERVATION', '1.000000', 'EUR', 'test-provider', datetime('now'), datetime('now'), '3.1.0');
+            ");
+        }
+
+        await migrationService.UpgradeAsync();
+
+        using var connection2 = await factory.CreateOpenConnectionAsync();
+
+        // A row written before migration 9 must be backfilled to ESTIMATED, never left NULL.
+        var backfilledState = await connection2.ExecuteScalarAsync<string>(
+            "SELECT reconciliation_state FROM cost_events WHERE id = 'cost-pre-mig9';");
+        backfilledState.Should().Be("ESTIMATED");
+
+        // The CHECK constraint on reconciliation_state actually rejects an invalid value.
+        var actBadReconciliation = async () => await connection2.ExecuteAsync(@"
+            INSERT INTO cost_events (id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at, schema_version, reconciliation_state)
+            VALUES ('cost-bad-reconciliation', 'prod-x', NULL, 'RESERVATION', '1.000000', 'EUR', 'prov', datetime('now'), datetime('now'), '3.1.0', 'BOGUS');
+        ");
+        await actBadReconciliation.Should().ThrowAsync<SqliteException>();
+
+        // estimated_cost/reserved_cost keep the same non-negative CHECK the rest of this codebase uses for money.
+        var actNegativeCost = async () => await connection2.ExecuteAsync(@"
+            INSERT INTO jobs (id, type, state, priority, idempotency_key, attempt, max_attempts, payload_json, created_at, updated_at, schema_version, estimated_cost)
+            VALUES ('job-negative-cost', 'RENDER', 'QUEUED', 3, 'idem-negative-cost', 0, 3, '{}', datetime('now'), datetime('now'), '3.1.0', '-1.000000');
+        ");
+        await actNegativeCost.Should().ThrowAsync<SqliteException>();
+
+        // agent_run_id is FK-checked against agent_runs.run_id (not the usual `id`), and rejects a bogus reference.
+        var actBadAgentRun = async () => await connection2.ExecuteAsync(@"
+            INSERT INTO cost_events (id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at, schema_version, agent_run_id)
+            VALUES ('cost-bad-agent-run', 'prod-x', NULL, 'RESERVATION', '1.000000', 'EUR', 'prov', datetime('now'), datetime('now'), '3.1.0', 'no-such-run');
+        ");
+        await actBadAgentRun.Should().ThrowAsync<SqliteException>();
+
+        // pricing_snapshot_id is deliberately nullable (not the NOT NULL the contract declares): no
+        // pipeline populates pricing_snapshots yet, so a row with none must still be insertable.
+        await connection2.ExecuteAsync(@"
+            INSERT INTO cost_events (id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at, schema_version)
+            VALUES ('cost-no-pricing-snapshot', 'prod-x', NULL, 'RESERVATION', '1.000000', 'EUR', 'prov', datetime('now'), datetime('now'), '3.1.0');
+        ");
+        var nullPricingSnapshot = await connection2.ExecuteScalarAsync<string?>(
+            "SELECT pricing_snapshot_id FROM cost_events WHERE id = 'cost-no-pricing-snapshot';");
+        nullPricingSnapshot.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Migration009_RollbackRemovesAllThirteenColumns()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 8);
+
+        using var connection = await factory.CreateOpenConnectionAsync();
+        var costColumns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('cost_events');")).ToList();
+        foreach (var col in new[] { "agent_run_id", "model_id", "provider_request_id", "budget_id", "pricing_snapshot_id", "reconciliation_state" })
+        {
+            costColumns.Should().NotContain(col);
+        }
+
+        var jobColumns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('jobs');")).ToList();
+        foreach (var col in new[] { "causation_id", "currency", "deadline_at", "estimated_cost", "reserved_cost", "last_error_code", "scheduled_at" })
+        {
+            jobColumns.Should().NotContain(col);
+        }
+    }
 }

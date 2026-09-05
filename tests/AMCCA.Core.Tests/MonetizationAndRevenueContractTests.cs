@@ -108,13 +108,15 @@ public class MonetizationAndRevenueContractTests : IDisposable
             currency: "EUR",
             provider: "elevenlabs");
 
-        // D-004: every persisted contract object carries schema_version.
+        // D-004: every persisted contract object carries schema_version. reconciliation_state must be
+        // ESTIMATED at record time -- a cost event just recorded has not been reconciled yet (migration 9).
         using (var conn = await _factory.CreateOpenConnectionAsync())
         {
-            var schemaVersion = await conn.ExecuteScalarAsync<string>(
-                "SELECT schema_version FROM cost_events WHERE production_id = @Id AND kind = 'SETTLEMENT';",
+            var row = await conn.QuerySingleAsync<(string SchemaVersion, string ReconciliationState)>(
+                "SELECT schema_version AS SchemaVersion, reconciliation_state AS ReconciliationState FROM cost_events WHERE production_id = @Id AND kind = 'SETTLEMENT';",
                 new { Id = prodId });
-            schemaVersion.Should().Be("3.1.0");
+            row.SchemaVersion.Should().Be("3.1.0");
+            row.ReconciliationState.Should().Be("ESTIMATED");
         }
 
         // 4. Reserved cost: 20.00 EUR (must NOT be counted in settled spend!)
