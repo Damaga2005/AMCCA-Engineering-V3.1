@@ -349,6 +349,16 @@ def _extract_check_domains(table_sql):
     return domains
 
 
+def _column_exists(table_sql, column):
+    """Whether `column` is defined in a CREATE TABLE statement's text. Matches at the
+    start of a line OR right after a comma -- not just line-start -- because
+    sqlite_master's stored SQL for a column added later via ALTER TABLE ADD COLUMN is
+    appended onto the end of the previous column's line rather than given its own line
+    (confirmed against a real ALTER TABLE ... ADD COLUMN run through SQLite), so a
+    line-start-only match silently misses every column a migration added this way."""
+    return bool(re.search(rf"(?:^|,)\s*{re.escape(column)}\s+\w", table_sql, re.M))
+
+
 def check_contract_enum_matches_ddl_check():
     """A JSON contract's `enum` on a column is meaningless as a structural guarantee if
     the table's own CHECK constraint does not enforce the same domain (D-026: 'This
@@ -386,7 +396,7 @@ def check_contract_enum_matches_ddl_check():
             contract_vals = set(spec["enum"])
             ddl_vals = ddl_checks.get(prop)
             if ddl_vals is None:
-                if re.search(rf"^\s*{re.escape(prop)}\s+\w", table_sql, re.M):
+                if _column_exists(table_sql, prop):
                     mismatches.append(f"{table}.{prop}: contract has {len(contract_vals)} enum values, DDL column has no CHECK")
                 # else: column doesn't exist on this table at all -- a different
                 # concern (contract field with no storage), not this check's job.
@@ -418,6 +428,9 @@ _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN = {
     ("job.schema.json", "lease_owner"): "normalized into leases.owner_id, joined by job_id (JobManager.ListJobsAsync)",
     ("job.schema.json", "lease_until"): "normalized into leases.lease_until, joined by job_id",
     ("job.schema.json", "heartbeat_at"): "normalized into leases.heartbeat_at, joined by job_id",
+    ("referral.schema.json", "brand"): "normalized into referral_programs.brand, joined by program_id",
+    ("referral.schema.json", "commission_model"): "normalized into referral_programs.commission_model, joined by program_id",
+    ("referral.schema.json", "disclosure_required"): "normalized into referral_programs.disclosure_required, joined by program_id -- deliberately not duplicated onto referral_links, since that would let a compliance-critical flag drift between two copies",
 }
 
 
@@ -461,7 +474,7 @@ def check_contract_fields_have_columns():
                 continue  # a nested shape has no flat column to check by design
             if (schema_file, prop) in _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN:
                 continue
-            if not re.search(rf"^\s*{re.escape(prop)}\s+\w", table_sql, re.M):
+            if not _column_exists(table_sql, prop):
                 missing.append(f"{table}.{prop}")
 
     check("contracts.fields_have_columns", not missing,

@@ -1086,8 +1086,8 @@ def build_tables_and_doc():
       "CHECK(provenance<>'ESTIMATED'). CHECK(state='REVERSED' OR amount NOT LIKE '-%') — a REVERSED row alone may be signed (V31-04).",
       "IX(publication_id), IX(state, occurred_at)"),
      ("analytics_snapshots",
-      f"{ID}, `production_id` TEXT NOT NULL, `publication_id` TEXT NOT NULL, `metric` TEXT NOT NULL, `value` REAL NOT NULL, `unit` TEXT NULL, `currency` TEXT NULL, `provenance` TEXT NOT NULL, `window_start` TEXT NULL, `window_end` TEXT NULL, `schema_version` TEXT NOT NULL, `observed_at` TEXT NOT NULL",
-      "FK(publication_id)->publications. UNIQUE(publication_id, metric, window_start, provenance).",
+      f"{ID}, `production_id` TEXT NOT NULL, `publication_id` TEXT NOT NULL, `metric` TEXT NOT NULL, `value` REAL NOT NULL, `unit` TEXT NULL, `currency` TEXT NULL, `provenance` TEXT NOT NULL, `window_start` TEXT NULL, `window_end` TEXT NULL, `schema_version` TEXT NOT NULL, `observed_at` TEXT NOT NULL, `source_account_id` TEXT NULL",
+      "FK(publication_id)->publications. FK(source_account_id)->platform_accounts (migration 7; analytics.schema.json's own field, had no column until the fourth audit's contracts.fields_have_columns check found it). UNIQUE(publication_id, metric, window_start, provenance).",
       "IX(publication_id, metric), IX(observed_at)"),
     ]
 

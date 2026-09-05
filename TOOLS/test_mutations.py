@@ -757,6 +757,8 @@ def mutation_19_field_presence_check_regresses_when_a_real_column_is_dropped():
                     "'cost_events.provider'" not in baseline_detail
                     and "cost_events.cost_event_id" not in baseline_detail
                     and "jobs.lease_owner" not in baseline_detail
+                    and "referral_links.disclosure_required" not in baseline_detail
+                    and "analytics_snapshots.source_account_id" not in baseline_detail
                     and "cost_events.reconciliation_state" in baseline_detail,
                     baseline_detail)
 

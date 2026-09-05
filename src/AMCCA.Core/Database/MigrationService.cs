@@ -1125,6 +1125,29 @@ public class MigrationService
             @"
                 UPDATE jobs SET state = 'COMPLETED' WHERE state = 'SUCCEEDED';
             "
+        ),
+        (
+            7,
+            "007_analytics_snapshot_source_account_column",
+            @"
+                -- analytics.schema.json has always declared the optional source_account_id, but the
+                -- column never existed (fourth audit, AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md section 2.2
+                -- and 2.4's gate check). analytics_snapshots has no writer anywhere in this codebase yet,
+                -- so this is a pure additive fix with no existing rows to reconcile. Nullable and
+                -- FK-checked against platform_accounts, matching the schema's own description ('ULID,
+                -- generated locally... external identifiers are never primary keys', D-003).
+                --
+                -- referral.schema.json's brand/commission_model/disclosure_required were investigated
+                -- alongside this and deliberately NOT added as new referral_links columns: they already
+                -- exist on referral_programs (the table referral_links.program_id references), so adding
+                -- them here would duplicate a compliance-critical field (disclosure_required) across two
+                -- tables that could drift out of sync -- the same normalization this codebase already uses
+                -- for jobs/leases. See _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN in TOOLS/validate_package.py.
+                ALTER TABLE analytics_snapshots ADD COLUMN source_account_id TEXT NULL REFERENCES platform_accounts(id);
+            ",
+            @"
+                ALTER TABLE analytics_snapshots DROP COLUMN source_account_id;
+            "
         )
     };
 

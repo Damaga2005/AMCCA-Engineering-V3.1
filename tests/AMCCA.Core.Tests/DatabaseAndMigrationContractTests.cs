@@ -409,4 +409,74 @@ public class DatabaseAndMigrationContractTests : IDisposable
             "SELECT state FROM jobs WHERE id = 'job-still-queued';");
         untouchedState.Should().Be("QUEUED");
     }
+
+    /// <summary>
+    /// analytics.schema.json has always declared the optional source_account_id, but the column never
+    /// existed (fourth audit section 2.2, and the contracts.fields_have_columns gate check it inspired).
+    /// Migration 7 adds it, FK-checked against platform_accounts. No code writes analytics_snapshots
+    /// rows yet, so this asserts the column round-trips and the FK actually rejects a bogus id --
+    /// exercised via a raw connection like the rest of this contract, the same way the existing
+    /// analytics_snapshots tests in MemoryGenomeExperimentContractTests already do for its other columns.
+    /// </summary>
+    [Fact]
+    public async Task Migration007_AddsAnalyticsSourceAccountColumn_FkEnforced()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+
+        using var connection = await factory.CreateOpenConnectionAsync();
+        await connection.ExecuteAsync(@"
+            INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
+            VALUES ('prod-src-acct', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
+            VALUES ('pub-src-acct', 'prod-src-acct', 'youtube', 'acc-x', 'ver-x', 'PUBLISHED', 'idem-src-acct', '3.1.0', datetime('now'), datetime('now'));
+            INSERT INTO platform_accounts (id, platform, account_handle, credential_secret_ref, state, created_at, updated_at)
+            VALUES ('platacct-1', 'youtube', '@handle', 'secret://vault/x', 'CONNECTED', datetime('now'), datetime('now'));
+        ");
+
+        await connection.ExecuteAsync(@"
+            INSERT INTO analytics_snapshots (id, production_id, publication_id, metric, value, provenance, schema_version, observed_at, source_account_id)
+            VALUES ('snap-with-source', 'prod-src-acct', 'pub-src-acct', 'views', 100, 'API_MEASURED', '3.1.0', datetime('now'), 'platacct-1');
+        ");
+
+        var stored = await connection.ExecuteScalarAsync<string>(
+            "SELECT source_account_id FROM analytics_snapshots WHERE id = 'snap-with-source';");
+        stored.Should().Be("platacct-1");
+
+        // A snapshot whose provenance doesn't trace to a real platform account is a bug, not a valid row.
+        var act = async () => await connection.ExecuteAsync(@"
+            INSERT INTO analytics_snapshots (id, production_id, publication_id, metric, value, provenance, schema_version, observed_at, source_account_id)
+            VALUES ('snap-bad-source', 'prod-src-acct', 'pub-src-acct', 'views', 50, 'API_MEASURED', '3.1.0', datetime('now'), 'no-such-account');
+        ");
+        await act.Should().ThrowAsync<SqliteException>("source_account_id is FK-checked against platform_accounts");
+
+        // The field is optional (analytics.schema.json: oneOf string/null) -- a snapshot with no known
+        // source account must still be insertable.
+        await connection.ExecuteAsync(@"
+            INSERT INTO analytics_snapshots (id, production_id, publication_id, metric, value, provenance, schema_version, observed_at)
+            VALUES ('snap-no-source', 'prod-src-acct', 'pub-src-acct', 'views', 75, 'API_MEASURED', '3.1.0', datetime('now'));
+        ");
+        var nullStored = await connection.ExecuteScalarAsync<string?>(
+            "SELECT source_account_id FROM analytics_snapshots WHERE id = 'snap-no-source';");
+        nullStored.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Rolling migration 7 back must leave the table in exactly its pre-migration shape -- no orphaned
+    /// column, and (implicitly, since the ADD COLUMN target no longer exists) no way to write the field
+    /// this migration introduced.
+    /// </summary>
+    [Fact]
+    public async Task Migration007_RollbackRemovesTheSourceAccountColumn()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 6);
+
+        using var connection = await factory.CreateOpenConnectionAsync();
+        var columns = (await connection.QueryAsync<string>("SELECT name FROM pragma_table_info('analytics_snapshots');")).ToList();
+        columns.Should().NotContain("source_account_id");
+    }
 }

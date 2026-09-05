@@ -425,9 +425,9 @@ contract below; the validator fails the build otherwise.
 
 ### `analytics_snapshots`
 
-**Columns.** `id` TEXT PK (ULID), `production_id` TEXT NOT NULL, `publication_id` TEXT NOT NULL, `metric` TEXT NOT NULL, `value` REAL NOT NULL, `unit` TEXT NULL, `currency` TEXT NULL, `provenance` TEXT NOT NULL, `window_start` TEXT NULL, `window_end` TEXT NULL, `schema_version` TEXT NOT NULL, `observed_at` TEXT NOT NULL
+**Columns.** `id` TEXT PK (ULID), `production_id` TEXT NOT NULL, `publication_id` TEXT NOT NULL, `metric` TEXT NOT NULL, `value` REAL NOT NULL, `unit` TEXT NULL, `currency` TEXT NULL, `provenance` TEXT NOT NULL, `window_start` TEXT NULL, `window_end` TEXT NULL, `schema_version` TEXT NOT NULL, `observed_at` TEXT NOT NULL, `source_account_id` TEXT NULL
 
-**Keys and constraints.** FK(publication_id)->publications. UNIQUE(publication_id, metric, window_start, provenance).
+**Keys and constraints.** FK(publication_id)->publications. FK(source_account_id)->platform_accounts (migration 7; analytics.schema.json's own field, had no column until the fourth audit's contracts.fields_have_columns check found it). UNIQUE(publication_id, metric, window_start, provenance).
 
 **Indexes.** IX(publication_id, metric), IX(observed_at)
 

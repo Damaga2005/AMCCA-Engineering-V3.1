@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2122797
+**Total bytes:** 2132262
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `b250430a0a2f5226e5808e85ba6eede3b60a3af1828862fd342f92283aad3889` | 27682 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `28fc7a0964f8ab6263d8659b0a88bf0f2b313481b3e07299f157b21ce0d7b99c` | 29247 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -99,7 +99,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SPEC/08_POLICY_ENGINE.md` | `7bc7098df75726473aacf31dc44755534d740ccf5763ce4295403bce4f637bd4` | 1879 |
 | `SPEC/09_APPROVALS.md` | `969ecea0850fbdbcce96744e3f79dd4afcad5d2fa4cbc7ff15cba50301affa3d` | 2004 |
 | `SPEC/10_DATABASE_ENGINE.md` | `7f2d28faa932d700e34838744f4a4620b89c89a423ce57affb49a8649595faa2` | 2813 |
-| `SPEC/11_DATABASE_SCHEMA.md` | `02d84f3dd85243f2c8d244d98f1d92e73b188ed7d569f61494a642eeb1dbd07e` | 35153 |
+| `SPEC/11_DATABASE_SCHEMA.md` | `acaa2ec861b26cc01f86e89232b90c96aa0df8cc50061c3089c8717e6d6bc1c4` | 35360 |
 | `SPEC/12_STATE_MACHINE.md` | `52e2119f1e96843a5fc21196f8c82f9db5fcc9118a89e60b9b7f7203fb872df1` | 3232 |
 | `SPEC/13_STATE_TRANSITION_MATRIX.md` | `ce4d9cf8d62273f7883d83fec7a942ed260b4cd9b0a7657329db7c88dfa9d5d0` | 43229 |
 | `SPEC/14_JOB_SYSTEM.md` | `5e65a58a07f631446bf2ae7f61717091ce77ff233cdbff40abd347f4a7610e31` | 3495 |
@@ -175,7 +175,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SYSTEM.md` | `1c6cc555f063980892ab81fe44661750ed7d8270c684e406964a44b67b64c764` | 2381 |
 | `TOOLS/conditional_coverage.json` | `54d8f4774c379bd09e7f4ead7b42413025897d58cdce00829ed69b9cc9c7e11a` | 1595 |
 | `TOOLS/conformance_tests.py` | `50e4a7461596c790ff2a5e78e0a41aaaa3a4726988fc9d340a9c6bc1df5fec82` | 23287 |
-| `TOOLS/generate_artifacts.py` | `ece87f0a8a4b594d66822c4edc1bad5e8e4ecbea2b57617890f9bbb837925d12` | 100798 |
+| `TOOLS/generate_artifacts.py` | `126944545ea10a114bb26ebac5aec23766dfe4f11db3de02fde7f647cb8be475` | 101005 |
 | `TOOLS/pe_validator.py` | `fb6c34a5d06667419c4afed793ed583e67adf91a562a0cd388b855850e38a38b` | 4391 |
 | `TOOLS/release_certification.ps1` | `2daeaef64e42cb237316f716da8b0ecb73a134e9099f13c2690d43e0c1c491dd` | 15023 |
 | `TOOLS/release_gate.py` | `9ae0f95ecbbf4d72c74c9738951d83422301c240c1cf275bb7fd550a6c0fc002` | 28740 |
@@ -187,7 +187,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
 | `TOOLS/test_generation.py` | `8a9074633c8f3fc284e35c4f3ebcc9a50188802d1ffecdc21fce656bb3246193` | 1371 |
 | `TOOLS/test_money_precision.py` | `902fa1490e7bea2881774a9c0be863686e5f1595e39acab2575c2a9541669d91` | 1289 |
-| `TOOLS/test_mutations.py` | `0bd0479c1a257dcb79c7dd7ece61fe8d1b4d32561bffc42868ad0aa8e4cb7f63` | 48188 |
+| `TOOLS/test_mutations.py` | `f302991f39d761f1672debb97fb4564fd9fa5536163f0c9591e79b2b68c84db8` | 48359 |
 | `TOOLS/test_no_contract_duplication.py` | `1b0c10d42b296ea84d19d4f4089b1bd13e40f33f784cc50e6cd685dfee7883d4` | 3090 |
 | `TOOLS/test_no_duplicated_version_constants.py` | `82af520ef60a0a0f41c2d80a164f83879febd93356d513de8f54fb10a4e13632` | 3933 |
 | `TOOLS/test_platform_evidence.py` | `6f4964998994dbd9015c40a74db509ed3b2684e9867414bac4fcff7bd1284280` | 2135 |
@@ -197,7 +197,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
-| `TOOLS/validate_package.py` | `735a90cba2ddf98d1b3b40f04b9450d00e50dd9a752fe7004bef5d3553c48d14` | 41408 |
+| `TOOLS/validate_package.py` | `50886cd5c0e5b6e527a659e41e6309f6bf56f148156173e9ebff80bc95bb9b25` | 42471 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
 | `installer/build_installer.ps1` | `278172cf412c60b94179cd1e6535c7bf5e5af67e6b25ed0b7bd839ffcb728f62` | 5197 |
@@ -248,7 +248,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
 | `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
-| `src/AMCCA.Core/Database/MigrationService.cs` | `915cafc33fdb050175c9b641f73b02c2462016645779e72b92eeff7c998e8512` | 59232 |
+| `src/AMCCA.Core/Database/MigrationService.cs` | `6181aa5de777ad2c96b5eddb026b60e5d9725259b4419483a6e7dd9bf7e24003` | 60849 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `77ab9bd59b74d53f451b493d58ebb36f32840b4012fca17d5e2d2f286b0d5e34` | 13634 |
@@ -337,7 +337,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `c11056b5af8e32f641dd61177212a2a2763126a9f42c716c7240f5b7dd62f88b` | 5982 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
 | `tests/AMCCA.Core.Tests/DagReworkAndInvalidationContractTests.cs` | `0402ffa482753f07cdacbe3e1c4fa38e865322166161ad8828f52d2bd6ab4c45` | 6562 |
-| `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `458e111ac19b499d48f00cd56ba3986a81036339a1d35e2968ec0c399e2d5f8d` | 17343 |
+| `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `06a5232ea2c6b8e30fd3f9bba7511e2fe8b2d6b1708e883b4686a33694488575` | 21978 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
 | `tests/AMCCA.Core.Tests/FakeSafeHttpClientFactory.cs` | `9f537b89d577a5c6dc9db60127d02b5ff1455252f7090bf12d82703b8ec762e3` | 860 |
