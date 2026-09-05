@@ -62,6 +62,14 @@ public sealed class QaThresholdProfileRegistry
         => new(overallMin, criticalMin);
 
     /// <summary>
+    /// Base thresholds from <c>policy.qa</c> (defaulting to SPEC/35's 8.5 / 8.0 when unset), plus any
+    /// stricter platform profiles.
+    /// </summary>
+    public static QaThresholdProfileRegistry FromConfig(
+        Configuration.QaPolicyConfig? qa, IEnumerable<QaThresholdProfile>? stricterProfiles = null)
+        => new(qa?.OverallMin ?? 8.5, qa?.CriticalMin ?? 8.0, stricterProfiles);
+
+    /// <summary>
     /// The thresholds for <paramref name="profileId"/>. Null/empty or <c>default</c> yields the base;
     /// any other id must have been registered or this throws <c>AMCCA-QA-003</c>.
     /// </summary>
