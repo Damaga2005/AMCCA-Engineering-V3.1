@@ -51,6 +51,8 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-JOB-001` | TRANSIENT | Yes | Lease expired mid-execution; fence token stale, work abandoned |
 | `AMCCA-JOB-002` | INTERNAL | No | Duplicate idempotency key on enqueue. `EnqueueJobAsync` lets the `UNIQUE(idempotency_key)` constraint reject the second insert (no check-then-act pre-check — unsound under concurrency, SPEC/15) and wraps that `SqliteException` in this code. A collision means the same logical intent was enqueued twice; the caller acts on the existing job. |
 | `AMCCA-JOB-003` | USER_ACTION_REQUIRED | No | Job dead-lettered after max attempts |
+| `AMCCA-ORC-001` | USER_ACTION_REQUIRED | No | The orchestrator reached a production state with no registered stage handler and moved the production to `BLOCKED` for an operator. Carried as the transition `reason_code`, not thrown — an operator supplies the stage result or a handler is added. |
+| `AMCCA-ORC-002` | USER_ACTION_REQUIRED | No | A stage handler threw while the orchestrator was driving a production; the orchestrator moved it to `BLOCKED` carrying the handler's failure. Carried as the transition `reason_code`, not thrown. |
 | `AMCCA-AI-001` | PROVIDER | Conditional | Gateway error; check provider health |
 | `AMCCA-AI-002` | UNKNOWN_EXTERNAL_STATE | No | Reconcile before any retry |
 | `AMCCA-AI-003` | VALIDATION | No | Agent output failed its declared schema |

@@ -326,6 +326,36 @@ public class ProductionService
         return result.ToList();
     }
 
+    /// <summary>
+    /// Productions currently in any of <paramref name="states"/>, oldest first. Used by the orchestrator
+    /// to pick up work; the caller supplies the set of states it drives.
+    /// </summary>
+    public async Task<IReadOnlyList<Production>> ListInStatesAsync(
+        IReadOnlyCollection<string> states, int limit = 100, CancellationToken ct = default)
+    {
+        if (states.Count == 0)
+        {
+            return Array.Empty<Production>();
+        }
+
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        const string sql = @"
+            SELECT
+                id AS Id, state AS State, blocked_from AS BlockedFrom, unknown_from AS UnknownFrom,
+                rework_attempts AS ReworkAttempts, aggregate_version AS AggregateVersion,
+                autonomy_mode AS AutonomyMode, title AS Title, language AS Language, niche_id AS NicheId,
+                opportunity_id AS OpportunityId, current_manifest_id AS CurrentManifestId,
+                schema_version AS SchemaVersion, created_at AS CreatedAt, updated_at AS UpdatedAt
+            FROM productions
+            WHERE state IN @States
+            ORDER BY created_at ASC
+            LIMIT @Limit;
+        ";
+        var result = await connection.QueryAsync<Production>(
+            new CommandDefinition(sql, new { States = states, Limit = limit }, cancellationToken: ct));
+        return result.ToList();
+    }
+
     public async Task<IReadOnlyList<StateTransitionRecord>> GetStateTransitionsAsync(string productionId, CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);

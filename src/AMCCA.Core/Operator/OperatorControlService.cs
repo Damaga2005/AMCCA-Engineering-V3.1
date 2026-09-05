@@ -187,6 +187,19 @@ public class OperatorControlService
         return await _auditStore.GetAuditLogsAsync(correlationId, action, ct);
     }
 
+    /// <summary>
+    /// Whether the global kill switch is engaged, read from the persisted <c>kill_switch_state</c> (the
+    /// same source SPEC/49 preflight gate 10 uses). Lean check for hot paths like the orchestrator tick,
+    /// which runs in a different process from the console and so cannot trust an in-memory flag.
+    /// </summary>
+    public async Task<bool> IsGlobalKillSwitchEngagedAsync(CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var mode = await connection.ExecuteScalarAsync<string?>(
+            new CommandDefinition("SELECT mode FROM kill_switch_state WHERE id = 1;", cancellationToken: ct));
+        return string.Equals(mode, "EMERGENCY_STOP", StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task<SystemStatusSummary> GetSystemStatusAsync(CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);

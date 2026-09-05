@@ -60,6 +60,10 @@ public static class AmccaErrors
     public const string Plt001 = "AMCCA-PLT-001"; // Platform rejected the request
     public const string Plt002 = "AMCCA-PLT-002"; // Credential invalid or expired; re-authenticate
     public const string Plt003 = "AMCCA-PLT-003"; // Platform rate limit
+
+    // Orchestrator Domain
+    public const string Orc001 = "AMCCA-ORC-001"; // Orchestrator has no stage handler for the production's current state; it moved the production to BLOCKED for an operator (reason_code, not thrown)
+    public const string Orc002 = "AMCCA-ORC-002"; // A stage handler threw; the orchestrator moved the production to BLOCKED with the handler's failure (reason_code, not thrown)
 }
 
 public enum ErrorCategory

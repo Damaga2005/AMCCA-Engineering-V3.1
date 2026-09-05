@@ -105,44 +105,15 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var dbDir = Path.Combine(localAppData, "AMCCA");
-        Directory.CreateDirectory(dbDir);
-        var dbPath = Path.Combine(dbDir, "amcca.db");
-
+        var (dbDir, dbPath) = Composition.ResolvePaths();
         var connectionFactory = new DatabaseConnectionFactory(dbPath);
-        services.AddSingleton(connectionFactory);
-        services.AddSingleton<MigrationService>();
-        services.AddSingleton<ISecretStore, WindowsDpapiSecretStore>();
+        var config = Composition.LoadConfig(dbDir);
 
-        // SPEC/03 "Deployed configuration file location", SPEC/04, SPEC/49 gates 1-2: validate
-        // config.yaml against the bundled schema if the operator has placed one next to the database;
-        // otherwise fall back to AmccaConfig's built-in safe defaults (DryRun=true, publishing disabled)
-        // scoped to this install's data directory.
-        var configPath = Path.Combine(dbDir, "config.yaml");
-        AmccaConfig config;
-        if (File.Exists(configPath))
-        {
-            var configService = ConfigService.CreateWithBundledSchema();
-            config = configService.LoadFromYaml(File.ReadAllText(configPath));
-        }
-        else
-        {
-            config = new AmccaConfig { DataRoot = dbDir };
-        }
-        services.AddSingleton(config);
+        // Core singletons shared with the headless orchestrator host (see Composition / Program).
+        // DEF-001/DEF-002: the UI never writes productions/approvals/settings directly -- every mutation
+        // goes through one of these domain services.
+        Composition.AddAmccaCore(services, connectionFactory, config);
 
-        // Domain / Operator services (SPEC/09, SPEC/12, SPEC/60, DEF-001/DEF-002: UI must never write
-        // productions/approvals/settings directly -- every mutation goes through a domain service).
-        services.AddSingleton<IAuditStore, AuditStore>();
-        services.AddSingleton<IEventStore, EventStore>();
-        services.AddSingleton(_ => StateMachineRegistry.CreateFromBundledDefinition());
-        services.AddSingleton<ProductionService>();
-        services.AddSingleton<BudgetManager>();
-        services.AddSingleton<ApprovalManager>();
-        services.AddSingleton<PolicyEngine>();
-        services.AddSingleton<JobManager>();
-        services.AddSingleton<OperatorControlService>();
         services.AddSingleton<IPreflightService, PreflightService>();
 
         // UI Services
