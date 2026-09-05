@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AMCCA.App.Jobs;
 using AMCCA.App.Orchestration;
 using AMCCA.Core.Database;
+using AMCCA.Core.Jobs;
 using AMCCA.Core.Orchestration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -59,6 +61,13 @@ public static class Program
         });
         builder.Services.AddSingleton<OrchestratorEngine>();
         builder.Services.AddHostedService<OrchestratorHostedService>();
+
+        // Job worker pool (SPEC/14, SPEC/16, SPEC/17). No handlers registered yet — an enqueued job
+        // requeues and, after max_attempts, dead-letters for an operator (P0.3 adds the handlers).
+        builder.Services.AddSingleton(new JobHandlerRegistry());
+        builder.Services.AddSingleton(JobWorkerOptions.Default);
+        builder.Services.AddSingleton<JobWorkerEngine>();
+        builder.Services.AddHostedService<JobWorkerHostedService>();
 
         var host = builder.Build();
 

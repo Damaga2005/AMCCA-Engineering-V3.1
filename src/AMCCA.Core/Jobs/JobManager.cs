@@ -89,18 +89,47 @@ public class JobManager
         string workerId,
         TimeSpan leaseDuration,
         CancellationToken ct = default)
+        => await TryClaimNextJobAsync(workerId, leaseDuration, agingWindow: null, ct);
+
+    /// <summary>
+    /// Claims the next QUEUED job. With <paramref name="agingWindow"/> set, effective priority is raised
+    /// by one level per whole window a job has waited (SPEC/17: "Aging raises effective priority over
+    /// time so that P5 work is not starved indefinitely by a busy pipeline"), capped so it never
+    /// overtakes P0. With it null, ordering is the plain priority/created_at it has always been.
+    /// </summary>
+    public async Task<JobClaim?> TryClaimNextJobAsync(
+        string workerId,
+        TimeSpan leaseDuration,
+        TimeSpan? agingWindow,
+        CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 
-        // 1. Find candidate queued job with highest priority (lowest integer)
-        const string candidateSql = @"
-            SELECT id FROM jobs
-            WHERE state = 'QUEUED'
-            ORDER BY priority ASC, created_at ASC
-            LIMIT 1;
-        ";
-        var candidateId = await connection.QuerySingleOrDefaultAsync<string>(candidateSql, transaction: tx);
+        // 1. Find candidate queued job with highest effective priority (lowest integer)
+        string candidateSql;
+        object? candidateParams = null;
+        if (agingWindow is { TotalSeconds: > 0 } w)
+        {
+            candidateSql = @"
+                SELECT id FROM jobs
+                WHERE state = 'QUEUED'
+                ORDER BY (priority - MIN(priority, CAST((julianday('now') - julianday(created_at)) * 86400.0 / @AgingWindowSeconds AS INTEGER))) ASC,
+                         created_at ASC
+                LIMIT 1;
+            ";
+            candidateParams = new { AgingWindowSeconds = w.TotalSeconds };
+        }
+        else
+        {
+            candidateSql = @"
+                SELECT id FROM jobs
+                WHERE state = 'QUEUED'
+                ORDER BY priority ASC, created_at ASC
+                LIMIT 1;
+            ";
+        }
+        var candidateId = await connection.QuerySingleOrDefaultAsync<string>(candidateSql, candidateParams, transaction: tx);
         if (string.IsNullOrEmpty(candidateId))
         {
             tx.Rollback();
@@ -531,6 +560,45 @@ public class JobManager
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @Id;", new { Id = jobId }, transaction: tx);
 
         tx.Commit();
+    }
+
+    /// <summary>
+    /// Moves every job whose lease has expired back to QUEUED (or DEAD_LETTER once attempts are
+    /// exhausted) and drops the dead lease row. A crashed worker leaves a LEASED job with a stale lease
+    /// that <see cref="TryClaimNextJobAsync"/> would never pick up; the worker pool sweeps this
+    /// periodically. Returns the number of jobs recovered.
+    ///
+    /// This is the lease half of <c>RecoveryService.RunStartupRecoveryPassAsync</c> with none of its
+    /// intent handling — safe to run every cycle, no fabricated reconciliation evidence.
+    /// </summary>
+    public async Task<int> ReclaimExpiredLeasesAsync(CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var now = DateTimeOffset.UtcNow.ToString("O");
+
+        const string expiredSql = @"
+            SELECT l.job_id AS JobId, j.attempt AS Attempt, j.max_attempts AS MaxAttempts
+            FROM leases l
+            JOIN jobs j ON j.id = l.job_id
+            WHERE l.lease_until <= @Now AND j.state = 'LEASED';
+        ";
+        var expired = (await connection.QueryAsync<(string JobId, long Attempt, long MaxAttempts)>(
+            new CommandDefinition(expiredSql, new { Now = now }, cancellationToken: ct))).ToList();
+
+        int recovered = 0;
+        foreach (var (jobId, attempt, maxAttempts) in expired)
+        {
+            using var tx = connection.BeginTransaction();
+            var targetState = attempt >= maxAttempts ? "DEAD_LETTER" : "QUEUED";
+            await connection.ExecuteAsync(
+                "UPDATE jobs SET state = @State, updated_at = @Now WHERE id = @JobId AND state = 'LEASED';",
+                new { State = targetState, Now = now, JobId = jobId }, transaction: tx);
+            await connection.ExecuteAsync(
+                "DELETE FROM leases WHERE job_id = @JobId;", new { JobId = jobId }, transaction: tx);
+            tx.Commit();
+            recovered++;
+        }
+        return recovered;
     }
 
     public async Task<JobRecord?> GetJobAsync(string jobId, CancellationToken ct = default)
