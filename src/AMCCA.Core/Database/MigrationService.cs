@@ -2356,7 +2356,7 @@ public class MigrationService
                 throw new InvalidOperationException($"No rollback definition for version {rec.Version}.");
             }
 
-            if (MigrationsRequiringForeignKeysOff.Contains(rec.Version))
+            if (MigrationsRequiringForeignKeysOff.Contains((int)rec.Version))
             {
                 // Mirrors the UpgradeAsync branch above: no ambient ADO transaction, since the
                 // DownSql text manages its own PRAGMA foreign_keys toggle and BEGIN/COMMIT.
