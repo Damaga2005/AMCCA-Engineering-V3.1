@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2274861
+**Total bytes:** 2275357
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -214,7 +214,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
 | `src/AMCCA.App/Services/INavigationService.cs` | `028e17b6b1ca85d54d0cae360607ae05b1a7b8514a07bd1e7406359c07cd537f` | 847 |
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
-| `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `252e2e3bc09d4487079a8dcd5af50e9c5b52d4efb6c8cae546367ce01891cda3` | 5890 |
+| `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `e692429c72d4648e6dffa0d1df1e1ebf2fe95fc387b34b12f854bc6adfc09547` | 5957 |
 | `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `6f848f1271e3e0c2ba3fa2eb352549b94ad66f20ae984d5c5ad72b38a053dca8` | 3304 |
 | `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `8e78b547e5bce2d470ad14d622c547644b61d64d35eb3fa938a3f0001e3f38fb` | 3107 |
 | `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `f8891b8dde20ae088458c03f037942a48e64de4c53448cc0b334bc25ab53da9c` | 11230 |
@@ -331,13 +331,13 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ArchitecturalDependenciesRegressionTests.cs` | `892e7dc8b129b36370e17988be422eeadb7d3bc2a726487adf6d8c115fe1ca36` | 2112 |
 | `tests/AMCCA.Core.Tests/ArchitectureAndRegistryRegressionTests.cs` | `31bc22b832e944ab044af8f56a466de46bca429f05dc2f27f5636e9721ba686c` | 8742 |
 | `tests/AMCCA.Core.Tests/ArchiveExtractionStagingRegressionTests.cs` | `6436e19ad0ef02ebf4689365d37f21812339c8e5c3d2bbcb3924c81b289f5f88` | 5508 |
-| `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `40bb41e32a868d3c1da014a20533079b60574ce85e14bbdc15f64634b2f6150b` | 6216 |
+| `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `1579fa2ba13eb051b4a83c0a7a8a5d28573fc70c0b9596cdb10f5cf5f57dacfc` | 6639 |
 | `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs` | `6adb5e799ebb4b6bb8a386e132f1d9b0a73c901b4de6cb622748980cd8f9f49c` | 20156 |
-| `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `7561776cd9a8bb862a08fe4049a395a164f33c6efd9ce211a5191740f25b1423` | 22147 |
+| `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `029522cb5b1e4a0e02856bb53163795308824ec26b58003e093410e5e40d4dbb` | 22147 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `c11056b5af8e32f641dd61177212a2a2763126a9f42c716c7240f5b7dd62f88b` | 5982 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
 | `tests/AMCCA.Core.Tests/DagReworkAndInvalidationContractTests.cs` | `0402ffa482753f07cdacbe3e1c4fa38e865322166161ad8828f52d2bd6ab4c45` | 6562 |
-| `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `d6062bac2be24a1b86b79c01bbc06490f73119c098677c268a2aa13d8720cb64` | 48446 |
+| `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `dc7c537f7e3fb696636c743528f4413d717e7551e39352312ed078ca37aa8c9c` | 48452 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `3ab464b8aa4e3d2eec5f8bf898836fe49436e2e51895b371b00cbb7e436d52ee` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `897bec4bd24435dcef3aae4263392d641a86ceb58227b1dd7a5e6b586b514622` | 7403 |
 | `tests/AMCCA.Core.Tests/FakeSafeHttpClientFactory.cs` | `9f537b89d577a5c6dc9db60127d02b5ff1455252f7090bf12d82703b8ec762e3` | 860 |
