@@ -125,7 +125,7 @@ public class ApprovalManager
         {
             throw new AmccaException(
                 AmccaErrors.Pol004,
-                ErrorCategory.Security,
+                ErrorCategory.UserActionRequired,
                 $"Approval '{approvalId}' is not PENDING and cannot be approved (SPEC/09, DEF-002).");
         }
     }
@@ -146,7 +146,7 @@ public class ApprovalManager
         {
             throw new AmccaException(
                 AmccaErrors.Pol004,
-                ErrorCategory.Security,
+                ErrorCategory.UserActionRequired,
                 $"Approval '{approvalId}' is not PENDING and cannot be rejected (SPEC/09, DEF-002).");
         }
     }
@@ -230,7 +230,7 @@ public class ApprovalManager
             tx.Rollback();
             throw new AmccaException(
                 AmccaErrors.Pol004,
-                ErrorCategory.Security,
+                ErrorCategory.UserActionRequired,
                 $"Protected action '{action}' on production '{productionId}' with target '{target}', subject '{subject}', cost {cost:F2} requires valid approved scoped human approval (SPEC/09, DEF-002).");
         }
 
@@ -278,7 +278,7 @@ public class ApprovalManager
             tx.Rollback();
             throw new AmccaException(
                 AmccaErrors.Pol004,
-                ErrorCategory.Security,
+                ErrorCategory.UserActionRequired,
                 $"Protected action '{action}' on production '{productionId}' requires valid human approval before entering protected state (SPEC/09, D-009).");
         }
 
@@ -294,7 +294,7 @@ public class ApprovalManager
             tx.Rollback();
             throw new AmccaException(
                 AmccaErrors.Pol004,
-                ErrorCategory.Security,
+                ErrorCategory.UserActionRequired,
                 "Approval already consumed or invalidated.");
         }
 

@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2088153
+**Total bytes:** 2088674
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `996c454cf4f59db65da2b64c755c75758382a370737f958dfa8ce3da18c0c2a1` | 18057 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `421bce9c34fea5152ed6beb318dc3f2bc1619391ec11deb2f4cfb8dab98933e3` | 18413 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -93,7 +93,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SPEC/02_RUNTIME.md` | `4d9053f1ff8176b373f4643dd0e7d5721ef11c23b240711af56772a351415489` | 2524 |
 | `SPEC/03_CONFIGURATION.md` | `369a3a08f0e8caa9f42506c694fe0847c1fd923e26cf9409b71ad51a29769e5d` | 3085 |
 | `SPEC/04_CONTRACTS.md` | `37aaf7ef03fec250fc4ca1ac05a03162dd5e633abd43f5426ef2bae99708615a` | 3199 |
-| `SPEC/05_ERROR_MODEL.md` | `bd34ab5ab4a5243aff388dd804f7d1e4dcd551586df859f418079d59728508d5` | 6955 |
+| `SPEC/05_ERROR_MODEL.md` | `57bcf47fb1cd51abe3be618ce233a0271f12fb70ea5a149bb2e9b04d2f390724` | 6967 |
 | `SPEC/06_AGENT_SYSTEM.md` | `6c39018c3f550a8cb413be2326aedb807977b0227713ec849ac4242128281e8e` | 2723 |
 | `SPEC/07_TOOL_REGISTRY.md` | `a41f18c333253307e3e5d60c7331051c47e7105b36e9e5cc48b3bd8419d6eaf2` | 2117 |
 | `SPEC/08_POLICY_ENGINE.md` | `7bc7098df75726473aacf31dc44755534d740ccf5763ce4295403bce4f637bd4` | 1879 |
@@ -242,7 +242,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Agents/AgentRuntime.cs` | `26b7153ec49755f74e6952661f28308e91e930f84d73001b83161cebf91ebbc2` | 9665 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `1f710a275f7fb5336cc1d11717ba87a09d848ecbf84f0d3e81764aef161838bf` | 8094 |
-| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `8d1e7e1c9793bf6d0ba4acdba1a751a84b4422ca95175a59f996917860f38267` | 4168 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `1fc4188f46f3e25b724694996fb1ae293217c5086270214083bf8877c8fdd619` | 4271 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
@@ -272,7 +272,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `db2ccee95a3168e9569f2a6fd568790e1b1012cf4fe4e2edf4a23183de4d3cf8` | 8182 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
 | `src/AMCCA.Core/Packaging/PeBinaryValidator.cs` | `8044d308f0f0e0e86566ce5885b57c45028eb6a7d8e03b1f2688e57cd6817d17` | 5204 |
-| `src/AMCCA.Core/Policy/ApprovalManager.cs` | `a9e4bf53d3b3a5d2662e23a3b964d3a1e7f387da61bcc37daff78350c3b45827` | 11363 |
+| `src/AMCCA.Core/Policy/ApprovalManager.cs` | `c9446c6cd4a46d7669846d8f762a75c367b61d2b57777ede6bb5ef8e643ab678` | 11413 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `09d8fdd116101605750dd819363c1dbafdeead63bc80fa06a7371ac50b2f8915` | 9282 |
 | `src/AMCCA.Core/Policy/PolicyEngine.cs` | `5f9bfae618e0805f451aaec48fe341e3fae1288024a8512cfffea13eb60df90c` | 5750 |
 | `src/AMCCA.Core/Policy/PolicyModels.cs` | `f10206e6479d7cb8a7657c076a1f05ff5fc281d7fd3725ab7498f0c77b34a1da` | 1692 |

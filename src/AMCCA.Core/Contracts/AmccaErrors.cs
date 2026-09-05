@@ -49,7 +49,7 @@ public static class AmccaErrors
     // Policy Domain
     public const string Pol001 = "AMCCA-POL-001"; // Policy evaluation rejected or failed
     public const string Pol003 = "AMCCA-POL-003"; // Operation refused: global or per-platform kill switch is active
-    public const string Pol004 = "AMCCA-POL-004"; // Human approval required before entering protected state
+    public const string Pol004 = "AMCCA-POL-004"; // Human approval required before entering protected state (ErrorCategory.UserActionRequired, not Security -- the operator, not an attacker, is who needs to act)
 
     // Job Domain
     public const string Job001 = "AMCCA-JOB-001"; // Lease expired mid-execution; fence token stale, work abandoned

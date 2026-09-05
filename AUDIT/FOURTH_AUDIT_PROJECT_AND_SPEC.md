@@ -144,8 +144,12 @@ puso en rojo de inmediato, lo que confirma el punto ciego de forma accidental pe
 que usa realmente el código en el punto donde se lanza, no una inventada. Dos matices para revisión del
 responsable de la especificación:
 
-- `AMCCA-POL-004` se cataloga como `SECURITY` porque es la categoría con la que `ApprovalManager` lo
-  lanza; semánticamente `USER_ACTION_REQUIRED` encajaría mejor con «hace falta que un humano apruebe».
+- ~~`AMCCA-POL-004` se cataloga como `SECURITY`~~ **Resuelto**: recategorizado a `USER_ACTION_REQUIRED`
+  tanto en `SPEC/05` como en los 5 puntos donde `ApprovalManager` lo lanza (`ErrorCategory` es solo
+  metadata del error — no hay ninguna rama de código en el repositorio que decida comportamiento por su
+  valor, y ningún test afirmaba sobre la categoría, solo sobre el código `AMCCA-POL-004` — así que el
+  cambio no tiene riesgo de comportamiento). Coincide con la convención ya usada por `AMCCA-JOB-003`,
+  el mismo patrón "espera a un operador".
 - `AMCCA-QA-003` y `AMCCA-RES-003` están declarados pero **ningún código los lanza**. Se catalogan
   según su propio comentario; procede decidir si son implementación pendiente o constantes muertas.
   **Resuelto**: `AMCCA-RES-003` es un duplicado exacto de `AMCCA-SEC-003` — `SsrfValidator` ya lanza

@@ -75,7 +75,7 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-PUB-008` | POLICY | No | Duplicate publication prevented by unique constraint |
 | `AMCCA-POL-001` | POLICY | No | Policy evaluation rejected or failed; required decision data is missing |
 | `AMCCA-POL-003` | POLICY | No | Refused: global or per-platform kill switch is active; clear it to proceed |
-| `AMCCA-POL-004` | SECURITY | No | Human approval required before the protected action; request and grant one |
+| `AMCCA-POL-004` | USER_ACTION_REQUIRED | No | Human approval required before the protected action; request and grant one |
 | `AMCCA-BUD-001` | BUDGET | No | Budget threshold reached |
 | `AMCCA-BUD-002` | BUDGET | No | Reservation refused; insufficient remaining budget |
 | `AMCCA-STO-001` | STORAGE | Yes if bounded | Insufficient free space |
