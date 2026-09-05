@@ -30,42 +30,45 @@ public class DatabaseConnectionFactory
         _connectionString = builder.ToString();
     }
 
+    // journal_mode = WAL is a persistent database property; verifying it (and that foreign_keys can be
+    // turned on) once per process avoids two PRAGMA round-trips on every connection open. foreign_keys /
+    // busy_timeout / temp_store are per-connection and are always set.
+    private volatile bool _walVerified;
+    private readonly object _verifyLock = new();
+
     public async Task<SqliteConnection> CreateOpenConnectionAsync(CancellationToken ct = default)
     {
         var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(ct);
 
-        // Configure connection pragmas per SPEC/10
         using (var cmd = connection.CreateCommand())
         {
-            cmd.CommandText = @"
-                PRAGMA journal_mode = WAL;
-                PRAGMA foreign_keys = ON;
-                PRAGMA busy_timeout = 5000;
-                PRAGMA temp_store = MEMORY;
-            ";
+            // WAL only needs setting until it sticks; the other three are connection-scoped (SPEC/10).
+            cmd.CommandText = _walVerified
+                ? "PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA temp_store = MEMORY;"
+                : "PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA temp_store = MEMORY;";
             await cmd.ExecuteNonQueryAsync(ct);
         }
 
-        // Assert WAL and foreign_keys = ON (SPEC/10)
-        var journalMode = await GetJournalModeAsync(connection, ct);
-        if (!string.Equals(journalMode, "wal", StringComparison.OrdinalIgnoreCase))
+        if (!_walVerified)
         {
-            connection.Dispose();
-            throw new AmccaException(
-                AmccaErrors.Db001,
-                ErrorCategory.Internal,
-                $"Database journal_mode must be WAL, but reported '{journalMode}'.");
-        }
+            var journalMode = await GetJournalModeAsync(connection, ct);
+            if (!string.Equals(journalMode, "wal", StringComparison.OrdinalIgnoreCase))
+            {
+                connection.Dispose();
+                throw new AmccaException(
+                    AmccaErrors.Db001, ErrorCategory.Internal,
+                    $"Database journal_mode must be WAL, but reported '{journalMode}'.");
+            }
 
-        var foreignKeys = await GetForeignKeysEnabledAsync(connection, ct);
-        if (!foreignKeys)
-        {
-            connection.Dispose();
-            throw new AmccaException(
-                AmccaErrors.Db001,
-                ErrorCategory.Internal,
-                "Database foreign_keys must be ON, but reported OFF.");
+            if (!await GetForeignKeysEnabledAsync(connection, ct))
+            {
+                connection.Dispose();
+                throw new AmccaException(
+                    AmccaErrors.Db001, ErrorCategory.Internal, "Database foreign_keys must be ON, but reported OFF.");
+            }
+
+            lock (_verifyLock) { _walVerified = true; }
         }
 
         return connection;

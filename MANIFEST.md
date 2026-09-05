@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 408
-**Total bytes:** 2491188
+**Total bytes:** 2491777
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -254,15 +254,15 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `84e415d464b6185be49cffff401f47560e0e931e36e1ed0095ff087d674d93ec` | 903 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
-| `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
+| `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `3db6f580c28236fc877f550950a88c6e2a904ca273df1a0033881a8e969d2d6c` | 3796 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
 | `src/AMCCA.Core/Database/MigrationService.cs` | `b134910b76b6f807bc0198ecf5d16d3ae414f5c6c5f62860d8f2d184c83f579b` | 124076 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Diagnostics/AmccaMetrics.cs` | `52473ca953cba33e97d5e4f65722f7e9bac1ec0c3d52809f3a0cea51f61617d9` | 1427 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `d9aa689989bc9efa3a33adfdbe853b674a728f5c6a888c0fdb486e7596f49baf` | 15079 |
-| `src/AMCCA.Core/Events/AuditStore.cs` | `dfa76634c1e0e1d63762538cbedaa64aea2db578e9c3d007131efe775f3a1cf9` | 5252 |
-| `src/AMCCA.Core/Events/EventStore.cs` | `0003439f50cbfaa58902681298faa38ff5d1302263e32469fb8c45322ddcf1b8` | 2884 |
+| `src/AMCCA.Core/Events/AuditStore.cs` | `1d938419c90b0e6ab27a363fc857aad8271996ba7e7fa84603edbefcfddb2acd` | 5298 |
+| `src/AMCCA.Core/Events/EventStore.cs` | `d8873fea60f7ffbbbfd83d03b7b87be789190ce4f88f6c8a0df5ef95972d54f6` | 2930 |
 | `src/AMCCA.Core/Experiments/ExperimentEngine.cs` | `df14fce36a2ff3a4f4f46aed9693615376fd6ba440ef46c89a45d1deadaf3de4` | 11568 |
 | `src/AMCCA.Core/Experiments/ExperimentModels.cs` | `2e109fbd4bc2d85c1ceff38ed7b8e30b5cfd5f0458f009560bf753b0919d4338` | 769 |
 | `src/AMCCA.Core/Genome/GenomeModels.cs` | `565671c0f157e0f83671a8955c80705e75331995e55be1e6ebd190b69a5ebe66` | 849 |

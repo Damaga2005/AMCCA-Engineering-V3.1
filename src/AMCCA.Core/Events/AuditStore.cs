@@ -68,7 +68,7 @@ public class AuditStore : IAuditStore
                 @SchemaVersion, @OccurredAt
             );
         ";
-        await connection.ExecuteAsync(sql, record);
+        await connection.ExecuteAsync(new CommandDefinition(sql, record, cancellationToken: ct));
     }
 
     public async Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, string? action = null, CancellationToken ct = default)
