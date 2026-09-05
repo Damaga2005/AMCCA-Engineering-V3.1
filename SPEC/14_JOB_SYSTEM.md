@@ -46,6 +46,12 @@ Bounded by `max_attempts` and by cumulative retry cost. On exhaustion the job mo
 `AMCCA-JOB-003` and a notification. A dead-lettered job is never silently dropped and never automatically
 retried; it waits for an operator.
 
+An operator requeuing a `DEAD_LETTER` job does **not** reset its `attempt` counter. Zeroing it would erase
+both the `max_attempts` bound and the retry history, letting a poisoned job loop indefinitely with no
+record. Preserving it grants exactly one further attempt, after which the job returns to `DEAD_LETTER` for
+the operator to look at again. This is a bounded retry, not a fresh budget — an operator who wants a job to
+survive more than one further attempt raises `max_attempts` explicitly rather than requeuing repeatedly.
+
 ## What a job may not do
 
 Hold a database transaction across its whole execution. Perform an `EXTERNAL_UNSAFE` call without a

@@ -462,12 +462,10 @@ public class JobManager
     /// SPEC/14: "A dead-lettered job is never silently dropped and never automatically retried; it waits
     /// for an operator." This is that operator action, and the only legal way out of DEAD_LETTER.
     ///
-    /// The attempt counter is deliberately NOT reset. SPEC/14 bounds retries by max_attempts and by
-    /// cumulative retry cost; zeroing the counter would erase both bounds and the attempt history, and
-    /// would let an operator loop a poisoned job indefinitely with no record. Preserving it grants exactly
-    /// one further attempt, after which the job returns to DEAD_LETTER for the operator to look at again.
-    /// SPEC/14 does not state which of the two it wants, so this takes the bounded reading; if the
-    /// intended semantics are a full budget reset, that belongs in SPEC/14 and an ADR, not in a guess here.
+    /// The attempt counter is deliberately NOT reset (SPEC/14, "Retries and dead-lettering"): zeroing it
+    /// would erase both the max_attempts bound and the attempt history, letting an operator loop a
+    /// poisoned job indefinitely with no record. Preserving it grants exactly one further attempt, after
+    /// which the job returns to DEAD_LETTER for the operator to look at again.
     /// </summary>
     public async Task RequeueDeadLetterJobAsync(string jobId, CancellationToken ct = default)
     {

@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2084902
+**Total bytes:** 2085562
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `3787a91dda89b94d0a11d02bfe4c658711bb4326faa99ecc7007abccc3489a2b` | 16851 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `619ec6ef48d7ccabd3334323e0b52b021393ec8e94d7496773e56ddede70e2f5` | 17216 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -102,7 +102,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SPEC/11_DATABASE_SCHEMA.md` | `02d84f3dd85243f2c8d244d98f1d92e73b188ed7d569f61494a642eeb1dbd07e` | 35153 |
 | `SPEC/12_STATE_MACHINE.md` | `52e2119f1e96843a5fc21196f8c82f9db5fcc9118a89e60b9b7f7203fb872df1` | 3232 |
 | `SPEC/13_STATE_TRANSITION_MATRIX.md` | `ce4d9cf8d62273f7883d83fec7a942ed260b4cd9b0a7657329db7c88dfa9d5d0` | 43229 |
-| `SPEC/14_JOB_SYSTEM.md` | `9d55d6b3a08422ca95f781451ba91494c3777310c7ddad9a80ec4677d328e661` | 2285 |
+| `SPEC/14_JOB_SYSTEM.md` | `dd947dbf55face874859d853c4a549d3eba92645e21272ff934812dcffd64462` | 2817 |
 | `SPEC/15_IDEMPOTENCY.md` | `ae3d193745ad19e58432585eba8e1a56388cab689c33a6899b337b302f18d0bc` | 1874 |
 | `SPEC/16_RECOVERY_RECONCILIATION.md` | `89a7caac6d9e136755f4259fd15e118fd33eaf17d6b91711d5b8f6d8e57dcd26` | 2286 |
 | `SPEC/17_SCHEDULER.md` | `d46b5212ac3cfeb31f5f7d3098615331f8019d1d476bdde7602711a69d260b48` | 1872 |
@@ -260,7 +260,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Genome/GenomeMutationService.cs` | `755daea02b4511ec05f995588ce4c23ee38daeece02d5978f98540df6c9d9b7c` | 7483 |
 | `src/AMCCA.Core/Jobs/IntentKeyGenerator.cs` | `1e2e0d0cc64e9ce7af544df84ca87257ecea9f973ca34722f5502d24de8563ca` | 1043 |
 | `src/AMCCA.Core/Jobs/IntentManager.cs` | `645e4a3feb627d35dbc046424f95615ec870fde47b5a29281e3fe280b5aabd16` | 4736 |
-| `src/AMCCA.Core/Jobs/JobManager.cs` | `c9f13953d4b12f7b60a2a3cb130e23ced3f8e15d2f110c5b2461ad557a8e6c47` | 20903 |
+| `src/AMCCA.Core/Jobs/JobManager.cs` | `25405fbbc7a3bcbc21492da27cfe716257cac76eeb92472fd19853686fb1f26f` | 20666 |
 | `src/AMCCA.Core/Jobs/JobModels.cs` | `adeba2797bee53982b1893e69b950ffdf378d0e949b535de19455f886022c9c4` | 2849 |
 | `src/AMCCA.Core/Jobs/RecoveryService.cs` | `efbf6c9ac240f6f4141b54509edec42d4238d9cfcbc9414c285a719819632c5a` | 3598 |
 | `src/AMCCA.Core/Media/MediaModels.cs` | `2575520baf93a372ddce788e068635966d440ec524d87a5fcc391e55a875c07e` | 2149 |
