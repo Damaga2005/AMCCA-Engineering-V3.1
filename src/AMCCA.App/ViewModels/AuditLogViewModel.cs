@@ -92,7 +92,11 @@ public class AuditLogViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load audit logs: {ex.Message}", "Error");
+            // SPEC/60 obligation 6: a failure needs an operator action, not just a message. Retrying or
+            // clearing the filter are the only two things this screen can do about a failed query.
+            _notificationService.AddNotification(
+                $"Failed to load audit logs: {ex.Message} Retry, or clear the filter and refresh.",
+                "Error");
         }
     }
 }

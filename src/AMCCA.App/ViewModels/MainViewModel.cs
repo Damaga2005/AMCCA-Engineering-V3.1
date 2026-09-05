@@ -4,6 +4,7 @@ using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.Core.Configuration;
+using AMCCA.Core.Contracts;
 using AMCCA.Core.Operator;
 
 namespace AMCCA.App.ViewModels;
@@ -129,7 +130,9 @@ public class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to refresh system status: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to refresh system status: {ex.Message} Retry; the kill switch and autonomy indicators may be stale until this succeeds.",
+                "Error");
         }
     }
 
@@ -163,9 +166,17 @@ public class MainViewModel : ViewModelBase
                 activating ? "Global kill switch engaged." : "Global kill switch cleared.",
                 activating ? "Warning" : "Success");
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} The kill switch was not changed; refresh status to confirm its current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to toggle kill switch: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to toggle kill switch: {ex.Message} Refresh status and retry.",
+                "Error");
         }
     }
 }

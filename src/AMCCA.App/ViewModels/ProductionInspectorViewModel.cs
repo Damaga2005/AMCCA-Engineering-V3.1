@@ -242,7 +242,9 @@ public class ProductionInspectorViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load productions for inspection: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load productions for inspection: {ex.Message} Retry the refresh.",
+                "Error");
         }
     }
 
@@ -420,7 +422,9 @@ public class ProductionInspectorViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load inspection for {productionId}: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load inspection for {productionId}: {ex.Message} Retry, or select a different production from the picker and back to confirm this one still exists.",
+                "Error");
         }
         finally
         {

@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2270306
+**Total bytes:** 2274856
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `815c03b52f646cfaf989588a4920037d167fcbc938ab24f811a899befa13f3d7` | 48960 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `1d22a39e9c909385307297df7f789104ab3b6121d67182d88b184eaa9d193f60` | 50384 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -214,14 +214,14 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
 | `src/AMCCA.App/Services/INavigationService.cs` | `028e17b6b1ca85d54d0cae360607ae05b1a7b8514a07bd1e7406359c07cd537f` | 847 |
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
-| `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `8331d818c0dd8c75e4d08076eb684a1455a443c61dffd1db58a269857fc432f3` | 4980 |
-| `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `f97510d219f3ec9995f38e4c92a7ac90264e6b3ab9cd7d4d52914660ccb83504` | 3027 |
+| `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `252e2e3bc09d4487079a8dcd5af50e9c5b52d4efb6c8cae546367ce01891cda3` | 5890 |
+| `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `6f848f1271e3e0c2ba3fa2eb352549b94ad66f20ae984d5c5ad72b38a053dca8` | 3304 |
 | `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `8e78b547e5bce2d470ad14d622c547644b61d64d35eb3fa938a3f0001e3f38fb` | 3107 |
 | `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `f8891b8dde20ae088458c03f037942a48e64de4c53448cc0b334bc25ab53da9c` | 11230 |
-| `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e0bfba2178821fb59851adbbdfb9a2a08f05426359af5a474862cc9f2113f0e2` | 7173 |
-| `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `5bc2c3c9c8a5e82218dabc886aa2528c73cd6cdf814499fe183ef9ee080e55e5` | 19730 |
-| `src/AMCCA.App/ViewModels/ProductionsViewModel.cs` | `1b3fbc0474d148b33984f4701d00940ef0cefb826914a3fb095ed2a3633dd0e9` | 4839 |
-| `src/AMCCA.App/ViewModels/SettingsViewModel.cs` | `60f134380f819702339ee41db56e7e0487dbd097e08f1f21ab00a4aec1d6b105` | 2941 |
+| `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e08e6cbc9dfce9b012d071674f572ca573aff67c69d207f8d62c33e81d600234` | 7631 |
+| `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `a8bcc1b72d46189f42e2312a8608e39b464c5ca4690a8f6a7d5babe6486971f6` | 19914 |
+| `src/AMCCA.App/ViewModels/ProductionsViewModel.cs` | `c8533286fd2225aa7d80825083f5ed24560845a2b2fcecf30b5716dbee4501d2` | 5503 |
+| `src/AMCCA.App/ViewModels/SettingsViewModel.cs` | `92415b15f01adcb8e1e7b1deb1f061e851b7fbce0e2216fb2ef9c426af4dd390` | 3574 |
 | `src/AMCCA.App/Views/ApprovalQueueView.xaml` | `62546731eb5ac895ae4215b4f4bfaa2e26879f4d032937a32000dbdba5a06291` | 3221 |
 | `src/AMCCA.App/Views/ApprovalQueueView.xaml.cs` | `85e552d8a680a0719a9ed0b5ee7a32f33529e3990f274025edc5d013dca7f1aa` | 195 |
 | `src/AMCCA.App/Views/AuditLogView.xaml` | `1ca8adb2958884ec3a0f5bebc1333f6ada0ffc062f3d25bf4ad663ab2cdca23f` | 2515 |

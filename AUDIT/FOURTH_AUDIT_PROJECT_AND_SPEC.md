@@ -402,8 +402,23 @@ Estado real tras el trabajo P0:
 | 3 | Todo número lleva su procedencia; medido y estimado visualmente distintos | ✅ **Resuelto** |
 | 4 | Todo elemento bloqueado indica qué regla lo bloqueó, de qué versión de política y qué lo desbloquearía | ✅ **Resuelto** (parcial por diseño: ver nota) |
 | 5 | Toda solicitud de aprobación muestra acción, **sujeto, techo de coste y expiración** | ✅ **Resuelto** |
-| 6 | Ninguna pantalla muestra un fallo sin código de error y acción del operador | 🟡 solo en el requeue de Job Queue |
+| 6 | Ninguna pantalla muestra un fallo sin código de error y acción del operador | ✅ **Resuelto** |
 | 7 | Operaciones largas muestran progreso y son cancelables | ✅ **Resuelto** |
+
+**Obligación 6 completada esta sesión:** hasta ahora solo el requeue de Job Queue añadía una acción de
+operador junto al mensaje de error; el resto de catches en `src/AMCCA.App/ViewModels` mostraban `ex.Message`
+desnudo (con el código SPEC/05 solo cuando la excepción era `AmccaException`, nunca una acción concreta).
+Se añadió una rama `catch (AmccaException ex)` con una acción de operador explícita en cada punto donde
+la llamada subyacente puede lanzarla de verdad (`ApprovalQueueViewModel.ApproveAsync`/`RejectAsync`,
+`ProductionsViewModel.CreateProductionAsync`/`CancelProductionAsync`, `MainViewModel.ToggleKillSwitchAsync`,
+`SettingsViewModel.SaveSettingsAsync` — verificado leyendo `ProductionService`/`OperatorControlService`
+para no inventar una rama que nunca se ejecutaría), y se añadió una acción de operador (retry/refresh) al
+`catch (Exception ex)` genérico de cada carga de solo lectura (`AuditLogViewModel`, `SettingsViewModel`,
+`ApprovalQueueViewModel.LoadApprovalsAsync`, `ProductionsViewModel.LoadProductionsAsync`,
+`MainViewModel.RefreshStatusAsync`, ambas cargas de `ProductionInspectorViewModel`), donde no existe un
+código SPEC/05 que mostrar porque la excepción no es de dominio. Ningún test de
+`WpfMvvmContractTests`/otros afirma sobre el texto exacto de estos mensajes (solo sobre presencia de
+código o `.Contains` de un código concreto), así que no se rompió ninguna aserción existente.
 
 **Corregido esta sesión (revisión de la propia auditoría, no trabajo nuevo):** la fila de la obligación 5
 estaba desactualizada — `ApprovalManager.GetPendingApprovalsAsync` ya deserializa `scope_json` a

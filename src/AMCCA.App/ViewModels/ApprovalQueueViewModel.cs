@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
+using AMCCA.Core.Contracts;
 using AMCCA.Core.Operator;
 
 namespace AMCCA.App.ViewModels;
@@ -93,7 +94,9 @@ public class ApprovalQueueViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load approvals: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load approvals: {ex.Message} Retry the refresh.",
+                "Error");
         }
     }
 
@@ -114,9 +117,18 @@ public class ApprovalQueueViewModel : ViewModelBase
             _notificationService.AddNotification($"Approval {SelectedApproval.Id} approved.", "Success");
             await LoadApprovalsAsync();
         }
+        catch (AmccaException ex)
+        {
+            // SPEC/60 obligation 6 / SPEC/62: the decision is re-asked atomically inside
+            // SubmitApprovalDecisionAsync, so a rejection here means the approval's real state has moved
+            // (expired, already decided) since the screen loaded -- refreshing is the correct next action.
+            _notificationService.AddNotification(
+                $"{ex.Message} Refresh the queue to see the approval's current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to approve: {ex.Message}", "Error");
+            _notificationService.AddNotification($"Failed to approve: {ex.Message} Refresh the queue and retry.", "Error");
         }
     }
 
@@ -137,9 +149,15 @@ public class ApprovalQueueViewModel : ViewModelBase
             _notificationService.AddNotification($"Approval {SelectedApproval.Id} rejected.", "Warning");
             await LoadApprovalsAsync();
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} Refresh the queue to see the approval's current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to reject: {ex.Message}", "Error");
+            _notificationService.AddNotification($"Failed to reject: {ex.Message} Refresh the queue and retry.", "Error");
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
+using AMCCA.Core.Contracts;
 using AMCCA.Core.Operator;
 using AMCCA.Core.Security;
 
@@ -71,7 +72,9 @@ public class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load settings: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load settings: {ex.Message} Retry, or restart the application if this persists.",
+                "Error");
         }
     }
 
@@ -88,9 +91,19 @@ public class SettingsViewModel : ViewModelBase
 
             _notificationService.AddNotification("Settings saved successfully.", "Success");
         }
+        catch (AmccaException ex)
+        {
+            // SPEC/60 obligation 6: ex.Message already carries the SPEC/05 code (AmccaException's own
+            // constructor embeds it), so only the operator action needs adding here.
+            _notificationService.AddNotification(
+                $"{ex.Message} The kill switch was not changed; refresh this screen to see its current state.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to save settings: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to save settings: {ex.Message} Retry, or refresh this screen to see the current state.",
+                "Error");
         }
     }
 }

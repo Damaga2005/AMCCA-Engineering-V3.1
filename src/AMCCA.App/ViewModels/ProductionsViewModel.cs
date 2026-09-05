@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
+using AMCCA.Core.Contracts;
 using AMCCA.Core.Domain;
 
 namespace AMCCA.App.ViewModels;
@@ -94,7 +95,9 @@ public class ProductionsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load productions: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load productions: {ex.Message} Retry the refresh.",
+                "Error");
         }
     }
 
@@ -116,9 +119,17 @@ public class ProductionsViewModel : ViewModelBase
             NewTopic = string.Empty;
             await LoadProductionsAsync();
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} No production was created; adjust the topic or niche and retry.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Error creating production: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Error creating production: {ex.Message} Retry, or check the topic and niche.",
+                "Error");
         }
     }
 
@@ -141,9 +152,17 @@ public class ProductionsViewModel : ViewModelBase
             _notificationService.AddNotification($"Cancelled production {SelectedProduction.Id}", "Info");
             await LoadProductionsAsync();
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} Refresh the list to see the production's current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Error cancelling production: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Error cancelling production: {ex.Message} Refresh and retry.",
+                "Error");
         }
     }
 }
