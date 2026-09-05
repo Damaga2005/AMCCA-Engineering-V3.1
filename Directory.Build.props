@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    Shared build settings for every project in the solution. Warnings are errors so the "0 warnings"
+    the build has always had stays enforced rather than aspirational. Analyzer level is left at the SDK
+    default deliberately (raising it would turn a wall of pre-existing CA suggestions into errors).
+  -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+</Project>

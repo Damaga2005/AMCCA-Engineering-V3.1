@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 404
-**Total bytes:** 2483004
+**Files:** 405
+**Total bytes:** 2483552
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -58,6 +58,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `CONFIG/platforms.yaml` | `5ed3b2fd005e872f62dbe882379ad86e40b5b1f475feaa9c3a6155cedab1623d` | 3792 |
 | `CONFIG/providers.yaml` | `ff8a47830eac4589cb21ccfbc2b236cfba15e849624bd65d91905318b04e7911` | 1945 |
 | `DECISIONS.md` | `bb5cfb47461be4ab99dc45d6cb45884465d1fd90940ffe88166c15c0039b0977` | 17318 |
+| `Directory.Build.props` | `2d79ca5247a08e0581de17f836e36b3d3026f989ae78aff0144492f03f3424e4` | 548 |
 | `IMPLEMENTATION_SUMMARY.md` | `22e441a3c64bf8dde6620ac416019307922c50934e4873a9149e799f9d5224e5` | 29561 |
 | `POLICIES/AFFILIATE_POLICY.md` | `a86ef44dc5e5b58ade98630074b62de487b7706576b1721dfb9bf552a8bccd2f` | 1553 |
 | `POLICIES/AUTONOMY_POLICY.md` | `b5baba74e8c50283daeb20d69776d1e405f3bf0df97ae2dfc66e479df620b20a` | 1560 |
