@@ -404,6 +404,70 @@ def check_contract_enum_matches_ddl_check():
           "; ".join(mismatches) if mismatches else "")
 
 
+# A contract field that legitimately has no column of its own name: either the field is the
+# contract's own name for the table's `id` primary key (a cosmetic naming difference, not a
+# storage gap), or the field is normalized into a different table's column and reached by a
+# join, not a copy. Each entry is verified against the real DDL, not assumed -- see the
+# check's docstring for how each was confirmed.
+_FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN = {
+    ("cost-event.schema.json", "cost_event_id"): "is the table's `id` primary key under the contract's own name",
+    ("claim.schema.json", "claim_id"): "is the table's `id` primary key under the contract's own name",
+    ("rights.schema.json", "rights_id"): "is the table's `id` primary key under the contract's own name",
+    ("referral.schema.json", "referral_id"): "is the table's `id` primary key under the contract's own name",
+    ("analytics.schema.json", "observation_id"): "is the table's `id` primary key under the contract's own name",
+    ("job.schema.json", "lease_owner"): "normalized into leases.owner_id, joined by job_id (JobManager.ListJobsAsync)",
+    ("job.schema.json", "lease_until"): "normalized into leases.lease_until, joined by job_id",
+    ("job.schema.json", "heartbeat_at"): "normalized into leases.heartbeat_at, joined by job_id",
+}
+
+
+def check_contract_fields_have_columns():
+    """Gate blind spot 4 from the fourth audit (section 4): nothing checked whether a JSON
+    contract's own fields actually have somewhere to live in the database. cost_events is the
+    audit's named example -- cost-event.schema.json requires reconciliation_state,
+    pricing_snapshot_id and schema_version, and none of the three has ever had a column, so
+    RecordCostAsync can never produce a schema-valid row no matter what it is given.
+
+    This reuses check_contract_enum_matches_ddl_check's own live-schema machinery (the real,
+    final DDL built by actually running every migration) and asks a simpler question of it:
+    for every flat (non-object, non-array) contract property, does a column of that name exist
+    on the mapped table at all. _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN is the complete, individually
+    verified list of properties that are correctly absent (a primary key under a different name,
+    or a field normalized into another table) -- everything else missing is a real gap."""
+    cs_source = read("src", "AMCCA.Core", "Database", "MigrationService.cs")
+    try:
+        migrations = _extract_migrations_from_csharp(cs_source)
+    except AssertionError as e:
+        return check("contracts.fields_have_columns", False, str(e))
+
+    migrations.sort(key=lambda m: m[0])
+    live_schema = _build_live_schema_via_sqlite([up for _v, up in migrations])
+
+    missing = []
+    for schema_file, table in sorted(_ENUM_CHECK_TABLE_MAP.items()):
+        schema_path = os.path.join(ROOT, "SCHEMAS", schema_file)
+        if not os.path.exists(schema_path):
+            continue
+        contract = json.loads(read("SCHEMAS", schema_file))
+        table_sql = live_schema.get(table)
+        if table_sql is None:
+            missing.append(f"{table}: table not found in the live schema built from MigrationService.cs")
+            continue
+
+        for prop, spec in (contract.get("properties") or {}).items():
+            if not isinstance(spec, dict):
+                continue
+            if spec.get("type") in ("object", "array") or "properties" in spec or "items" in spec:
+                continue  # a nested shape has no flat column to check by design
+            if (schema_file, prop) in _FIELD_HAS_NO_OWN_COLUMN_BY_DESIGN:
+                continue
+            if not re.search(rf"^\s*{re.escape(prop)}\s+\w", table_sql, re.M):
+                missing.append(f"{table}.{prop}")
+
+    check("contracts.fields_have_columns", not missing,
+          f"contract fields with no DDL column: {sorted(missing)}")
+
+
 def check_thrown_error_codes_catalogued():
     """refs.all_error_codes_catalogued (in check_references) only scans .md prose for
     `AMCCA-XXX-NNN`-shaped citations -- it never looks at the .cs that actually throws a
@@ -760,6 +824,7 @@ def main():
     check_state_machine()
     check_database()
     check_contract_enum_matches_ddl_check()
+    check_contract_fields_have_columns()
     check_thrown_error_codes_catalogued()
     check_spec60_obligations()
     check_spec()

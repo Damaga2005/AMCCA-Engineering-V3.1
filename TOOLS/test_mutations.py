@@ -737,6 +737,68 @@ def mutation_16_ddl_check_regresses_from_contract_enum():
     return ok
 
 
+def mutation_19_field_presence_check_regresses_when_a_real_column_is_dropped():
+    import shutil, tempfile
+    import validate_package as vp
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut19_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        mig_rel = os.path.join("src", "AMCCA.Core", "Database", "MigrationService.cs")
+        os.makedirs(os.path.dirname(os.path.join(scratch, mig_rel)), exist_ok=True)
+        shutil.copy2(os.path.join(ROOT, mig_rel), os.path.join(scratch, mig_rel))
+        shutil.copytree(os.path.join(ROOT, "SCHEMAS"), os.path.join(scratch, "SCHEMAS"))
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_contract_fields_have_columns()
+        baseline_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation19.baseline_scratch_copy_does_not_flag_provider_or_pk_aliases",
+                    "'cost_events.provider'" not in baseline_detail
+                    and "cost_events.cost_event_id" not in baseline_detail
+                    and "jobs.lease_owner" not in baseline_detail
+                    and "cost_events.reconciliation_state" in baseline_detail,
+                    baseline_detail)
+
+        mig_path = os.path.join(scratch, mig_rel)
+        with open(mig_path, encoding="utf-8") as f:
+            source = f.read()
+        needle = "                    provider TEXT NOT NULL,\n                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')"
+        assert needle in source, "test fixture assumption violated: cost_events' provider/occurred_at/created_at DDL text has changed"
+        mutated_source = source.replace(
+            needle,
+            "                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')",
+            1)
+
+        with open(mig_path, "w", encoding="utf-8") as f:
+            f.write(mutated_source)
+
+        vp.RESULTS = []
+        vp.check_contract_fields_have_columns()
+        mutated_ok = vp.RESULTS[0]["ok"]
+        mutated_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation19.check_goes_red_when_a_real_column_is_dropped",
+                    not mutated_ok and "'cost_events.provider'" in mutated_detail,
+                    mutated_detail) and ok
+        ok = record("mutation19.pk_alias_and_normalized_fields_still_not_flagged_after_mutation",
+                    "cost_events.cost_event_id" not in mutated_detail
+                    and "jobs.lease_owner" not in mutated_detail,
+                    mutated_detail) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, does not flag provider either.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_contract_fields_have_columns()
+    real_detail = vp.RESULTS[0]["detail"]
+    real_clean = "'cost_events.provider'" not in real_detail
+    vp.RESULTS = saved
+    ok = record("mutation19.real_package_unaffected_by_mutation", real_clean, real_detail) and ok
+    return ok
+
+
 def mutation_17_thrown_error_code_regresses_from_spec_catalogue():
     import shutil, tempfile
     import validate_package as vp
@@ -890,6 +952,7 @@ def run():
         mutation_16_ddl_check_regresses_from_contract_enum,
         mutation_17_thrown_error_code_regresses_from_spec_catalogue,
         mutation_18_spec60_obligation_signatures_regress,
+        mutation_19_field_presence_check_regresses_when_a_real_column_is_dropped,
     ]
     results = []
     for m in mutations:

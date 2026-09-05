@@ -116,6 +116,33 @@ explícitamente— **la base de datos la rechazará**.
 Además, `cost_events.reconciliation_state` está declarado en el contrato y **la columna no existe** en
 el DDL: un campo de contrato sin almacenamiento.
 
+**Ampliado tras construir el check automatizado (§4, punto ciego 4):** no era un caso aislado. Comparando
+cada propiedad plana de cada contrato mapeado contra la columna real (excluyendo las 8 correspondencias ya
+verificadas como diseño correcto — el propio PK bajo otro nombre en `cost-event`/`claim`/`rights`/
+`referral`/`analytics.schema.json`, y `lease_owner`/`lease_until`/`heartbeat_at` de `job.schema.json`,
+normalizados en `leases` y unidos por `job_id`), quedan 20 campos de contrato sin ninguna columna real:
+
+| Tabla | Campos sin columna |
+|---|---|
+| `cost_events` | `schema_version`, `agent_run_id`, `model_id`, `provider_request_id`, `units`, `pricing_snapshot_id`, `reconciliation_state`, `budget_id` (8 de 15 propiedades del contrato) |
+| `jobs` | `schema_version`, `scheduled_at`, `deadline_at`, `estimated_cost`, `reserved_cost`, `currency`, `causation_id`, `last_error_code` |
+| `referral_links` | `brand`, `commission_model`, `disclosure_required` |
+| `analytics_snapshots` | `source_account_id` |
+
+`referral_links.disclosure_required` es el más grave de los veinte: es un campo **requerido** por
+`referral.schema.json` y trata directamente de la obligación de divulgar afiliación (SPEC/26-27) — el
+propio sistema no tiene dónde persistir si una divulgación de afiliado es obligatoria para un enlace de
+referido concreto. `cost_events` es el caso más amplio: 8 de sus 15 propiedades, incluidas las 3
+requeridas (`schema_version`, `pricing_snapshot_id`, `reconciliation_state`), no tienen columna —
+`RecordCostAsync` no puede producir jamás una fila válida contra su propio contrato.
+
+Ninguno de los 20 se corrigió aquí — igual que las 16 columnas sin `CHECK` de §2.1, cada uno es su propia
+unidad de riesgo (decidir si el campo se añade a la tabla, se normaliza en otra, o se retira del contrato)
+y corregirlos a ciegas en bloque sería exactamente el tipo de cambio grande y no verificado que esta
+sesión ha evitado deliberadamente en otros puntos. Lo que se hizo fue construir el check que los hace
+visibles (`contracts.fields_have_columns`, con mutation test `mutation_19`) en vez de dejarlos como deuda
+invisible.
+
 ### 2.3 Contradicción contrato ↔ implementación
 
 `job.schema.json` enumera `SUCCEEDED`; `JobManager.CompleteJobAsync` escribe `COMPLETED`. Como
@@ -304,9 +331,14 @@ confirmados por los hallazgos anteriores:
    comportamiento en tiempo de ejecución. Lo que se comprueba es la firma concreta que ya existe, así que
    una regresión que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni
    menos que eso.
-4. No detecta campos de contrato sin columna → `cost_events.reconciliation_state` pasa en verde.
+4. ~~No detecta campos de contrato sin columna~~ **Resuelto** (`contracts.fields_have_columns`, con
+   mutation test `mutation_19`) → deja de pasar en verde: hoy señala 20 campos de contrato sin columna
+   real en `cost_events`, `jobs`, `referral_links` y `analytics_snapshots` (detalle completo en §2.2). El
+   ejemplo original de la auditoría (`cost_events.reconciliation_state`) era solo uno de ocho campos sin
+   columna en esa misma tabla.
 
-La restante (blind spot 4) es automatizable igual que las tres ya resueltas. Las obligaciones 3, 4 y 7 de
+Los cuatro puntos ciegos que esta auditoría nombró están ahora cerrados como checks del gate. Las
+obligaciones 3, 4 y 7 de
 SPEC/60, y la otra mitad de la 6 (que todo fallo real muestre su código de SPEC/05, no solo que no aparezca
 una frase prohibida), siguen sin comprobación mecánica posible sin ejecutar la UI — documentarlas como
 "comprobadas" sería exactamente el tipo de gate que pasa en verde sin significar nada, que es lo que esta
@@ -339,7 +371,8 @@ introducidas en la superficie cubierta por la herramienta.
 | P0 | Compilar y ejecutar la suite .NET | Nada de esta rama ha sido compilado (§0) |
 | P0 | Resolver `audit_log.actor_type` contrato ↔ DDL | El orquestador no puede auditarse a sí mismo (§2.2) |
 | P0 | Acotar `tool_runs.side_effect_class` con `CHECK` | La defensa de intent falla en abierto (§2.1) |
-| P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~ y ~~códigos lanzados ↔ catálogo~~ **Resueltos** | Convierte §2.1–2.3 y el punto ciego 2 de §4 en fallos visibles |
+| P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
+| P2 | 20 campos de contrato sin columna (`cost_events`×8, `jobs`×7, `referral_links`×3, `analytics_snapshots`×1) — cada uno su propia unidad de riesgo | Ahora visibles vía `contracts.fields_have_columns` (§2.2, §4) |
 | P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | Aprobaciones: mostrar sujeto, techo de coste y expiración | Obligación 5, operador aprobando a ciegas (§3.1) |
 | P1 | Resolver `COMPLETED` vs `SUCCEEDED` | Contradicción contrato ↔ implementación (§2.3) |
