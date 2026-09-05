@@ -397,8 +397,8 @@ Estado real tras el trabajo P0:
 | # | Obligación | Estado |
 |---:|---|---|
 | — | «*The UI thread performs no I/O, no database access and no waiting*» | ❌ el arranque bloquea el hilo de UI sobre el preflight |
-| 1 | Kill switch alcanzable en una acción **desde cada pantalla** | ❌ solo en Settings |
-| 2 | Modo de autonomía y estado de publicación visibles en cada pantalla | ❌ no implementado |
+| 1 | Kill switch alcanzable en una acción **desde cada pantalla** | ✅ **Resuelto** (`ToggleKillSwitchCommand`/`IsKillSwitchActive` en el chrome compartido de `MainWindow.xaml`, corregido esta sesión: fila desactualizada) |
+| 2 | Modo de autonomía y estado de publicación visibles en cada pantalla | ✅ **Resuelto** (`AutonomyMode`/`PublishingEnabled` en el mismo chrome compartido, corregido esta sesión: fila desactualizada) |
 | 3 | Todo número lleva su procedencia; medido y estimado visualmente distintos | ❌ no implementado |
 | 4 | Todo elemento bloqueado indica qué regla lo bloqueó, de qué versión de política y qué lo desbloquearía | ❌ no implementado |
 | 5 | Toda solicitud de aprobación muestra acción, **sujeto, techo de coste y expiración** | ✅ **Resuelto** |
@@ -435,13 +435,18 @@ Cuatro de las ausencias tienen tabla y datos disponibles hoy: claims/fuentes, de
 hallazgos de QA y aristas del DAG. Se construyó contra la descripción de una línea del informe anterior
 en lugar de contra esta lista normativa.
 
-### 3.3 Ruta de actualización del kill switch
+### 3.3 Ruta de actualización del kill switch — **Resuelto (migración 005)**
 
 `SettingsViewModel` escribía antes en `settings['kill_switch.global']`; ahora persiste en
-`kill_switch_state`, que es lo que lee el gate 10 del preflight. La clave antigua queda **sin escritor y
-sin lector**. Una instalación existente con el kill switch activado **lo perdería silenciosamente al
-actualizar**. Requiere una migración que copie el valor. Riesgo real bajo (la aplicación probablemente
-nunca se ha desplegado), pero es una regresión de seguridad en el camino de actualización.
+`kill_switch_state`, que es lo que lee el gate 10 del preflight. La clave antigua quedaba **sin escritor
+y sin lector**: una instalación existente con el kill switch activado lo habría perdido silenciosamente
+al actualizar.
+
+**Corregido esta sesión (revisión de la propia auditoría, no trabajo nuevo):** esta sección estaba
+desactualizada. La migración 005 (`005_migrate_kill_switch_from_settings_table`) ya copia el valor de
+`settings['kill_switch.global']` a `kill_switch_state`, condicionado a `NOT EXISTS` para no pisar una
+decisión que la instalación ya hubiera tomado en la tabla nueva, y borra la clave antigua tras
+migrarla. La regresión de seguridad en el camino de actualización ya no existe.
 
 ---
 
@@ -497,7 +502,7 @@ introducidas en la superficie cubierta por la herramienta.
 | Preflight completo | Cerrado (10 gates, invocado en arranque) |
 | Eliminar SQL directo de la UI | Cerrado para mutaciones; Dashboard y Audit Log siguen leyendo SQL directo |
 | Approval Queue vía dominio | Cerrado en la ruta; **cumple SPEC/60 obl. 5** (§3.1, corregido esta sesión: la auditoría estaba desactualizada) |
-| Kill switch operacional | Cerrado funcionalmente; sin ruta de actualización (§3.3); incumple obl. 1 |
+| Kill switch operacional | Cerrado, incluida la ruta de actualización (§3.3) y la obl. 1 (§3.1), corregido esta sesión: fila desactualizada |
 | Production Inspector | Parcial: ~50 % de SPEC/60 (§3.2) |
 | Job Queue | Cerrado, incluido el requeue de dead-letter que SPEC/14 exigía y no existía |
 | Product E2E | Parcial: recorre las capas reales; el viaje completo depende de subsistemas inexistentes |
