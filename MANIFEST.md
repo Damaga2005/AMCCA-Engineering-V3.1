@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2276779
+**Total bytes:** 2277921
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -215,8 +215,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Services/INavigationService.cs` | `028e17b6b1ca85d54d0cae360607ae05b1a7b8514a07bd1e7406359c07cd537f` | 847 |
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
 | `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `e692429c72d4648e6dffa0d1df1e1ebf2fe95fc387b34b12f854bc6adfc09547` | 5957 |
-| `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `6f848f1271e3e0c2ba3fa2eb352549b94ad66f20ae984d5c5ad72b38a053dca8` | 3304 |
-| `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `8e78b547e5bce2d470ad14d622c547644b61d64d35eb3fa938a3f0001e3f38fb` | 3107 |
+| `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `a4baa3ad38807404ededb6944f17b768993de11c9ad0e0ba29d52c0ca8aa9532` | 2204 |
+| `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `45210e53e3b6dd870819e9e9ef914821d7cc791886e073ed1f758b24f11b3c1c` | 2870 |
 | `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `f8891b8dde20ae088458c03f037942a48e64de4c53448cc0b334bc25ab53da9c` | 11230 |
 | `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e08e6cbc9dfce9b012d071674f572ca573aff67c69d207f8d62c33e81d600234` | 7631 |
 | `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `a8bcc1b72d46189f42e2312a8608e39b464c5ca4690a8f6a7d5babe6486971f6` | 19914 |
@@ -252,7 +252,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `77ab9bd59b74d53f451b493d58ebb36f32840b4012fca17d5e2d2f286b0d5e34` | 13634 |
-| `src/AMCCA.Core/Events/AuditStore.cs` | `f29074949b72c61cc88ba81174d48937e7f85d9d18d728145b0277e6bd1767f7` | 3672 |
+| `src/AMCCA.Core/Events/AuditStore.cs` | `dfa76634c1e0e1d63762538cbedaa64aea2db578e9c3d007131efe775f3a1cf9` | 5252 |
 | `src/AMCCA.Core/Events/EventStore.cs` | `0003439f50cbfaa58902681298faa38ff5d1302263e32469fb8c45322ddcf1b8` | 2884 |
 | `src/AMCCA.Core/Experiments/ExperimentEngine.cs` | `df14fce36a2ff3a4f4f46aed9693615376fd6ba440ef46c89a45d1deadaf3de4` | 11568 |
 | `src/AMCCA.Core/Experiments/ExperimentModels.cs` | `2e109fbd4bc2d85c1ceff38ed7b8e30b5cfd5f0458f009560bf753b0919d4338` | 769 |
@@ -269,8 +269,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Memory/MemoryRetrievalService.cs` | `c73ea418e6a05bccaa60de6eb773ce272c6083d687da1ba1e594422de11cc150` | 7957 |
 | `src/AMCCA.Core/Monetization/MonetizationModels.cs` | `7abe03b040434b73b9d9788a25314a5e4533565db411e453cea8ab933c9cdb32` | 1489 |
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `a77cb915a368d78a1df7015f2fc6ed240309e7db9dbb9a7a227330b56fa12f8b` | 5747 |
-| `src/AMCCA.Core/Operator/OperatorControlService.cs` | `6140a2a3ca965b2dd1ccbbb098ba2b542317b0b66bff9440bf12143bb4bf77bb` | 8179 |
-| `src/AMCCA.Core/Operator/OperatorModels.cs` | `f71d4ad0294a2e4a36fde8bd2dac3e7fd0a6776e4a3f342177b3ade9a69399ca` | 189 |
+| `src/AMCCA.Core/Operator/OperatorControlService.cs` | `a2451039228e77d08c0683914941ecc14e5a67245a3226705fe440c606965a87` | 8595 |
+| `src/AMCCA.Core/Operator/OperatorModels.cs` | `d35899e1e11d5ab4b5abf453f3916af3a3d1c8087f81e006568499ef3718a815` | 224 |
 | `src/AMCCA.Core/Packaging/PeBinaryValidator.cs` | `8044d308f0f0e0e86566ce5885b57c45028eb6a7d8e03b1f2688e57cd6817d17` | 5204 |
 | `src/AMCCA.Core/Policy/ApprovalManager.cs` | `c9446c6cd4a46d7669846d8f762a75c367b61d2b57777ede6bb5ef8e643ab678` | 11413 |
 | `src/AMCCA.Core/Policy/BudgetManager.cs` | `09d8fdd116101605750dd819363c1dbafdeead63bc80fa06a7371ac50b2f8915` | 9282 |
@@ -325,7 +325,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `1b33c8dc38dea5a890a7aadfe6fc27a063cf60ceea363d6be4f2afcc5e341d3f` | 960 |
 | `tests/AMCCA.Core.Tests/AgentContractEnforcementRegressionTests.cs` | `eb8d0928b96537fc2a66be35b3c8e62e99417c561c763feafd4050b8db0425c4` | 8244 |
 | `tests/AMCCA.Core.Tests/AgentCostReservationOrderRegressionTests.cs` | `47ac5a937cc5a3c781bbb98f5948c46f7ea44a0d80de2fedfdb84576eb61a42e` | 6805 |
-| `tests/AMCCA.Core.Tests/AgentOutputResourceLimitRegressionTests.cs` | `a46444d0552051d298a81d6d288091bd97af10bf6da7c57868a7e2bacea50738` | 3890 |
+| `tests/AMCCA.Core.Tests/AgentOutputResourceLimitRegressionTests.cs` | `963a7f00f2131596f8929edfebd2808822934b33118b6f06af0dbd96577d2c86` | 4320 |
 | `tests/AMCCA.Core.Tests/AiProviderRealIntegrationTests.cs` | `99a3dfb1e6d40ed4a1daa60d33b44eec29522b6284646634806505775fb30f81` | 11414 |
 | `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs` | `fba53fdfba4914ac6f5c49875a06e96c4734ccf474353d3d20f3efe7eb83ae46` | 8512 |
 | `tests/AMCCA.Core.Tests/ArchitecturalDependenciesRegressionTests.cs` | `892e7dc8b129b36370e17988be422eeadb7d3bc2a726487adf6d8c115fe1ca36` | 2112 |
@@ -379,4 +379,4 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/TestSecretStores.cs` | `b50f6419786f2b86cfdac2bb0e48b5f77abb129bc0bee1d217ec86b38fad1453` | 744 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
-| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `48a3604026cd3e40328fe28de3f9d4cd310876070ac1b1c8d2610ae5c8dbf2b3` | 34015 |
+| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `e344e81220914da812893977e51cb5efd0d83b290972cda37247e709e65ffe61` | 34033 |

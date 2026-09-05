@@ -89,11 +89,11 @@ public class WpfMvvmContractTests : IDisposable
 
     private NavigationService CreateNavigationService(out DashboardViewModel dash, out ProductionsViewModel prod, out ApprovalQueueViewModel apprv, out SettingsViewModel sett, out AuditLogViewModel audit)
     {
-        dash = new DashboardViewModel(_factory, _operatorControlService, null!);
+        dash = new DashboardViewModel(_operatorControlService, null!, _notificationService);
         prod = new ProductionsViewModel(_productionService, _dialogService, _notificationService);
         apprv = new ApprovalQueueViewModel(_operatorControlService, _dialogService, _notificationService);
         sett = new SettingsViewModel(_operatorControlService, _secretStore, _notificationService);
-        audit = new AuditLogViewModel(_factory, _notificationService);
+        audit = new AuditLogViewModel(_auditStore, _notificationService);
 
         var d = dash;
         var p = prod;
@@ -625,7 +625,7 @@ public class WpfMvvmContractTests : IDisposable
             ");
         }
 
-        var auditVm = new AuditLogViewModel(_factory, _notificationService);
+        var auditVm = new AuditLogViewModel(_auditStore, _notificationService);
         await auditVm.LoadAuditLogAsync();
         auditVm.Entries.Should().HaveCount(2);
 

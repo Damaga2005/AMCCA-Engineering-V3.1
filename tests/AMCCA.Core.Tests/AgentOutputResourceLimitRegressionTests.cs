@@ -25,6 +25,11 @@ public class AgentOutputResourceLimitRegressionTests
             string? correlationId = null, string? action = null, System.Threading.CancellationToken ct = default)
             => System.Threading.Tasks.Task.FromResult<System.Collections.Generic.IReadOnlyList<AMCCA.Core.Events.AuditRecord>>(
                 System.Array.Empty<AMCCA.Core.Events.AuditRecord>());
+
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<AMCCA.Core.Events.AuditRecord>> SearchAuditLogsAsync(
+            string? query, int limit = 100, System.Threading.CancellationToken ct = default)
+            => System.Threading.Tasks.Task.FromResult<System.Collections.Generic.IReadOnlyList<AMCCA.Core.Events.AuditRecord>>(
+                System.Array.Empty<AMCCA.Core.Events.AuditRecord>());
     }
 
     private static AgentContract Contract(string? schema = null)

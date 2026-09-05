@@ -205,10 +205,16 @@ public class OperatorControlService
             "SELECT COUNT(*) FROM productions WHERE state NOT IN ('CANCELLED', 'ARCHIVED', 'FAILED');";
         int activeProductionsCount = await connection.ExecuteScalarAsync<int>(activeProductionsSql);
 
+        // Was computed with its own SQL inside DashboardViewModel -- the last direct query left in that
+        // screen. Folded in here so the dashboard reads every number from one place.
+        int verifiedPublicationsCount = await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM publications WHERE state = 'VERIFIED';");
+
         return new SystemStatusSummary(
             GlobalKillSwitchActive: killSwitchActive,
             AutonomyMode: _autonomyMode,
             PendingApprovalsCount: pendingCount,
-            ActiveProductionsCount: activeProductionsCount);
+            ActiveProductionsCount: activeProductionsCount,
+            VerifiedPublicationsCount: verifiedPublicationsCount);
     }
 }
