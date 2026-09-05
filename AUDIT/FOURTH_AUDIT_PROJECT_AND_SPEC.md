@@ -162,10 +162,49 @@ responsable de la especificación:
   el código hubiera ocultado, en el caso de `QA-003`, que la selección de perfil de umbral es una
   funcionalidad que la especificación da por hecha y el código no tiene.
 
-Nunca lanzados, entre ellos: `AMCCA-AI-005` (techo de coste de agente excedido) y `AMCCA-JOB-001`
-(*lease* expirado, token de vallado obsoleto, trabajo abandonado). Este último es especialmente
-relevante: SPEC/14 exige que un worker con token obsoleto **abandone** su escritura; el código devuelve
-`false` desde `CompleteJobAsync` en lugar de señalar la condición con su código.
+Nunca lanzados, entre ellos: `AMCCA-AI-005` (techo de coste de agente excedido, sigue sin resolver — no es
+parte del sistema de Jobs) y `AMCCA-JOB-001` (*lease* expirado, token de vallado obsoleto, trabajo
+abandonado).
+
+**Resuelto para `AMCCA-JOB-001`, y con un defecto real detrás:** no solo nunca se lanzaba — donde debía
+lanzarse, el código lanzaba `AMCCA-JOB-003` en su lugar. `CompleteJobOrThrowAsync` y la sobrecarga de
+`FailJobAsync` con comprobación de *fence token* rechazaban un token obsoleto con `AMCCA-JOB-003`
+(`USER_ACTION_REQUIRED`, "job en dead-letter tras máximos intentos") cuando la condición real es la que
+`AMCCA-JOB-001` describe literalmente: un worker cuyo *lease* ya pasó a otro dueño, que debe abandonar sin
+que ningún operador tenga que intervenir (`TRANSIENT`, reintentable por quien sí sostiene el *lease*).
+Corregidos ambos puntos a `AMCCA-JOB-001`/`TRANSIENT`. `RequeueDeadLetterJobAsync` sigue usando
+`AMCCA-JOB-003` para su propio caso (un operador intenta reencolar un job que no está en `DEAD_LETTER`),
+que sí encaja con la categoría — no se tocó.
+
+**Un tercer punto igual de mal codificado, encontrado al corregir los dos anteriores:**
+`HeartbeatLeaseOrThrowAsync` lanzaba `AMCCA-JOB-002` ("clave de idempotencia duplicada" según SPEC/05)
+para exactamente la misma condición de *fence token* obsoleto — el propio comentario del código ya
+delataba la confusión ("expired lease or duplicate key", mezclando dos cosas no relacionadas). Un
+*heartbeat* es otra forma de escritura que un worker obsoleto debe abandonar, así que es el mismo caso que
+`AMCCA-JOB-001` — corregido igual. `AMCCA-JOB-002` queda declarado pero sin uso real: `EnqueueJobAsync` no
+comprueba la clave de idempotencia duplicada antes de insertar, así que hoy una violación de
+`UNIQUE(idempotency_key)` sale como una excepción de base de datos sin envolver, no como este código. Se
+cataloga con nota explícita en `SPEC/05`, igual que `AMCCA-QA-003` — no se implementó la comprobación
+porque hacerlo bien exige capturar y distinguir el tipo de excepción real de SQLite, algo que no puedo
+verificar sin poder compilar en este entorno; inventarlo sin poder probarlo sería peor que dejarlo
+documentado como hueco real.
+
+`CompleteJobAsync` (la sobrecarga que devuelve `bool` en vez de lanzar) sigue devolviendo `false` sin
+código ante un *fence token* obsoleto; se deja así deliberadamente porque es un contrato alternativo ya
+cubierto por tests explícitos (`JobsAndLeasesContractTests`, `ConcurrencySuiteSpec73Tests`) y no está en
+la ruta de ningún llamador de producción — cambiar su forma de señalar el fallo sin que nadie lo consuma
+sería adivinar un requisito, no corregir uno.
+
+**SPEC/14 también decía algo que el código nunca hizo:** "on exhaustion the job moves to `DEAD_LETTER`
+with `AMCCA-JOB-003` and a notification" — la transición a `DEAD_LETTER` era un cambio de estado
+silencioso, sin código adjunto ni notificación (`JobManager` no tiene ninguna dependencia capaz de emitir
+una; el Core no depende del `INotificationService` de WPF, correctamente, y no existe todavía un rastro de
+auditoría del ciclo de vida de un job que pudiera alimentar una notificación por otra vía). Se añadió
+`JobQueueEntry.ReasonCode` (calculado, igual que `IsDeadLettered`: `AMCCA-JOB-003` si y solo si
+`state = DEAD_LETTER`) y una columna "Reason Code" en Job Queue, satisfaciendo la obligación 6 de SPEC/60
+sin inventar un mecanismo de notificación que no existe. Se corrigió la redacción de SPEC/14 para
+describir esto con precisión en vez de prometer una notificación push que ningún operador recibirá si no
+tiene Job Queue abierto en el momento.
 
 ### 2.5 Contratos incompletos (decisiones que el código debe tomar y la SPEC no fija)
 

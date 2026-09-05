@@ -53,8 +53,8 @@ public static class AmccaErrors
 
     // Job Domain
     public const string Job001 = "AMCCA-JOB-001"; // Lease expired mid-execution; fence token stale, work abandoned
-    public const string Job002 = "AMCCA-JOB-002"; // Lease heartbeat refused: expired lease or duplicate key
-    public const string Job003 = "AMCCA-JOB-003"; // Fail/Complete refused: stale fence token or dead-lettered
+    public const string Job002 = "AMCCA-JOB-002"; // Reserved, unused: duplicate idempotency key on enqueue. EnqueueJobAsync has no pre-check and a UNIQUE(idempotency_key) violation surfaces as a raw unwrapped SqliteException today, not this. (Previously misused for stale-lease heartbeat rejection, which is Job001's condition -- fixed.)
+    public const string Job003 = "AMCCA-JOB-003"; // Job dead-lettered after max attempts: JobQueueEntry.ReasonCode when a job is DEAD_LETTER, and thrown by RequeueDeadLetterJobAsync when requeue is attempted on a job that is not (stale fence token is Job001, not this -- fixed)
 
     // Platform Domain
     public const string Plt001 = "AMCCA-PLT-001"; // Platform rejected the request

@@ -52,6 +52,10 @@
                 <DataGridTextColumn Header="Job ID" Binding="{Binding Id}" Width="180"/>
                 <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="130"/>
                 <DataGridTextColumn Header="State" Binding="{Binding State}" Width="130"/>
+                <!-- SPEC/60 obligation 6: DEAD_LETTER is a terminal state, so it must carry the SPEC/05
+                     code it means (AMCCA-JOB-003) rather than leave the operator to infer why from the
+                     Attempt/Max columns alone. Blank for every non-terminal or non-dead-lettered state. -->
+                <DataGridTextColumn Header="Reason Code" Binding="{Binding ReasonCode}" Width="120"/>
                 <DataGridTextColumn Header="P" Binding="{Binding Priority}" Width="40"/>
                 <DataGridTextColumn Header="Attempt" Binding="{Binding Attempt}" Width="70"/>
                 <DataGridTextColumn Header="Max" Binding="{Binding MaxAttempts}" Width="50"/>

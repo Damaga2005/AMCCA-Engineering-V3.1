@@ -1,3 +1,5 @@
+using AMCCA.Core.Contracts;
+
 namespace AMCCA.Core.Jobs;
 
 public class JobRecord
@@ -38,6 +40,16 @@ public class JobQueueEntry
     public long? FenceToken { get; set; }
 
     public bool IsDeadLettered => string.Equals(State, "DEAD_LETTER", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// SPEC/60 obligation 6: no screen shows a terminal state without a SPEC/05 error code. DEAD_LETTER
+    /// is the only terminal state that isn't just "the operator asked for this" (CANCELLED) or "the
+    /// domain layer already produced its own code" (FAILED, UNKNOWN_EXTERNAL_STATE) -- it always means
+    /// exactly one thing, SPEC/14's "Bounded by max_attempts... on exhaustion the job moves to
+    /// DEAD_LETTER with AMCCA-JOB-003", so it is computed here rather than stored, the same as
+    /// IsDeadLettered above.
+    /// </summary>
+    public string? ReasonCode => IsDeadLettered ? AmccaErrors.Job003 : null;
 }
 
 public class JobClaim

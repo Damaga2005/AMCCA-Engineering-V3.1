@@ -32,7 +32,8 @@ UPDATE jobs SET state='LEASED' WHERE id=? AND state='QUEUED';
 paired with an insert into `leases` carrying a monotonically increasing `fence_token`.
 Read-then-write claiming is forbidden. Heartbeats extend `lease_until`. An expired lease becomes
 recoverable only after validating that the previous owner's fence token is stale; a worker whose token is
-stale MUST abandon its write rather than complete it.
+stale MUST abandon its write rather than complete it, and does so via `AMCCA-JOB-001` (TRANSIENT,
+retryable by whoever now holds the lease -- this is an expected race outcome, not an operator problem).
 
 ## Concurrency limits
 
@@ -42,9 +43,14 @@ cannot finish is not started.
 
 ## Retries and dead-lettering
 
-Bounded by `max_attempts` and by cumulative retry cost. On exhaustion the job moves to `DEAD_LETTER` with
-`AMCCA-JOB-003` and a notification. A dead-lettered job is never silently dropped and never automatically
-retried; it waits for an operator.
+Bounded by `max_attempts` and by cumulative retry cost. On exhaustion the job moves to `DEAD_LETTER`. It
+carries `AMCCA-JOB-003` (SPEC/60 obligation 6) as soon as an operator looks at it in Job Queue -- the
+Reason Code column is computed from `state = DEAD_LETTER`, not a separate stored fact that could drift
+from it. A dead-lettered job is never silently dropped and never automatically retried; it waits for an
+operator, who discovers it by its state in that screen. There is no push notification: JobManager has no
+dependency capable of raising one (Core does not depend on the WPF notification service, and no
+job-lifecycle audit trail exists yet to drive one another way), so an operator who is not looking at Job
+Queue will not be alerted the moment a job dead-letters.
 
 An operator requeuing a `DEAD_LETTER` job does **not** reset its `attempt` counter. Zeroing it would erase
 both the `max_attempts` bound and the retry history, letting a poisoned job loop indefinitely with no

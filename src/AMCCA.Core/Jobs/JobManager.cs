@@ -240,10 +240,15 @@ public class JobManager
         var success = await HeartbeatLeaseAsync(jobId, workerId, expectedFenceToken, extension, ct);
         if (!success)
         {
+            // Same condition SPEC/14 describes for AMCCA-JOB-001: the fence token no longer matches the
+            // current lease, so this worker has already lost the job -- a heartbeat is just another kind
+            // of write that a stale owner must abandon. Previously miscoded as AMCCA-JOB-002, whose
+            // catalogued meaning (SPEC/05) is an unrelated condition -- a duplicate idempotency key --
+            // that this method has nothing to do with.
             throw new AmccaException(
-                AmccaErrors.Job002,
+                AmccaErrors.Job001,
                 ErrorCategory.Transient,
-                $"Heartbeat refused for job '{jobId}': lease is expired, fence token {expectedFenceToken} is stale, or lease owned by another worker (DEF-017).");
+                $"Heartbeat refused for job '{jobId}': lease is expired, fence token {expectedFenceToken} is stale, or lease owned by another worker (DEF-017, SPEC/14).");
         }
     }
 
@@ -289,10 +294,14 @@ public class JobManager
         if (lease == null || lease.OwnerId != workerId || lease.FenceToken != expectedFenceToken)
         {
             tx.Rollback();
+            // SPEC/14, AMCCA-JOB-001: the lease already moved on (expired and was re-claimed, or was
+            // never this worker's), so this worker's write is stale, not forbidden -- whoever holds the
+            // lease now is entitled to complete it. TRANSIENT/retryable, not USER_ACTION_REQUIRED: no
+            // operator needs to act, the caller simply abandons and stops (SPEC/14 "work abandoned").
             throw new AmccaException(
-                AmccaErrors.Job003,
-                ErrorCategory.Security,
-                $"CompleteJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold lease (DEF-016).");
+                AmccaErrors.Job001,
+                ErrorCategory.Transient,
+                $"CompleteJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold lease (DEF-016, SPEC/14).");
         }
 
         var now = DateTimeOffset.UtcNow.ToString("O");
@@ -321,10 +330,12 @@ public class JobManager
         if (lease == null || lease.OwnerId != workerId || lease.FenceToken != expectedFenceToken)
         {
             tx.Rollback();
+            // Same stale-lease condition as CompleteJobOrThrowAsync above: AMCCA-JOB-001, not JOB-003 --
+            // this worker no longer holds the job, it did not fail an operator-facing precondition.
             throw new AmccaException(
-                AmccaErrors.Job003,
-                ErrorCategory.Security,
-                $"FailJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold active lease (DEF-016).");
+                AmccaErrors.Job001,
+                ErrorCategory.Transient,
+                $"FailJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold active lease (DEF-016, SPEC/14).");
         }
 
         var job = await connection.QuerySingleOrDefaultAsync<JobRecord>(
@@ -434,9 +445,8 @@ public class JobManager
 
     /// <summary>
     /// The job states actually present in this database. The queue filter is built from this rather than
-    /// from a hardcoded list because `job.schema.json` enumerates SUCCEEDED while JobManager writes
-    /// COMPLETED on the success path -- a contract/implementation contradiction that is not this method's
-    /// to resolve. Reporting the states that exist keeps the filter honest either way.
+    /// a hardcoded list so it stays honest even if the set of states in use ever drifts from
+    /// `job.schema.json`'s enum again, the way COMPLETED vs SUCCEEDED once did.
     /// </summary>
     public async Task<IReadOnlyList<string>> ListDistinctJobStatesAsync(CancellationToken ct = default)
     {

@@ -49,7 +49,7 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-STM-002` | INTERNAL | No | Resume attempted to a state other than `blocked_from` |
 | `AMCCA-STM-003` | INTERNAL | No | Outbound transition attempted from a terminal state |
 | `AMCCA-JOB-001` | TRANSIENT | Yes | Lease expired mid-execution; fence token stale, work abandoned |
-| `AMCCA-JOB-002` | INTERNAL | No | Duplicate idempotency key |
+| `AMCCA-JOB-002` | INTERNAL | No | Reserved; duplicate idempotency key on enqueue. Not currently thrown — `EnqueueJobAsync` has no pre-check, so a `UNIQUE(idempotency_key)` violation surfaces as a raw, unwrapped database exception today, not this code. Kept catalogued rather than removed for the same reason as `AMCCA-QA-003`: it names a real gap (duplicate-enqueue detection the caller can act on) rather than a condition that cannot occur. |
 | `AMCCA-JOB-003` | USER_ACTION_REQUIRED | No | Job dead-lettered after max attempts |
 | `AMCCA-AI-001` | PROVIDER | Conditional | Gateway error; check provider health |
 | `AMCCA-AI-002` | UNKNOWN_EXTERNAL_STATE | No | Reconcile before any retry |
