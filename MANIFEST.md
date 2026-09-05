@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 387
-**Total bytes:** 2398498
+**Files:** 389
+**Total bytes:** 2411739
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -248,7 +248,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `1f710a275f7fb5336cc1d11717ba87a09d848ecbf84f0d3e81764aef161838bf` | 8094 |
 | `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `bf525e226b51018b187c19997439b0c2054d42a4873c9bd27e49a1825a48165f` | 5629 |
-| `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
+| `src/AMCCA.Core/Contracts/AmccaException.cs` | `84e415d464b6185be49cffff401f47560e0e931e36e1ed0095ff087d674d93ec` | 903 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
 | `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
@@ -294,12 +294,13 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Preflight/PreflightService.cs` | `e9d3a9a5925ce0225b7316072c95f4400bc34ffad5f1954e1cd52753197e0191` | 10920 |
 | `src/AMCCA.Core/Prompts/PromptModels.cs` | `a269aa91eb386554f749e202e37a2f7fbdaf739a1d07842b4e119a2b639c14d5` | 1468 |
 | `src/AMCCA.Core/Prompts/PromptService.cs` | `6aa5f1bf21e6af833b5faf4f45ae1179cabd94a8354ef10adbfa61493b204609` | 5262 |
-| `src/AMCCA.Core/Providers/DirectOpenAiCompatibleGatewayAdapter.cs` | `7f4b0c7c7cb5f8b029a031636a07d53a087816b0df30cdbb4c566eae5e51b824` | 14689 |
+| `src/AMCCA.Core/Providers/DirectOpenAiCompatibleGatewayAdapter.cs` | `6ce4f6d12095e37460c6f5e42b1fd3279d90320fe7b39b302d211e04fdaddcdf` | 15360 |
 | `src/AMCCA.Core/Providers/FailoverProviderGateway.cs` | `4aea494b0d0cce5dfcf6b75f96c9687865e191435d54e67795b4aa7f01eea40f` | 3599 |
 | `src/AMCCA.Core/Providers/IProviderGateway.cs` | `b316ab48c361c6bc44545f12dfa0b08f35c16b9d1b4ffd315047a125566648e9` | 713 |
 | `src/AMCCA.Core/Providers/ModelRegistry.cs` | `354e0550d7d3675c9e277cabc68fc55dda7b3ea3e626e27424ebb346bb030c72` | 4780 |
-| `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `9816539bffdfef2e7e295f5d30af7c5a782f50448a94b9cadedcb95c278b5f54` | 10201 |
+| `src/AMCCA.Core/Providers/OmniRoutersGatewayAdapter.cs` | `08af9af0512e268cd165196d1a345e91a17f15eddf20b35d66e8ec023f9b06c4` | 10810 |
 | `src/AMCCA.Core/Providers/ProviderModels.cs` | `cbc1419035fe01df6e4f50a3ca2e031384c92729374c703ded5414031977b0cc` | 2129 |
+| `src/AMCCA.Core/Providers/ResilientProviderGateway.cs` | `87828280f73bb3ee833a3c527e92a9478ce69d6b30a2b2eece395dfa014c1e17` | 4911 |
 | `src/AMCCA.Core/Publishing/BasePlatformAdapter.cs` | `5a07c8611d426e84239b708701e4685f1d995a82b9e5cdfb110121c049080632` | 4078 |
 | `src/AMCCA.Core/Publishing/IPlatformAdapter.cs` | `a3f3589624e3e79d061e71321376cf323c7684b5cb4f05c1dbbfa285c518bfc5` | 1530 |
 | `src/AMCCA.Core/Publishing/InstagramPlatformAdapter.cs` | `4b057e31912bde11c2331e1c11060f1e284f82ec5db52cc43842569679409deb` | 6784 |
@@ -384,6 +385,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ProductionSecretStoreRegressionTests.cs` | `179d6b2595e2f960a8102798107bbecfff6991636ea2b9e15c7cdfd08deb8e4e` | 2592 |
 | `tests/AMCCA.Core.Tests/ProviderGatewayAndModelRegistryContractTests.cs` | `8141a09397cbc630787faa6ffa52fd48bd7313f810b158b0eeb274b92cf5646a` | 6159 |
 | `tests/AMCCA.Core.Tests/ProviderLoopbackIntegrationTests.cs` | `35194604db24908501d4ffe78a089c087d047396086a1d8a755086e405e206dd` | 10499 |
+| `tests/AMCCA.Core.Tests/ProviderResilienceContractTests.cs` | `6dc789c387a75a3f97ae8df21b92835702215261b68cdaeeeca980bf72039b62` | 6659 |
 | `tests/AMCCA.Core.Tests/PublishingAndPlatformHubContractTests.cs` | `c637e9101bd87e4e3eb55629cbdecdc38e31771636ae616f4c345e90d250a112` | 5598 |
 | `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e72698af24a6b162648169405fbecf5f068827dcc00823ce1f33134f6e53e5cc` | 7014 |
 | `tests/AMCCA.Core.Tests/ReparsePointConfinementRegressionTests.cs` | `5c1294595078008fd07574007254ce663ba8678a168c0dd69f3304cb84e42303` | 5485 |

@@ -221,7 +221,8 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
                 throw new AmccaException(
                     AmccaErrors.Ai002,
                     ErrorCategory.RateLimited,
-                    "Rate limit exceeded (HTTP 429) on OmniRouters.");
+                    "Rate limit exceeded (HTTP 429) on OmniRouters.",
+                    retryAfter: ReadRetryAfter(httpResponse));
             }
 
             if ((int)httpResponse.StatusCode >= 500)
@@ -291,5 +292,19 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
                     "Malformed response from OmniRouters: invalid JSON payload.");
             }
         }
+    }
+
+    /// <summary>The HTTP <c>Retry-After</c> as a delay, whether given as delta-seconds or an HTTP date.</summary>
+    private static TimeSpan? ReadRetryAfter(HttpResponseMessage response)
+    {
+        var ra = response.Headers.RetryAfter;
+        if (ra is null) return null;
+        if (ra.Delta is { } delta) return delta > TimeSpan.Zero ? delta : null;
+        if (ra.Date is { } date)
+        {
+            var wait = date - DateTimeOffset.UtcNow;
+            return wait > TimeSpan.Zero ? wait : null;
+        }
+        return null;
     }
 }
