@@ -12,6 +12,35 @@ el árbol, no por lectura impresionista.
 
 ---
 
+## 0-bis. Cierre de la sesión de seguimiento (2026-09-05)
+
+Una sesión posterior, en un Windows con SDK .NET 8 real, **compiló y ejecutó la suite** (lo que §0 dejó
+sin verificar) y cerró los cinco huecos que quedaban abiertos como trabajo real, no como subsistema
+inexistente. Estado final: `AMCCA.sln` compila con 0 avisos, **655 tests en verde**
+(`AMCCA.Core.Tests`; el `C14_SqliteBusyUnderSustainedWritePressure` es flaky por *timing* bajo carga de
+suite completa, verde en aislamiento), y `python TOOLS/validate_package.py` **68/68**.
+
+| Commit | Qué cierra | Sección |
+|---|---|---|
+| `630b80b` | 5 tests que fallaban: 1 bug real de i18n (`CostCeilingDisplay` formateaba dinero con la cultura del SO) + 4 *fixtures* con valores fuera de los `enum` canónicos que la migración 010 ahora aplica (`agent_runs.state`, `audit_log.outcome`, `publications.state`, `events.aggregate_type`). El desajuste que §2.1 anticipó al añadir los `CHECK`. | §2.1 |
+| `6ca0883` | `MANIFEST` regenerado tras lo anterior. | — |
+| `18e88cd` | `AMCCA-JOB-002`: `EnqueueJobAsync` dejaba propagar la `SqliteException` cruda de `UNIQUE(idempotency_key)`; ahora la envuelve en `AmccaException(AMCCA-JOB-002, Internal, retryable:false)` sin *pre-check* (SPEC/15). Deja de ser "declarado pero sin uso real". | §2.4 |
+| `7f0a801` | Dashboard y Audit Log dejan de leer SQLite directo desde el `ViewModel`: el conteo de publicaciones verificadas se pliega en `OperatorControlService.GetSystemStatusAsync`; el filtro del Audit Log pasa a `IAuditStore.SearchAuditLogsAsync`. Cierra la última fila abierta de §5. El `catch {}` vacío del Dashboard pasa a notificación con acción (obl. 6). | §5 |
+| `9f6a30b` | Gate: `spec60.obligation_3/4/7` — cada uno fija la firma textual concreta que ya existe en el build (estilo de `reconciliation_state`, *bindings* del panel de bloqueo + la divulgación honesta, `ProgressBar` indeterminado + `CancellationTokenSource` por carga). `mutation_18` extendido con las tres regresiones. | §3.1, §4 |
+| `46486af` | `AMCCA-QA-003`: `QaThresholdProfileRegistry` resuelve un `threshold_profile_id` a sus umbrales; lanza `AMCCA-QA-003` para un id desconocido y para un perfil que baja un umbral por debajo de la base (SPEC/35). `QaVerdictEvaluator.EvaluateVerdict` acepta el registry como parámetro opcional; los 5 llamadores existentes no cambian. Deja de ser "implementación pendiente genuina". | §2.4 |
+| `04054bb` | Arranque asíncrono: `App.OnStartup` muestra `MainWindow` de inmediato y **`await`** el preflight en vez de `Task.Run(...).GetAwaiter().GetResult()`. `MainViewModel` arranca en `IsStartingUp` (sin lectura de BD en el constructor, navegación deshabilitada, *overlay* de progreso) y `App` llama a `CompleteStartupAsync` cuando el preflight pasa. Gate: `spec60.ui_thread_startup_does_not_block` + `mutation_18`. Cierra la única fila ❌ de §3.1. | §3.1, §4 |
+
+Sigue **fuera de alcance a propósito** (subsistema inexistente, no un hueco de código): la pestaña de
+oportunidad/puntuación del Inspector (`opportunities` sin escritor), el *Product E2E* completo,
+`cost_events`/`jobs` con ~10 columnas nulables sin escritor, `pricing_snapshot_id` requerido-vs-nulable
+deliberado (§2.2), la tabla persistida `threshold_profiles` con ULID que `qa.schema.json` describe (sin
+escritor de `qa_reports`, §2.4), y la mitad de la obligación 6 que exige ejecutar la UI (§4).
+
+Las marcas de estado de §2.4, §3.1, §4, §5 y §6 se han actualizado en línea para no contradecir este
+cierre; el cuerpo del informe se conserva como se produjo el 2026-09-04.
+
+---
+
 ## 0. Qué no se ha podido verificar
 
 **No se ha compilado ni ejecutado la suite .NET.** No hay SDK de .NET en el entorno de auditoría. Todo
@@ -19,6 +48,10 @@ lo relativo a compilación y resultado de tests es, por tanto, **no verificado**
 sí se han ejecutado son las herramientas Python del repositorio (`validate_package.py`,
 `release_gate.py`, `test_repository_hygiene.py`, `test_certification_mutations.py`) y análisis estático
 propio sobre los contratos, el DDL y el código fuente.
+
+> **Resuelto (2026-09-05, §0-bis):** la sesión de seguimiento sí compiló y ejecutó la suite en un
+> Windows con SDK .NET 8. `AMCCA.sln` compila con 0 avisos; `AMCCA.Core.Tests` da **655/655**
+> (con la salvedad del `C14` flaky por *timing*); el gate da **68/68**.
 
 Dos comprobaciones del gate fallan por entorno, no por el proyecto: `jsonschema` no está instalado.
 
@@ -319,6 +352,15 @@ responsable de la especificación:
   el código hubiera ocultado, en el caso de `QA-003`, que la selección de perfil de umbral es una
   funcionalidad que la especificación da por hecha y el código no tiene.
 
+  > **Cerrado en la sesión de seguimiento (commit `46486af`, §0-bis):** `QaThresholdProfileRegistry`
+  > (nuevo) resuelve un `threshold_profile_id` a sus umbrales. `Resolve` lanza `AMCCA-QA-003` para un
+  > id desconocido; el constructor lo lanza para un perfil que baja un umbral por debajo de la base
+  > (SPEC/35: un perfil de plataforma puede subir umbrales, nunca bajarlos). `QaVerdictEvaluator.EvaluateVerdict`
+  > acepta el registry como parámetro opcional; los 5 llamadores existentes no lo pasan y no cambian.
+  > Cuatro tests en `QaEngineAndDagReworkContractTests`. Queda diferida la tabla persistida
+  > `threshold_profiles` con el ULID que `qa.schema.json` describe: no hay escritor de `qa_reports`
+  > todavía, así que el id de perfil es hoy una entrada en memoria de `QaVerdictEvaluator`.
+
 Nunca lanzados, entre ellos: ~~`AMCCA-AI-005`~~ (techo de coste de agente excedido) y `AMCCA-JOB-001`
 (*lease* expirado, token de vallado obsoleto, trabajo
 abandonado).
@@ -360,6 +402,14 @@ porque hacerlo bien exige capturar y distinguir el tipo de excepción real de SQ
 verificar sin poder compilar en este entorno; inventarlo sin poder probarlo sería peor que dejarlo
 documentado como hueco real.
 
+> **Cerrado en la sesión de seguimiento (commit `18e88cd`, §0-bis):** con el SDK disponible se hizo
+> exactamente eso. `EnqueueJobAsync` envuelve la `SqliteException` de `UNIQUE(idempotency_key)`
+> (filtrada por código de error 19 + el nombre de columna en el mensaje, para no tragar un fallo de FK
+> ni otro `UNIQUE`) en `AmccaException(AMCCA-JOB-002, Internal, retryable:false)`, con la
+> `SqliteException` como `InnerException`. Sin *pre-check*: SPEC/15 prohíbe el *check-then-act*, es la
+> BD quien rechaza. `EnqueueJob_WithDuplicateIdempotencyKey_*` en `JobsAndLeasesContractTests` afirma
+> ahora el código concreto y `Retryable == false`.
+
 `CompleteJobAsync` (la sobrecarga que devuelve `bool` en vez de lanzar) sigue devolviendo `false` sin
 código ante un *fence token* obsoleto; se deja así deliberadamente porque es un contrato alternativo ya
 cubierto por tests explícitos (`JobsAndLeasesContractTests`, `ConcurrencySuiteSpec73Tests`) y no está en
@@ -396,7 +446,7 @@ Estado real tras el trabajo P0:
 
 | # | Obligación | Estado |
 |---:|---|---|
-| — | «*The UI thread performs no I/O, no database access and no waiting*» | ❌ el arranque bloquea el hilo de UI sobre el preflight |
+| — | «*The UI thread performs no I/O, no database access and no waiting*» | ✅ **Resuelto** en la sesión de seguimiento (commit `04054bb`, §0-bis): arranque asíncrono |
 | 1 | Kill switch alcanzable en una acción **desde cada pantalla** | ✅ **Resuelto** (`ToggleKillSwitchCommand`/`IsKillSwitchActive` en el chrome compartido de `MainWindow.xaml`, corregido esta sesión: fila desactualizada) |
 | 2 | Modo de autonomía y estado de publicación visibles en cada pantalla | ✅ **Resuelto** (`AutonomyMode`/`PublishingEnabled` en el mismo chrome compartido, corregido esta sesión: fila desactualizada) |
 | 3 | Todo número lleva su procedencia; medido y estimado visualmente distintos | ✅ **Resuelto** |
@@ -477,6 +527,18 @@ de las obligaciones 1/2/5 de turnos anteriores, pero tampoco detectado entonces)
 de ambos comentarios; los 9 ficheros `.xaml` de `src/AMCCA.App` parsean ahora limpiamente con un parser
 XML estándar.
 
+**Sesión de seguimiento (commit `04054bb`, §0-bis) — la fila `—` (hilo de UI sin espera):** el arranque
+ya no bloquea. `App.OnStartup` es `async`: muestra `MainWindow` de inmediato y hace `await` del
+preflight en vez de `Task.Run(...).GetAwaiter().GetResult()`, así que el *dispatcher* sigue bombeando
+mensajes durante la espera. `MainViewModel` arranca en `IsStartingUp` — sin lectura de estado en el
+constructor (la BD no existe hasta que el preflight corre sus migraciones), navegación deshabilitada,
+*overlay* «Running system checks…» con `ProgressBar` indeterminado. `App` llama al nuevo
+`CompleteStartupAsync` cuando el preflight pasa: surface de *warnings* degradados, navega al Dashboard,
+primera lectura de estado, y limpia `IsStartingUp`. Un preflight que aborta o lanza cierra la ventana y
+muestra el mismo diálogo de abort de antes. `MainViewModel_StaysInCheckingState_UntilStartupCompletes`
+en `WpfMvvmContractTests` lo cubre; el gate lo guarda con
+`spec60.ui_thread_startup_does_not_block` (+ `mutation_18`).
+
 ### 3.2 El Production Inspector cubre aproximadamente la mitad de lo que SPEC/60 exige — **Resuelto salvo la oportunidad (subsistema inexistente)**
 
 SPEC/60 lo llama «*the most important screen*» y enumera su contenido obligatorio:
@@ -534,18 +596,27 @@ confirmados por los hallazgos anteriores:
    `AmccaErrors.Xxx` que aparece en un `throw new AmccaException(...)` real del código (incluyendo el alias
    `Cst002 = Bud002`) a su valor `"AMCCA-..."` literal y exige que esté catalogado en `SPEC/05`, en vez de
    solo escanear citas en prosa `.md` como hacía `refs.all_error_codes_catalogued`.
-3. ~~No comprueba las obligaciones normativas de SPEC/60~~ **Parcialmente resuelto**
-   (`spec60.obligation_1_kill_switch_in_shared_chrome`, `spec60.obligation_2_autonomy_and_publishing_visible`,
-   `spec60.obligation_5_approval_detail_columns`, `spec60.obligation_6_no_bare_generic_failure_text`, con
-   mutation test `mutation_18`) → §3.1 deja de pasar en verde de forma incondicional para las obligaciones
-   1, 2 y 5, que ya tenían una firma textual concreta y verificable en el build de seis pantallas (el
-   binding del kill switch y de autonomía/publicación en `MainWindow.xaml`, las columnas de
-   `ApprovalQueueView.xaml`), más una comprobación parcial de la obligación 6 (que ningún fichero de
-   `src/AMCCA.App` contenga una frase de fallo genérico tipo "algo salió mal"). No se intentó un verificador
-   general de "el kill switch es alcanzable desde cada pantalla": eso no es un grep, es una propiedad de
-   comportamiento en tiempo de ejecución. Lo que se comprueba es la firma concreta que ya existe, así que
-   una regresión que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni
-   menos que eso.
+3. ~~No comprueba las obligaciones normativas de SPEC/60~~ **Resuelto para toda firma verificable**
+   (`spec60.obligation_1`…`_7` + `spec60.ui_thread_startup_does_not_block`, con mutation test
+   `mutation_18`) → §3.1 deja de pasar en verde de forma incondicional para las obligaciones 1, 2 y 5,
+   que ya tenían una firma textual concreta y verificable en el build de seis pantallas (el binding del
+   kill switch y de autonomía/publicación en `MainWindow.xaml`, las columnas de `ApprovalQueueView.xaml`),
+   más una comprobación parcial de la obligación 6 (que ningún fichero de `src/AMCCA.App` contenga una
+   frase de fallo genérico tipo "algo salió mal"). No se intentó un verificador general de "el kill
+   switch es alcanzable desde cada pantalla": eso no es un grep, es una propiedad de comportamiento en
+   tiempo de ejecución. Lo que se comprueba es la firma concreta que ya existe, así que una regresión
+   que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni menos que eso.
+
+   > **Sesión de seguimiento (commit `9f6a30b` y `04054bb`, §0-bis):** se añadieron
+   > `spec60.obligation_3_number_provenance_visually_distinct` (el estilo de `reconciliation_state` en
+   > `ProductionInspectorView.xaml` sigue distinguiendo `DISPUTED` de `RECONCILED`),
+   > `spec60.obligation_4_blocked_item_shows_rule_and_unblock_path` (los tres *bindings* del panel de
+   > bloqueo + la divulgación `"(no policy decision recorded for this block)"` en el VM),
+   > `spec60.obligation_7_long_operations_show_progress_and_cancel` (`ProgressBar` indeterminado +
+   > `CancellationTokenSource` por carga en Job Queue y en el Inspector) y
+   > `spec60.ui_thread_startup_does_not_block` (que no reaparezca un wait bloqueante
+   > `.GetAwaiter().GetResult()` / `.Wait()` / `.Result;` en `App.xaml.cs`). `mutation_18` extendido
+   > con las cuatro regresiones. Solo queda sin check mecánico la otra mitad de la obligación 6.
 4. ~~No detecta campos de contrato sin columna~~ **Resuelto y en verde de punta a punta**
    (`contracts.fields_have_columns`, con mutation test `mutation_19`) → de los 20 campos que este check
    sacó a la luz: `referral_links.brand`/`commission_model`/`disclosure_required` resultaron ser diseño
@@ -556,15 +627,13 @@ confirmados por los hallazgos anteriores:
    tabla. `contracts.fields_have_columns` pasa en verde por primera vez desde que existe.
 
 Los cuatro puntos ciegos que esta auditoría nombró están ahora cerrados como checks del gate. Las
-obligaciones 3, 4 y 7 de SPEC/60 están implementadas (§3.1), pero — a diferencia de las obligaciones 1, 2
-y 5, que sí tienen firma verificable por `validate_package.py` — no se les añadió un check mecánico
-equivalente: verificar visualmente que un color se aplica correctamente, o que una cancelación detiene de
-verdad una consulta en marcha, no es un `grep` de texto en un `.xaml` como los de la obligación 1/2/5,
-sino una propiedad de comportamiento en tiempo de ejecución del mismo tipo que ya motivó dejar sin
-comprobación mecánica las obligaciones 3/4/7 en el resto de este informe. La otra mitad de la 6 (que todo
-fallo real muestre su código de SPEC/05, no solo que no aparezca una frase prohibida) sigue igual de sin
-comprobación mecánica posible sin ejecutar la UI — documentarla como "comprobada" sería exactamente el
-tipo de gate que pasa en verde sin significar nada, que es lo que esta sección entera existe para evitar.
+obligaciones 3, 4 y 7 de SPEC/60 están implementadas (§3.1); la sesión de seguimiento (§0-bis) **sí les
+añadió** un check mecánico, del mismo tipo "firma textual concreta que ya existe en el build" que las de
+1/2/5 — no un verificador de comportamiento en runtime, que sigue sin ser posible sin ejecutar la UI,
+sino un guardián contra una regresión que borre esa firma. La otra mitad de la 6 (que todo fallo real
+muestre su código de SPEC/05, no solo que no aparezca una frase prohibida) sigue sin comprobación
+mecánica posible sin ejecutar la UI — documentarla como "comprobada" sería exactamente el tipo de gate
+que pasa en verde sin significar nada, que es lo que esta sección entera existe para evitar.
 
 ---
 
@@ -577,7 +646,7 @@ introducidas en la superficie cubierta por la herramienta.
 | P0 | Estado real |
 |---|---|
 | Preflight completo | Cerrado (10 gates, invocado en arranque) |
-| Eliminar SQL directo de la UI | Cerrado para mutaciones; Dashboard y Audit Log siguen leyendo SQL directo |
+| Eliminar SQL directo de la UI | **Cerrado** — mutaciones ya estaban; Dashboard y Audit Log también, en la sesión de seguimiento (commit `7f0a801`, §0-bis): el conteo de publicaciones se plegó en `OperatorControlService`, el filtro de Audit Log en `IAuditStore.SearchAuditLogsAsync` |
 | Approval Queue vía dominio | Cerrado en la ruta; **cumple SPEC/60 obl. 5** (§3.1, corregido esta sesión: la auditoría estaba desactualizada) |
 | Kill switch operacional | Cerrado, incluida la ruta de actualización (§3.3) y la obl. 1 (§3.1), corregido esta sesión: fila desactualizada |
 | Production Inspector | Completo salvo oportunidad/puntuación (subsistema inexistente, §3.2) |
@@ -590,20 +659,20 @@ introducidas en la superficie cubierta por la herramienta.
 
 | Prioridad | Acción | Fundamento |
 |---|---|---|
-| P0 | Compilar y ejecutar la suite .NET | Nada de esta rama ha sido compilado (§0) |
+| P0 | ~~Compilar y ejecutar la suite .NET~~ **Hecho** (sesión de seguimiento, §0-bis): `AMCCA.sln` 0 avisos, `AMCCA.Core.Tests` 655/655 (`C14` flaky), gate 68/68 | Nada de esta rama había sido compilado (§0) |
 | P0 | ~~Resolver `audit_log.actor_type` contrato ↔ DDL~~ **Ya resuelto** (migración 004; entrada de la auditoría desactualizada, corregido esta sesión) | El orquestador ya puede auditarse a sí mismo (§2.2) |
 | P0 | ~~Acotar `tool_runs.side_effect_class` con `CHECK`~~ **Resuelto** (migración 010) | La defensa de intent ya no falla en abierto (§2.1) |
 | P1 | ~~Añadir al gate la comparación enum ↔ `CHECK`~~, ~~códigos lanzados ↔ catálogo~~, ~~firmas de obligaciones 1/2/5/6 de SPEC/60~~ y ~~campos de contrato ↔ columna~~ **Resueltos** | Convierte §2.1–2.3, §3.1 y los 4 puntos ciegos de §4 en fallos visibles |
 | P2 | ~~13 campos de contrato sin columna (`cost_events`×6, `jobs`×7)~~ **Todos resueltos** (migración 009; `pricing_snapshot_id` deliberadamente nulable, ver §2.2) | `contracts.fields_have_columns` en verde |
 | P2 | ~~`analytics_snapshots.source_account_id`~~ **Resuelto** (migración 007); ~~`cost_events`/`jobs`.`schema_version`~~ **Resuelto** (migración 008, D-004); ~~`referral_links.brand`/`commission_model`/`disclosure_required`~~ **no eran un hueco** (normalizados en `referral_programs`) | §2.2 |
-| P1 | Catalogar los 6 códigos de error huérfanos | Obligación 6 de SPEC/60 (§2.4) |
+| P1 | ~~Catalogar los 6 códigos de error huérfanos~~ **Hecho**; además `AMCCA-JOB-002` (commit `18e88cd`) y `AMCCA-QA-003` (commit `46486af`) pasaron de "catalogado sin uso" a código real lanzado y testeado (§0-bis, §2.4) | Obligación 6 de SPEC/60 (§2.4) |
 | P1 | ~~Aprobaciones: mostrar sujeto, techo de coste y expiración~~ **Ya resuelto** (entrada de la auditoría desactualizada, corregido esta sesión) | Obligación 5, `spec60.obligation_5_approval_detail_columns` en verde (§3.1) |
 | P1 | ~~Resolver `COMPLETED` vs `SUCCEEDED`~~ **Ya resuelto** (migración 006; entrada de la auditoría desactualizada, corregido esta sesión) | Contradicción contrato ↔ implementación (§2.3) |
 | P2 | ~~Completar el Inspector con claims, decisiones de política, hallazgos de QA y aristas del DAG~~ **Resuelto** (evidencia de publicaciones incluida); oportunidad/puntuación queda fuera a propósito, subsistema inexistente | §3.2 |
 | P2 | ~~Migración del kill switch desde `settings`~~ **Resuelto** (migración 005) | Regresión en actualización (§3.3) |
 | P2 | ~~Fijar rango de FFmpeg~~, ~~semántica de requeue~~ y ~~ruta de config~~ **Resueltos**, ver §2.5 | Contratos incompletos (§2.5) |
 | P2 | ~~Kill switch y modo de autonomía en todas las pantallas~~ **Resuelto** | Obligaciones 1 y 2 (§3.1) |
-| P1 | ~~Procedencia visual de los números, elemento bloqueado → regla/desbloqueo, progreso y cancelación~~ **Resuelto** (sin check mecánico en el gate, ver §4) | Obligaciones 3, 4 y 7 de SPEC/60 (§3.1) |
+| P1 | ~~Procedencia visual de los números, elemento bloqueado → regla/desbloqueo, progreso y cancelación~~ **Resuelto**, y con check mecánico en el gate desde la sesión de seguimiento (`spec60.obligation_3/4/7`, commit `9f6a30b`, §0-bis) | Obligaciones 3, 4 y 7 de SPEC/60 (§3.1) |
 
 ---
 
@@ -618,3 +687,13 @@ han divergido sin que nada lo señale**.
 Y la conclusión más incómoda es de método: el documento que ha dirigido la remediación tiene rota la
 trazabilidad al corpus normativo en 68 de 83 entradas. Los planes derivados de él deben re-anclarse a
 los ficheros SPEC reales antes de continuar.
+
+**Actualización tras la sesión de seguimiento (2026-09-05, §0-bis):** de las divergencias contrato ↔
+código que este veredicto señalaba, las dos que quedaban como código real pendiente —
+`AMCCA-JOB-002` (enqueue duplicado sin envolver) y `AMCCA-QA-003` (sin resolución de perfil de umbral)—
+están cerradas y testeadas; Dashboard y Audit Log ya no leen SQLite directo; el arranque ya no bloquea
+el hilo de UI; y las obligaciones 3/4/7 de SPEC/60 tienen check en el gate. Con la suite ya compilada y
+ejecutada (655 tests, gate 68/68), lo que queda en la rama es exclusivamente lo que este informe
+clasifica como **subsistema inexistente** (oportunidad/scoring, E2E completo, columnas sin escritor,
+`threshold_profiles` persistido) más la mitad de la obligación 6 que exige ejecutar la UI. El aviso de
+método sobre `AMCCA_SPEC_01_83_AUDIT.md` sigue vigente.
