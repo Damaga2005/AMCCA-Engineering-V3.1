@@ -143,6 +143,15 @@ responsable de la especificación:
   lanza; semánticamente `USER_ACTION_REQUIRED` encajaría mejor con «hace falta que un humano apruebe».
 - `AMCCA-QA-003` y `AMCCA-RES-003` están declarados pero **ningún código los lanza**. Se catalogan
   según su propio comentario; procede decidir si son implementación pendiente o constantes muertas.
+  **Resuelto**: `AMCCA-RES-003` es un duplicado exacto de `AMCCA-SEC-003` — `SsrfValidator` ya lanza
+  `AMCCA-SEC-003` para todo rechazo de dominio/SSRF, así que `RES-003` nunca tenía un camino que lo
+  disparara; no era implementación pendiente, era una constante redundante. `AMCCA-QA-003` sí es
+  implementación pendiente genuina: `QaVerdictEvaluator` no tiene ningún concepto de "perfil de umbral"
+  con nombre, solo recibe `minOverall`/`minCritical` fijos del llamador, así que la condición que
+  describe ("perfil desconocido o inválido") no puede ocurrir hasta que se construya esa función. En
+  ambos casos se mantienen catalogados en `SPEC/05` con una nota explícita en vez de borrarlos — borrar
+  el código hubiera ocultado, en el caso de `QA-003`, que la selección de perfil de umbral es una
+  funcionalidad que la especificación da por hecha y el código no tiene.
 
 Nunca lanzados, entre ellos: `AMCCA-AI-005` (techo de coste de agente excedido) y `AMCCA-JOB-001`
 (*lease* expirado, token de vallado obsoleto, trabajo abandonado). Este último es especialmente

@@ -58,12 +58,12 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-AI-005` | BUDGET | No | Agent cost ceiling exceeded |
 | `AMCCA-RES-001` | VALIDATION | No | Material claim lacks sufficient independent sources |
 | `AMCCA-RES-002` | TRANSIENT | Yes | Research source unavailable |
-| `AMCCA-RES-003` | SECURITY | No | Source domain not allowed by policy or failed the SSRF check |
+| `AMCCA-RES-003` | SECURITY | No | Reserved; duplicate of `AMCCA-SEC-003` (`SsrfValidator` throws `AMCCA-SEC-003` for every SSRF/domain-policy rejection). Not currently thrown by any code path — kept catalogued rather than removed so a future caller cannot silently reuse the code for an unrelated condition. |
 | `AMCCA-MED-001` | MEDIA | Yes if bounded | Render failed; re-render |
 | `AMCCA-MED-002` | MEDIA | No | FFmpeg timeout or output ceiling exceeded |
 | `AMCCA-QA-001` | VALIDATION | No | QA failure; rework |
 | `AMCCA-QA-002` | INTERNAL | No | AI-assisted finding attempted to set a verdict |
-| `AMCCA-QA-003` | INTERNAL | No | QA threshold profile unknown or invalid |
+| `AMCCA-QA-003` | INTERNAL | No | Reserved for a named QA threshold-profile lookup. `QaVerdictEvaluator` does not implement threshold profiles yet — it takes `minOverall`/`minCritical` as fixed caller-supplied defaults, so this condition cannot currently occur. Kept catalogued (not thrown) until threshold-profile selection is built. |
 | `AMCCA-RGT-001` | RIGHTS | No | Asset not GREEN; review rights |
 | `AMCCA-CMP-001` | COMPLIANCE | No | Required synthetic-content label not applied |
 | `AMCCA-CMP-002` | COMPLIANCE | No | Required affiliate disclosure missing |
