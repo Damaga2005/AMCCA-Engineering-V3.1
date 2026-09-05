@@ -656,7 +656,7 @@ public class DatabaseAndMigrationContractTests : IDisposable
                 INSERT INTO prompt_versions (id, template_id, version_no, body_sha256, body_ref, created_at)
                 VALUES ('pv-mig10', 'pt-mig10', 1, '{sha}', 'ref-mig10', datetime('now'));
                 INSERT INTO agent_runs (run_id, production_id, agent_id, agent_version, prompt_version_id, model_id, model_params_hash, state, input_hash, correlation_id, schema_version, started_at)
-                VALUES ('run-mig10', 'prod-mig10', 'agent-1', '1.0', 'pv-mig10', 'model-1', 'h1', 'RUNNING', 'ih1', 'corr-mig10', '3.1.0', datetime('now'));
+                VALUES ('run-mig10', 'prod-mig10', 'agent-1', '1.0', 'pv-mig10', 'model-1', 'h1', 'STARTED', 'ih1', 'corr-mig10', '3.1.0', datetime('now'));
 
                 INSERT INTO jobs (id, production_id, type, state, payload_json, created_at, updated_at, schema_version)
                 VALUES ('job-mig10', 'prod-mig10', 'RENDER', 'QUEUED', '{{}}', datetime('now'), datetime('now'), '3.1.0');
@@ -665,13 +665,13 @@ public class DatabaseAndMigrationContractTests : IDisposable
                 VALUES ('acct-mig10', 'youtube', '@h', 'secret://vault/x', 'CONNECTED', datetime('now'), datetime('now'));
                 INSERT INTO synthetic_declarations (id) VALUES ('sd-mig10');
                 INSERT INTO publications (id, production_id, platform, account_id, content_version_id, synthetic_declaration_id, platform_label_required, state, idempotency_key, schema_version, created_at, updated_at)
-                VALUES ('pub-mig10', 'prod-mig10', 'youtube', 'acct-mig10', 'cv-mig10', 'sd-mig10', 1, 'QUEUED', 'idem-mig10', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('pub-mig10', 'prod-mig10', 'youtube', 'acct-mig10', 'cv-mig10', 'sd-mig10', 1, 'INTENT_CREATED', 'idem-mig10', '3.1.0', datetime('now'), datetime('now'));
 
                 INSERT INTO analytics_snapshots (id, production_id, publication_id, metric, value, provenance, schema_version, observed_at)
                 VALUES ('as-mig10', 'prod-mig10', 'pub-mig10', 'views', 1, 'API_MEASURED', '3.1.0', datetime('now'));
 
                 INSERT INTO audit_log (audit_id, action, actor_type, actor_id, outcome, correlation_id, schema_version, occurred_at)
-                VALUES ('al-mig10', 'some_action', 'OPERATOR', 'op-1', 'COMMITTED', 'corr-mig10', '3.1.0', datetime('now'));
+                VALUES ('al-mig10', 'some_action', 'OPERATOR', 'op-1', 'ALLOWED', 'corr-mig10', '3.1.0', datetime('now'));
 
                 INSERT INTO claims (id, production_id, text, status, materiality, subject_class, schema_version, created_at)
                 VALUES ('cl-mig10', 'prod-mig10', 'claim text', 'VERIFIED', 'MATERIAL', 'GENERAL', '3.1.0', datetime('now'));

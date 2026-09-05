@@ -48,7 +48,11 @@ public class CanonicalMigrationSchemaTests : IDisposable
     {
         // 1. Upgrade from clean slate
         var applied = await _migrator.UpgradeAsync();
-        applied.AppliedCount.Should().Be(3, "all 3 canonical migration scripts must be executed on a clean database");
+        var appliedRecords = await _migrator.GetAppliedMigrationsAsync();
+        applied.AppliedCount.Should().Be(appliedRecords.Count,
+            "a clean database must execute every built-in migration exactly once");
+        appliedRecords.Select(m => m.Version).Should().Contain(new long[] { 1, 2, 3 },
+            "the three canonical schema migrations (001-003) must always be applied");
 
         // 2. Query all user tables in SQLite
         using var connection = await _factory.CreateOpenConnectionAsync();
@@ -120,8 +124,9 @@ public class CanonicalMigrationSchemaTests : IDisposable
     {
         // 1. Initial Upgrade
         await _migrator.UpgradeAsync();
+        var allMigrations = await _migrator.GetAppliedMigrationsAsync();
 
-        // 2. Rollback migration 3
+        // 2. Rollback everything from version 3 onward
         await _migrator.RollbackAsync(targetVersion: 2);
 
         using (var connection = await _factory.CreateOpenConnectionAsync())
@@ -140,7 +145,8 @@ public class CanonicalMigrationSchemaTests : IDisposable
 
         // 3. Re-upgrade to latest
         var reApplied = await _migrator.UpgradeAsync();
-        reApplied.AppliedCount.Should().Be(1, "only migration 3 should be re-applied");
+        reApplied.AppliedCount.Should().Be(allMigrations.Count - 2,
+            "every migration from version 3 onward must be re-applied");
 
         using (var connection = await _factory.CreateOpenConnectionAsync())
         {

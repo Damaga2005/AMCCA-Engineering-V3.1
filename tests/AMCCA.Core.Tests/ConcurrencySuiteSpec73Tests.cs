@@ -325,7 +325,7 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
                     await eventStore.AppendEventAsync(new EventRecord(
                         EventId: UlidGenerator.NewUlid(),
                         EventType: "PROD_STARTED",
-                        AggregateType: "PRODUCTION",
+                        AggregateType: "production",
                         AggregateId: "agg-c08",
                         AggregateVersion: 1, // Same aggregate_version raced concurrently
                         CorrelationId: $"corr-{idx}",

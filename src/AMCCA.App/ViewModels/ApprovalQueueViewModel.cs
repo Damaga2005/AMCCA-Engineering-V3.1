@@ -23,7 +23,9 @@ public record ApprovalItem(
     // expiry being approved." A legacy or scope-less approval has no subject/cost ceiling to show;
     // this states that plainly instead of leaving a blank cell that reads as a loading glitch.
     public string SubjectDisplay => Subject ?? "(no scope recorded)";
-    public string CostCeilingDisplay => CostCeiling is { } c ? c.ToString("F2") : "(no scope recorded)";
+    public string CostCeilingDisplay => CostCeiling is { } c
+        ? c.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+        : "(no scope recorded)";
 }
 
 public class ApprovalQueueViewModel : ViewModelBase
