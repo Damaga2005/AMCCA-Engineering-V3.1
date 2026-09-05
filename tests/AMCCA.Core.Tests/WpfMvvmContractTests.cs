@@ -89,7 +89,7 @@ public class WpfMvvmContractTests : IDisposable
 
     private NavigationService CreateNavigationService(out DashboardViewModel dash, out ProductionsViewModel prod, out ApprovalQueueViewModel apprv, out SettingsViewModel sett, out AuditLogViewModel audit)
     {
-        dash = new DashboardViewModel(_factory, null!);
+        dash = new DashboardViewModel(_factory, _operatorControlService, null!);
         prod = new ProductionsViewModel(_productionService, _dialogService, _notificationService);
         apprv = new ApprovalQueueViewModel(_operatorControlService, _dialogService, _notificationService);
         sett = new SettingsViewModel(_operatorControlService, _secretStore, _notificationService);

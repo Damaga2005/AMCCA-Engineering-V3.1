@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2088674
+**Total bytes:** 2088952
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -216,7 +216,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
 | `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `8331d818c0dd8c75e4d08076eb684a1455a443c61dffd1db58a269857fc432f3` | 4980 |
 | `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `f97510d219f3ec9995f38e4c92a7ac90264e6b3ab9cd7d4d52914660ccb83504` | 3027 |
-| `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `c0350d9fe4120086f967a82ccdf4dd212ad3e42624e094a0e27c4290fd98a9f5` | 2854 |
+| `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `8e78b547e5bce2d470ad14d622c547644b61d64d35eb3fa938a3f0001e3f38fb` | 3107 |
 | `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `4b59227e35b01ed1f476678518b47f3135ebdba044eb5be9378d85afd4c191f3` | 10072 |
 | `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e0bfba2178821fb59851adbbdfb9a2a08f05426359af5a474862cc9f2113f0e2` | 7173 |
 | `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `2dcbd4c20181c54ea76e5568aa06a3a26596cf9b87cd9b549e1042fed14801bc` | 10838 |
@@ -379,4 +379,4 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/TestSecretStores.cs` | `b50f6419786f2b86cfdac2bb0e48b5f77abb129bc0bee1d217ec86b38fad1453` | 744 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
-| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `bc7da6ccc74286a13d592324de7ab7415da726bdfcc13da35fec019ffc048085` | 27768 |
+| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `f5b7f0a1b0a5e6e6bf263ecb2e183ac6d28f4ceecbfb220743a1860216301cba` | 27793 |
