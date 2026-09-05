@@ -55,10 +55,13 @@ public class JobsAndLeasesContractTests : IDisposable
         job1.State.Should().Be("QUEUED");
         job1.SchemaVersion.Should().Be("3.1.0", "D-004: every persisted contract object carries schema_version");
 
-        // Enqueueing identical logical intent key fails with unique constraint
+        // Enqueueing identical logical intent key fails on UNIQUE(idempotency_key). The raw
+        // SqliteException is wrapped as AMCCA-JOB-002 (SPEC/05) so the caller has an actionable code.
         var act = async () => await jobManager.EnqueueJobAsync("render", key, "corr-2", "{}", priority: 2);
 
-        await act.Should().ThrowAsync<Exception>();
+        var thrown = await act.Should().ThrowAsync<AmccaException>();
+        thrown.Which.ErrorCode.Should().Be(AmccaErrors.Job002);
+        thrown.Which.Retryable.Should().BeFalse();
     }
 
     [Fact]

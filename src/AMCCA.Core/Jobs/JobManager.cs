@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using Dapper;
+using Microsoft.Data.Sqlite;
 
 namespace AMCCA.Core.Jobs;
 
@@ -58,9 +59,31 @@ public class JobManager
                 @MaxAttempts, @CorrelationId, @PayloadJson, @CreatedAt, @UpdatedAt, @SchemaVersion
             );
         ";
-        await connection.ExecuteAsync(sql, job);
+        try
+        {
+            await connection.ExecuteAsync(sql, job);
+        }
+        catch (SqliteException ex) when (
+            ex.SqliteErrorCode == SqliteConstraintErrorCode &&
+            ex.Message.Contains("jobs.idempotency_key", StringComparison.Ordinal))
+        {
+            // SPEC/15: duplicate enqueue is caught by the DB's UNIQUE(idempotency_key), never a
+            // check-then-act pre-check (unsound under concurrency). Wrap the raw engine error so the
+            // caller gets an actionable code instead of a bare SqliteException (AMCCA-JOB-002, SPEC/05).
+            throw new AmccaException(
+                AmccaErrors.Job002,
+                ErrorCategory.Internal,
+                $"A job with idempotency key '{idempotencyKey}' is already enqueued. The key is a pure " +
+                "function of operation + entity + intent version (SPEC/15), so a collision means the same " +
+                "logical intent was submitted twice; act on the existing job rather than enqueuing again.",
+                retryable: false,
+                innerException: ex);
+        }
         return job;
     }
+
+    // SQLITE_CONSTRAINT. Matches the literal the concurrency suite already asserts on.
+    private const int SqliteConstraintErrorCode = 19;
 
     public async Task<JobClaim?> TryClaimNextJobAsync(
         string workerId,
