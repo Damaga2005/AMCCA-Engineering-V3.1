@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2270158
+**Total bytes:** 2270306
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -217,7 +217,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/ViewModels/ApprovalQueueViewModel.cs` | `8331d818c0dd8c75e4d08076eb684a1455a443c61dffd1db58a269857fc432f3` | 4980 |
 | `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `f97510d219f3ec9995f38e4c92a7ac90264e6b3ab9cd7d4d52914660ccb83504` | 3027 |
 | `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `8e78b547e5bce2d470ad14d622c547644b61d64d35eb3fa938a3f0001e3f38fb` | 3107 |
-| `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `b3d44a4312f08a15a9c6beebf61f43045478669147efa077f1ec117a001a7f9b` | 11082 |
+| `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `f8891b8dde20ae088458c03f037942a48e64de4c53448cc0b334bc25ab53da9c` | 11230 |
 | `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e0bfba2178821fb59851adbbdfb9a2a08f05426359af5a474862cc9f2113f0e2` | 7173 |
 | `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `5bc2c3c9c8a5e82218dabc886aa2528c73cd6cdf814499fe183ef9ee080e55e5` | 19730 |
 | `src/AMCCA.App/ViewModels/ProductionsViewModel.cs` | `1b3fbc0474d148b33984f4701d00940ef0cefb826914a3fb095ed2a3633dd0e9` | 4839 |

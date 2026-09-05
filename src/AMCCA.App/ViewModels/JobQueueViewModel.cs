@@ -303,9 +303,10 @@ public class JobQueueViewModel : ViewModelBase
         catch (AmccaException ex)
         {
             // SPEC/62: an error reaching the UI carries its SPEC/05 code, a human message and an
-            // operator action.
+            // operator action. ex.Message already begins with "[ErrorCode] ..." (AmccaException's own
+            // constructor), so prefixing ex.ErrorCode again here would show the code twice.
             _notificationService.AddNotification(
-                $"{ex.ErrorCode}: {ex.Message} Refresh the queue to see the job's current state.",
+                $"{ex.Message} Refresh the queue to see the job's current state.",
                 "Error");
         }
         catch (Exception ex)
