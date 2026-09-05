@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.App.ViewModels;
+using AMCCA.Core.Configuration;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Domain;
@@ -119,7 +120,8 @@ public class WpfMvvmContractTests : IDisposable
     public void MainViewModel_NavigationCommands_SwitchCurrentViewProperly()
     {
         var nav = CreateNavigationService(out var dash, out var prod, out var apprv, out var sett, out var audit);
-        var mainVm = new MainViewModel(nav);
+        var config = new AmccaConfig { PublishingEnabled = false };
+        var mainVm = new MainViewModel(nav, _operatorControlService, config, _dialogService, _notificationService);
 
         // Initially navigate to dashboard
         mainVm.NavigateDashboardCommand.Execute(null);
@@ -148,6 +150,43 @@ public class WpfMvvmContractTests : IDisposable
         // Navigate to Settings
         mainVm.NavigateSettingsCommand.Execute(null);
         mainVm.CurrentView.Should().BeOfType<SettingsViewModel>();
+    }
+
+    /// <summary>
+    /// SPEC/60 obligations 1-2: the kill switch is reachable in one action from every screen, and
+    /// autonomy mode / publishing state are visible on every screen. MainViewModel hosts the sidebar
+    /// chrome shared by all six screens, so this is where those obligations are actually satisfied --
+    /// this test exercises the toggle end to end (through OperatorControlService, so it persists and
+    /// is audited exactly like the Settings screen's own toggle) rather than just the presentation hint.
+    /// </summary>
+    [Fact]
+    public async Task MainViewModel_TogglesGlobalKillSwitch_PersistsAndSurfacesAutonomyAndPublishingState()
+    {
+        var nav = CreateNavigationService(out _, out _, out _, out _, out _);
+        var config = new AmccaConfig { PublishingEnabled = true };
+        var mainVm = new MainViewModel(nav, _operatorControlService, config, _dialogService, _notificationService);
+
+        // RefreshStatusAsync from the constructor is fire-and-forget; await one explicitly before asserting.
+        await mainVm.RefreshStatusAsync();
+        mainVm.IsKillSwitchActive.Should().BeFalse();
+        mainVm.PublishingEnabled.Should().BeTrue();
+        mainVm.AutonomyMode.Should().NotBeNullOrWhiteSpace();
+
+        await mainVm.ToggleKillSwitchAsync();
+        mainVm.IsKillSwitchActive.Should().BeTrue("the toggle re-asks the current state and flips it");
+
+        // The write went through OperatorControlService, so it is the same persisted state Settings and
+        // SPEC/49 preflight gate 10 read -- not a value local to this one view model.
+        var status = await _operatorControlService.GetSystemStatusAsync();
+        status.GlobalKillSwitchActive.Should().BeTrue();
+        var auditTrail = await _operatorControlService.QueryAuditTrailAsync(action: "operator.global_kill_switch_toggled");
+        auditTrail.Should().Contain(a => a.ActorType == "OPERATOR");
+
+        // A refresh must re-ask rather than trust a cached value (SPEC/62) -- it has to reflect a change
+        // made by a completely different actor since the last read, not just its own prior toggle.
+        await _operatorControlService.ToggleGlobalKillSwitchAsync("someone-else", active: false, "cleared elsewhere", Guid.NewGuid().ToString("N"));
+        await mainVm.RefreshStatusAsync();
+        mainVm.IsKillSwitchActive.Should().BeFalse("a refresh must re-read state changed elsewhere, not trust what it last saw");
     }
 
     [Fact]

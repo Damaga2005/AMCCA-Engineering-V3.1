@@ -5,11 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:AMCCA.App.ViewModels"
         xmlns:views="clr-namespace:AMCCA.App.Views"
+        xmlns:common="clr-namespace:AMCCA.App.Common"
         mc:Ignorable="d"
         Title="AMCCA Engineering V3.1 — Production Operations" Height="720" Width="1100"
         Background="#181825" WindowStartupLocation="CenterScreen">
-    
+
     <Window.Resources>
+        <common:KillSwitchLabelConverter x:Key="KillSwitchLabelConverter"/>
+        <common:EnabledDisabledConverter x:Key="EnabledDisabledConverter"/>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardView/>
         </DataTemplate>
@@ -48,9 +51,37 @@
                     <TextBlock Text="Engineering V3.1" FontSize="12" Foreground="#A6ADC8"/>
                 </StackPanel>
 
-                <!-- Footer / Status -->
+                <!-- Footer / Status: SPEC/60 obligations 1-2 -- the kill switch is reachable in one
+                     action from every screen, and autonomy mode / publishing state are visible on every
+                     screen rather than buried in Settings. This panel is chrome shared by all six
+                     screens (it sits outside the ContentControl below), so it never needs repeating. -->
                 <StackPanel DockPanel.Dock="Bottom">
                     <Separator Background="#313244" Margin="0,15"/>
+
+                    <Button Command="{Binding ToggleKillSwitchCommand}" Padding="10,8" Margin="0,0,0,10" BorderThickness="0" HorizontalContentAlignment="Center">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="#A6E3A1"/>
+                                <Setter Property="Foreground" Value="#11111B"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsKillSwitchActive}" Value="True">
+                                        <Setter Property="Background" Value="#F38BA8"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="{Binding IsKillSwitchActive, Converter={StaticResource KillSwitchLabelConverter}}" FontWeight="Bold" FontSize="12"/>
+                    </Button>
+
+                    <TextBlock Foreground="#A6ADC8" FontSize="11" Margin="0,0,0,2">
+                        <Run Text="Autonomy: "/>
+                        <Run Text="{Binding AutonomyMode, Mode=OneWay}" FontWeight="Bold"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Margin="0,0,0,10">
+                        <Run Text="Publishing: " Foreground="#A6ADC8"/>
+                        <Run Text="{Binding PublishingEnabled, Mode=OneWay, Converter={StaticResource EnabledDisabledConverter}}" FontWeight="Bold"/>
+                    </TextBlock>
+
                     <TextBlock Text="{Binding StatusText}" Foreground="#6C7086" FontSize="11" TextWrapping="Wrap"/>
                 </StackPanel>
 
