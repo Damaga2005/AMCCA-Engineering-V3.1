@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 398
-**Total bytes:** 2450738
+**Files:** 400
+**Total bytes:** 2461078
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -213,7 +213,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/MainWindow.xaml` | `4375696d75f5da51464e7861cfeaf581c738e9fb7a1014fcad8e0e448b50f4fd` | 7857 |
 | `src/AMCCA.App/MainWindow.xaml.cs` | `d4a6f13a7e43f9c71ac06a9ba23bf0a17df3a8661211cbe25bd2e0358c502f50` | 245 |
 | `src/AMCCA.App/Orchestration/OrchestratorHostedService.cs` | `230ef2c7229e74237ef54293d7de26bae550bcb21c2aadb2d63066f16e9d094f` | 3140 |
-| `src/AMCCA.App/Program.cs` | `4144097a5354c323c71e25e8c90e25bc4051052d1c33be1d9c9afb11f0e2b907` | 3972 |
+| `src/AMCCA.App/Program.cs` | `ffd832014b5cf8761159a48330d37f490ea6682480d0b65e7ca01b0ab9ca2150` | 4516 |
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
 | `src/AMCCA.App/Services/INavigationService.cs` | `028e17b6b1ca85d54d0cae360607ae05b1a7b8514a07bd1e7406359c07cd537f` | 847 |
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
@@ -278,6 +278,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `a77cb915a368d78a1df7015f2fc6ed240309e7db9dbb9a7a227330b56fa12f8b` | 5747 |
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `9452e6db14aa0632449f67b575297ef8ab89400a5575b4c03465cc8561f85b18` | 9398 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `d35899e1e11d5ab4b5abf453f3916af3a3d1c8087f81e006568499ef3718a815` | 224 |
+| `src/AMCCA.Core/Orchestration/Handlers/AgentResearchAgent.cs` | `a7ae42e40b0bc3674f5cd6171a9ac097c087644b8b216c0dba51cef71b5c1a60` | 4378 |
 | `src/AMCCA.Core/Orchestration/Handlers/NoWorkAdvanceHandler.cs` | `89ceda455988fae58fe1cea66487967547c5f2a7d248a56b3c144079fb0968e6` | 877 |
 | `src/AMCCA.Core/Orchestration/Handlers/ResearchStageHandler.cs` | `e04a9fa5bce10d0fb49eec93a7782a293ac711fa5cef3bc863dee90fa28bd996` | 2725 |
 | `src/AMCCA.Core/Orchestration/Handlers/ScriptStageHandler.cs` | `0637b3f99e4e2dc05255fff568c942866ef5e22d6710e4a47bbcefc58ee64019` | 3028 |
@@ -349,6 +350,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/AgentCostReservationOrderRegressionTests.cs` | `47ac5a937cc5a3c781bbb98f5948c46f7ea44a0d80de2fedfdb84576eb61a42e` | 6805 |
 | `tests/AMCCA.Core.Tests/AgentLoopContractTests.cs` | `73697ec2d07577f32cc1943740807d68a429763ac2e5234fddb7fded0afc9fb0` | 8991 |
 | `tests/AMCCA.Core.Tests/AgentOutputResourceLimitRegressionTests.cs` | `963a7f00f2131596f8929edfebd2808822934b33118b6f06af0dbd96577d2c86` | 4320 |
+| `tests/AMCCA.Core.Tests/AgentResearchAgentContractTests.cs` | `c6d070a9c3cdd0b9e929c0d602f25af62b81184e9a2a8983bb54a5414048119e` | 5418 |
 | `tests/AMCCA.Core.Tests/AiProviderRealIntegrationTests.cs` | `99a3dfb1e6d40ed4a1daa60d33b44eec29522b6284646634806505775fb30f81` | 11414 |
 | `tests/AMCCA.Core.Tests/ApprovalScopeAndAtomicityRegressionTests.cs` | `fba53fdfba4914ac6f5c49875a06e96c4734ccf474353d3d20f3efe7eb83ae46` | 8512 |
 | `tests/AMCCA.Core.Tests/ArchitecturalDependenciesRegressionTests.cs` | `892e7dc8b129b36370e17988be422eeadb7d3bc2a726487adf6d8c115fe1ca36` | 2112 |

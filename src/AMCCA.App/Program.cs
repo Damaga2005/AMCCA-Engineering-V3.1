@@ -61,15 +61,25 @@ public static class Program
         {
             builder.Services.AddSingleton(gateway);
         }
+        builder.Services.AddSingleton<AMCCA.Core.Research.ResearchService>();
 
         builder.Services.AddSingleton(sp =>
         {
             var cf = sp.GetRequiredService<DatabaseConnectionFactory>();
+            var gw = sp.GetService<IProviderGateway>();
+
+            AMCCA.Core.Orchestration.Handlers.IResearchAgent? researchAgent = gw is null ? null
+                : new AMCCA.Core.Orchestration.Handlers.AgentResearchAgent(
+                    sp.GetRequiredService<AMCCA.Core.Domain.ProductionService>(),
+                    sp.GetRequiredService<AMCCA.Core.Research.ResearchService>(),
+                    sp.GetRequiredService<AMCCA.Core.Events.IAuditStore>(),
+                    gw);
+
             var registry = new StageHandlerRegistry();
             registry.Register("INIT", new InitStageHandler());
-            // RESEARCHING / SCRIPTING run their deterministic verification now; the generative agent
-            // (model provider + tools) is passed in once wired — until then they block for an operator.
-            registry.Register("RESEARCHING", new ResearchStageHandler(cf, agent: null));
+            // RESEARCHING runs its generative agent (when a provider is configured) then the
+            // deterministic SPEC/26 verification. SCRIPTING's agent arrives in A4.
+            registry.Register("RESEARCHING", new ResearchStageHandler(cf, researchAgent));
             registry.Register("SCRIPTING", new ScriptStageHandler(cf, agent: null));
             // Pure bookkeeping states between producing stages.
             var advance = new NoWorkAdvanceHandler();
