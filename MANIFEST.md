@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2085562
+**Total bytes:** 2086579
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `619ec6ef48d7ccabd3334323e0b52b021393ec8e94d7496773e56ddede70e2f5` | 17216 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `2c94fc4545a50e960494349e4dc7558ddc226086b01728a472350e648cc76c86` | 17702 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -91,7 +91,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SCHEMAS/tool-run.schema.json` | `2f819cee7fe3f6039cfa1c6e472566e1039f172efeb802dd75b9042b39b52df0` | 4927 |
 | `SPEC/01_TECH_STACK.md` | `c5a397c5f581f97b61e2e2da4aa2c1ebc261a27f1f2754a5151911f728bd886a` | 3433 |
 | `SPEC/02_RUNTIME.md` | `4d9053f1ff8176b373f4643dd0e7d5721ef11c23b240711af56772a351415489` | 2524 |
-| `SPEC/03_CONFIGURATION.md` | `937e8341a03447b91009f5683c5f4330ebf171bffca2141396fe1222c1407ef2` | 2461 |
+| `SPEC/03_CONFIGURATION.md` | `369a3a08f0e8caa9f42506c694fe0847c1fd923e26cf9409b71ad51a29769e5d` | 3085 |
 | `SPEC/04_CONTRACTS.md` | `37aaf7ef03fec250fc4ca1ac05a03162dd5e633abd43f5426ef2bae99708615a` | 3199 |
 | `SPEC/05_ERROR_MODEL.md` | `bd34ab5ab4a5243aff388dd804f7d1e4dcd551586df859f418079d59728508d5` | 6955 |
 | `SPEC/06_AGENT_SYSTEM.md` | `6c39018c3f550a8cb413be2326aedb807977b0227713ec849ac4242128281e8e` | 2723 |
@@ -204,7 +204,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
-| `src/AMCCA.App/App.xaml.cs` | `58ac955f3194e7a28ce548276d209a9aabd13bcc00bb03002c2d136a7922db98` | 7166 |
+| `src/AMCCA.App/App.xaml.cs` | `af51d94fcedb7a786ddc8e019016717688c00e9dd97c2a97f2b173b595699e43` | 7073 |
 | `src/AMCCA.App/Common/RelayCommand.cs` | `7cbfae6aaac6658c5cd498d8d322c1b11164440001a42e9492640b7508472071` | 2354 |
 | `src/AMCCA.App/Common/StatusConverters.cs` | `d0d25931faf195950b92cda8285c7ef5a77718873b0cb4fcf0052e417f85eac9` | 1241 |
 | `src/AMCCA.App/Common/ViewModelBase.cs` | `2446920133a472d99e9ab606a65aa38451d07b9385894823343179d01df16e84` | 689 |

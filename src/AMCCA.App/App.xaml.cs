@@ -112,11 +112,10 @@ public partial class App : Application
         services.AddSingleton<MigrationService>();
         services.AddSingleton<ISecretStore, WindowsDpapiSecretStore>();
 
-        // SPEC/04, SPEC/49 gates 1-2: validate config.yaml against the bundled schema if the operator
-        // has placed one next to the database; otherwise fall back to AmccaConfig's built-in safe
-        // defaults (DryRun=true, publishing disabled) scoped to this install's data directory. There is
-        // no ADR pinning a deployed config path, so this mirrors the existing amcca.db convention rather
-        // than inventing a new one.
+        // SPEC/03 "Deployed configuration file location", SPEC/04, SPEC/49 gates 1-2: validate
+        // config.yaml against the bundled schema if the operator has placed one next to the database;
+        // otherwise fall back to AmccaConfig's built-in safe defaults (DryRun=true, publishing disabled)
+        // scoped to this install's data directory.
         var configPath = Path.Combine(dbDir, "config.yaml");
         AmccaConfig config;
         if (File.Exists(configPath))
