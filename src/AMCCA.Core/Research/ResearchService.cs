@@ -163,6 +163,81 @@ public class ResearchService : IDisposable
         tx.Commit();
     }
 
+    public sealed record ClaimEvaluationSummary(int Verified, int Estimated, int Disputed, int Unknown)
+    {
+        public int Total => Verified + Estimated + Disputed + Unknown;
+    }
+
+    /// <summary>
+    /// Re-runs <see cref="ClaimValidator"/> over every claim of a production against its linked sources
+    /// (SPEC/26) and writes the resulting <c>status</c> back. Returns the post-evaluation status
+    /// breakdown. This is what the research agent calls after recording claims + sources to see which
+    /// are verified.
+    /// </summary>
+    public async Task<ClaimEvaluationSummary> EvaluateAllClaimsAsync(string productionId, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+
+        var claims = (await connection.QueryAsync<Claim>(new CommandDefinition(
+            @"SELECT id AS Id, production_id AS ProductionId, text AS Text, status AS Status,
+                     materiality AS Materiality, subject_class AS SubjectClass,
+                     contains_personal_data AS ContainsPersonalData, schema_version AS SchemaVersion,
+                     created_at AS CreatedAt
+              FROM claims WHERE production_id = @Id;",
+            new { Id = productionId }, cancellationToken: ct))).ToList();
+
+        var links = (await connection.QueryAsync<(string ClaimId, string Relation, string SourceId)>(new CommandDefinition(
+            @"SELECT cs.claim_id AS ClaimId, cs.relation AS Relation, cs.source_id AS SourceId
+              FROM claim_sources cs
+              JOIN claims c ON c.id = cs.claim_id
+              WHERE c.production_id = @Id;",
+            new { Id = productionId }, cancellationToken: ct))).ToList();
+
+        var sources = (await connection.QueryAsync<Source>(new CommandDefinition(
+            @"SELECT id AS Id, url AS Url, publisher AS Publisher, published_at AS PublishedAt,
+                     retrieved_at AS RetrievedAt, content_hash AS ContentHash, trust_tier AS TrustTier,
+                     robots_allowed AS RobotsAllowed, created_at AS CreatedAt
+              FROM sources
+              WHERE id IN (SELECT source_id FROM claim_sources cs JOIN claims c ON c.id = cs.claim_id WHERE c.production_id = @Id);",
+            new { Id = productionId }, cancellationToken: ct))).ToDictionary(s => s.Id);
+
+        int verified = 0, estimated = 0, disputed = 0, unknown = 0;
+        using var tx = connection.BeginTransaction();
+        foreach (var claim in claims)
+        {
+            var claimSources = links
+                .Where(l => l.ClaimId == claim.Id && sources.ContainsKey(l.SourceId))
+                .Select(l => (sources[l.SourceId], l.Relation));
+
+            var status = ClaimValidator.EvaluateClaimStatus(claim, claimSources);
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE claims SET status = @Status WHERE id = @Id;",
+                new { Status = status, Id = claim.Id }, transaction: tx, cancellationToken: ct));
+
+            switch (status)
+            {
+                case "VERIFIED": verified++; break;
+                case "ESTIMATED": estimated++; break;
+                case "DISPUTED": disputed++; break;
+                default: unknown++; break;
+            }
+        }
+        tx.Commit();
+
+        return new ClaimEvaluationSummary(verified, estimated, disputed, unknown);
+    }
+
+    /// <summary>Links an already-recorded claim to another source (a claim may cite several).</summary>
+    public async Task LinkClaimSourceAsync(string claimId, string sourceId, string relation, string? excerptHash = null, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        await connection.ExecuteAsync(new CommandDefinition(
+            @"INSERT OR IGNORE INTO claim_sources (claim_id, source_id, relation, excerpt_hash)
+              VALUES (@ClaimId, @SourceId, @Relation, @ExcerptHash);",
+            new { ClaimId = claimId, SourceId = sourceId, Relation = relation, ExcerptHash = excerptHash },
+            cancellationToken: ct));
+    }
+
     public async Task<Claim?> GetClaimAsync(string claimId, CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);

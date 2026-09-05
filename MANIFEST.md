@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 396
-**Total bytes:** 2434038
+**Files:** 398
+**Total bytes:** 2450738
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -321,7 +321,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Research/ClaimValidator.cs` | `b16d3aff481491822ecdcb2d8da60e7998a3ef5fdd15260e1a00795b3e59eada` | 2040 |
 | `src/AMCCA.Core/Research/ResearchModels.cs` | `681ef7c07810e4f89c8cc97ef46fee8112037f1e299991f96c50bc3828c2e20b` | 1450 |
 | `src/AMCCA.Core/Research/ResearchScraper.cs` | `deb3756e131bee488bb3410b6dc5d2a09a6722a6a46242bfaaa2fc99ef060771` | 471 |
-| `src/AMCCA.Core/Research/ResearchService.cs` | `f1bf2d509c577e77abbdc8c8a6cd5b48f28d8c099c751abc4b770b6890fcab2a` | 6662 |
+| `src/AMCCA.Core/Research/ResearchService.cs` | `3a17a4c3003f9cba08e1027989dbb6ea0881c5f50f2aba83bb126f77b63a5dbc` | 10783 |
 | `src/AMCCA.Core/Scripts/ScriptModels.cs` | `c4fdda5d199969f15796bae4171e2a5662f591e4d3278d6d6ea76fbc70d91807` | 347 |
 | `src/AMCCA.Core/Scripts/ScriptValidator.cs` | `70b43aa51c9f333677887009307cd27147a45a0023e0537e3a701af7be000552` | 2062 |
 | `src/AMCCA.Core/Security/IEphemeralSecretStore.cs` | `fd71f96ac1c5a6f9523cc8fa227f5ce234842b49a989c7f1ded3cb1afd952732` | 384 |
@@ -341,6 +341,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/WindowsDpapiSecretStore.cs` | `324976b1c7fd502c744fa0978f71c221396d316be45a54d5cac9e1ba33012c76` | 2436 |
 | `src/AMCCA.Core/StateMachine/StateMachineRegistry.cs` | `5c3ca55845159ce8dcff299bd3f9d4c471db4ac095f8e390b60bbef42e8608dc` | 6834 |
 | `src/AMCCA.Core/StateMachine/TransitionDefinition.cs` | `5c8823a1fe73a71aac1ae76d4c332886a86c4d928184a5ecad3a4783908fb064` | 647 |
+| `src/AMCCA.Core/Tools/ResearchTools.cs` | `1bdb1c03d078b48d27123203b4992c14c36e14944ae6eadbaf86371e88c5d9b5` | 5980 |
 | `src/AMCCA.Core/Tools/ToolModels.cs` | `e8457379adc579425afa93ae53bfd6be08aea2351172d406200aa8ce4f4ce0c9` | 480 |
 | `src/AMCCA.Core/Tools/ToolRegistry.cs` | `30ae345cac66de00b81d4207171474363e61e6b4fa3715e28fc4499cdcc45ff7` | 1070 |
 | `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `1b33c8dc38dea5a890a7aadfe6fc27a063cf60ceea363d6be4f2afcc5e341d3f` | 960 |
@@ -396,6 +397,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e72698af24a6b162648169405fbecf5f068827dcc00823ce1f33134f6e53e5cc` | 7014 |
 | `tests/AMCCA.Core.Tests/ReparsePointConfinementRegressionTests.cs` | `5c1294595078008fd07574007254ce663ba8678a168c0dd69f3304cb84e42303` | 5485 |
 | `tests/AMCCA.Core.Tests/ResearchAndClaimValidationContractTests.cs` | `6f8f5f74b84d403fafb4e5fdda9539dd2806faac033efcd2038ecfb4b6b0ce49` | 8662 |
+| `tests/AMCCA.Core.Tests/ResearchToolsContractTests.cs` | `a5574e98a6b591ebace89e8e53ac485d2c07b570de22424df46ff1f76eac9cac` | 6599 |
 | `tests/AMCCA.Core.Tests/SecretRefResolutionRegressionTests.cs` | `601d2c20cd99d8a7ebeef17f5ba397fb160e657c1aa0549a1fdae518b5cff21e` | 5504 |
 | `tests/AMCCA.Core.Tests/SecretStoreContractTests.cs` | `ea0b82db06e14f5724af2748bcd0a7bcf825d473150903645a2226b3c3f9a0e9` | 1919 |
 | `tests/AMCCA.Core.Tests/SecurityHardeningSpec72ContractTests.cs` | `80356f4e82057cbdd9a1bd81550deff3a0eb17207733700b90a691aa93a339b4` | 4044 |
