@@ -6,6 +6,17 @@
 **Commit de referencia:** `fc8e4068f8d1afd4abb1c23e3048a18f48b23174`  
 **Fuente certificada:** `9ba76f4593034632d59070b5bb73e9e4f99ff04d`
 
+> **Nota añadida el 2026-09-05 (`AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md`, §1):** la columna «SPEC» de la
+> tabla de la sección 3 (`Estado SPEC 01 → 83`) **es un índice interno de este informe, no una referencia
+> al documento normativo `SPEC/NN_*.md` del repositorio.** Se verificó cada una de las 83 entradas contra
+> el fichero SPEC real y **68 de 83 no coinciden** (p. ej. la fila 15 «Jobs» no es `SPEC/15`, es
+> `SPEC/14_JOB_SYSTEM.md`; la fila 61 «Inspector» no es `SPEC/61`, el Inspector se especifica en
+> `SPEC/60_DESKTOP_UI.md`). Los juicios de estado (🟢/🟡/🔴) por área siguen siendo en gran medida útiles,
+> pero **ninguna cita "SPEC NN" de este documento debe tratarse como una referencia válida** al SPEC real
+> con ese número. Un trabajo de remediación en una rama posterior heredó varias de estas citas erróneas
+> antes de detectarse esto; quedaron corregidas allí, no en este fichero. Este documento se conserva sin
+> renumerar para preservar su historial tal como se produjo.
+
 ---
 
 # 1. Resumen ejecutivo
@@ -67,6 +78,9 @@ La existencia de una clase, interfaz, tabla o test aislado **no implica automát
 ---
 
 # 3. Estado SPEC 01 → 83
+
+> **La columna «SPEC» de esta tabla es un índice interno 1–83, no el número del fichero
+> `SPEC/NN_*.md` real** — ver la nota al inicio del documento. No cites estas filas como "SPEC/NN".
 
 | SPEC | Área | Estado |
 |---:|---|:---:|

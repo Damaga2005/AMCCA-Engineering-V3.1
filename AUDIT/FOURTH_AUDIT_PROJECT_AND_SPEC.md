@@ -61,6 +61,11 @@ y una `SPEC/59` (control de operador) apuntaban al documento equivocado. Corregi
 reemplazar sus números por los nombres de fichero SPEC reales. Mientras no se haga, cualquier plan
 derivado de él arrastrará trazabilidad falsa.
 
+**Resuelto:** se añadió una nota al inicio de `AMCCA_SPEC_01_83_AUDIT.md` y otra justo antes de la tabla
+de la sección 3, dejando explícito que la columna «SPEC» es un índice interno 1–83 y no una referencia
+válida a `SPEC/NN_*.md`. No se renumeró la tabla ni se tocó ningún otro contenido del informe, para
+preservarlo tal como se produjo.
+
 ---
 
 ## 2. Hallazgos sobre la especificación
