@@ -186,7 +186,7 @@ public class DatabaseAndMigrationContractTests : IDisposable
         var validAudit = new AuditRecord(
             AuditId: UlidGenerator.NewUlid(),
             Action: "production.approve",
-            ActorType: "OPERATOR", // Valid: OPERATOR or SYSTEM
+            ActorType: "OPERATOR", // Valid: OPERATOR, SCHEDULER, ORCHESTRATOR, RECONCILER or SYSTEM (audit.schema.json)
             ActorId: "operator-1",
             SubjectType: "production",
             SubjectId: "01J8ZQ4T7K9WPX2MNVBCDEFGHJ",
@@ -211,5 +211,76 @@ public class DatabaseAndMigrationContractTests : IDisposable
 
         (await act.Should().ThrowAsync<AmccaException>())
             .Where(e => e.ErrorCode == AmccaErrors.Sec001);
+    }
+
+    /// <summary>
+    /// I-09 / SPEC/55: audit.schema.json enumerates OPERATOR, SCHEDULER, ORCHESTRATOR, RECONCILER and
+    /// SYSTEM as legitimate actors -- everything except AGENT. Migration 4 widened the audit_log CHECK
+    /// to match; before it, this table only accepted OPERATOR and SYSTEM, so an orchestrator or
+    /// reconciler audit record failed at the database layer without ever reaching the AGENT check above.
+    /// </summary>
+    [Theory]
+    [InlineData("OPERATOR")]
+    [InlineData("SCHEDULER")]
+    [InlineData("ORCHESTRATOR")]
+    [InlineData("RECONCILER")]
+    [InlineData("SYSTEM")]
+    public async Task AuditStore_AcceptsEveryNonAgentActorTypeInTheContract(string actorType)
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+
+        var auditStore = new AuditStore(factory);
+
+        var audit = new AuditRecord(
+            AuditId: UlidGenerator.NewUlid(),
+            Action: "system.event",
+            ActorType: actorType,
+            ActorId: "actor-1",
+            SubjectType: null,
+            SubjectId: null,
+            ProductionId: null,
+            Outcome: "ALLOWED",
+            PolicyDecisionId: null,
+            ReasonCode: null,
+            CorrelationId: "corr-actor-types",
+            SchemaVersion: "3.1.0",
+            OccurredAt: DateTimeOffset.UtcNow.ToString("O"));
+
+        var act = async () => await auditStore.AppendAuditAsync(audit);
+        await act.Should().NotThrowAsync();
+
+        var logs = await auditStore.GetAuditLogsAsync(correlationId: "corr-actor-types");
+        logs.Should().ContainSingle(a => a.ActorType == actorType);
+    }
+
+    /// <summary>
+    /// SPEC/07 / tool-run.schema.json bound side_effect_class to five values, but the DDL left the column
+    /// unconstrained: a mistyped value evaded 'EXTERNAL_UNSAFE requires an intent_id' instead of being
+    /// rejected by it, the structural defence failing open. Migration 4 closed the domain.
+    /// </summary>
+    [Fact]
+    public async Task Migration004_RejectsInvalidToolRunSideEffectClass()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+        await migrationService.UpgradeAsync();
+
+        using var connection = await factory.CreateOpenConnectionAsync();
+        var insert = () => connection.ExecuteAsync(@"
+            INSERT INTO tool_runs (
+                run_id, tool_id, tool_version, side_effect_class, state,
+                input_hash, correlation_id, schema_version, started_at
+            ) VALUES (
+                @RunId, 'tool-1', 'v1', 'external_unsafe', 'STARTED',
+                'hash', 'corr-1', '3.1.0', @Now
+            );
+        ", new { RunId = UlidGenerator.NewUlid(), Now = DateTimeOffset.UtcNow.ToString("O") });
+
+        // Lowercase mirrors the exact enum value with the wrong case -- the case this defence must catch,
+        // since a value this close to correct is the one a hand-written call site is most likely to send.
+        var act = async () => await insert();
+        await act.Should().ThrowAsync<SqliteException>();
     }
 }

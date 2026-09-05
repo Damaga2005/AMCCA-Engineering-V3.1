@@ -280,6 +280,130 @@ def check_database():
     return tables
 
 
+# Maps a SCHEMAS/*.schema.json file to the table it governs. Only files whose contract
+# describes a column backed by a single physical table are listed; join tables and
+# pure-computation schemas (e.g. state-machine.json) are not contracts over one table
+# and are out of scope for this check.
+_ENUM_CHECK_TABLE_MAP = {
+    "agent-run.schema.json": "agent_runs",
+    "analytics.schema.json": "analytics_snapshots",
+    "audit.schema.json": "audit_log",
+    "claim.schema.json": "claims",
+    "cost-event.schema.json": "cost_events",
+    "event.schema.json": "events",
+    "job.schema.json": "jobs",
+    "production.schema.json": "productions",
+    "publication.schema.json": "publications",
+    "qa.schema.json": "qa_reports",
+    "referral.schema.json": "referral_links",
+    "rights.schema.json": "rights_records",
+    "tool-run.schema.json": "tool_runs",
+}
+
+
+def _extract_migrations_from_csharp(cs_source):
+    """Pulls (version, up_sql) tuples out of MigrationService.BuiltInMigrations in
+    declaration order. The C# literals are verbatim strings (@"...") with no embedded
+    double quotes anywhere in this file (SQL uses single-quoted string literals), so a
+    non-greedy match on the first following '"' is a safe boundary -- if that ever
+    stops being true, this raises rather than silently mis-parsing."""
+    pattern = re.compile(
+        r'\(\s*(\d+)\s*,\s*"([^"]*)"\s*,\s*@"(.*?)"\s*,\s*@"(.*?)"\s*\)',
+        re.S)
+    migrations = pattern.findall(cs_source)
+    if not migrations:
+        raise AssertionError("no migrations parsed out of MigrationService.cs -- parser is broken")
+    return [(int(v), up) for v, _name, up, _down in migrations]
+
+
+def _build_live_schema_via_sqlite(up_sql_statements):
+    """Applies every migration's UpSql against a real in-memory SQLite database and
+    returns {table_name: create_table_sql}. This is the actual final schema (renames,
+    rebuilds and drops all resolved by the engine itself), not a text approximation of
+    migration ordering."""
+    import sqlite3
+    con = sqlite3.connect(":memory:")
+    try:
+        con.execute("PRAGMA foreign_keys=ON;")
+        for up in up_sql_statements:
+            con.executescript(up)
+        rows = con.execute(
+            "SELECT name, sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL;"
+        ).fetchall()
+        return {name: sql for name, sql in rows}
+    finally:
+        con.close()
+
+
+_CHECK_IN_RE = re.compile(r"CHECK\s*\(\s*(\w+)\s+IN\s*\(([^)]*)\)", re.I)
+
+
+def _extract_check_domains(table_sql):
+    """{column: {allowed values}} for every CHECK(col IN (...)) in one CREATE TABLE
+    statement's text. Exposed as its own function (not inlined into the check below)
+    so a mutation test can exercise it directly against a scratch-mutated schema
+    string without needing to run a whole migration set through SQLite."""
+    domains = {}
+    for col, vals in _CHECK_IN_RE.findall(table_sql):
+        domains.setdefault(col, set()).update(re.findall(r"'([^']*)'", vals))
+    return domains
+
+
+def check_contract_enum_matches_ddl_check():
+    """A JSON contract's `enum` on a column is meaningless as a structural guarantee if
+    the table's own CHECK constraint does not enforce the same domain (D-026: 'This
+    holds even if the preflight code path that is supposed to enforce it has a bug').
+    This check builds the real, final schema by actually running every migration
+    against SQLite, then compares each mapped contract's enums against that table's
+    CHECK(col IN (...)) constraints -- catching both an unconstrained column and a
+    contract/DDL contradiction, neither of which any other check here detects."""
+    cs_source = read("src", "AMCCA.Core", "Database", "MigrationService.cs")
+    try:
+        migrations = _extract_migrations_from_csharp(cs_source)
+    except AssertionError as e:
+        return check("contracts.enum_matches_ddl_check", False, str(e))
+
+    migrations.sort(key=lambda m: m[0])
+    live_schema = _build_live_schema_via_sqlite([up for _v, up in migrations])
+
+    mismatches = []
+
+    for schema_file, table in sorted(_ENUM_CHECK_TABLE_MAP.items()):
+        schema_path = os.path.join(ROOT, "SCHEMAS", schema_file)
+        if not os.path.exists(schema_path):
+            continue
+        contract = json.loads(read("SCHEMAS", schema_file))
+        table_sql = live_schema.get(table)
+        if table_sql is None:
+            mismatches.append(f"{table}: table not found in the live schema built from MigrationService.cs")
+            continue
+
+        ddl_checks = _extract_check_domains(table_sql)
+
+        for prop, spec in (contract.get("properties") or {}).items():
+            if not (isinstance(spec, dict) and "enum" in spec):
+                continue
+            contract_vals = set(spec["enum"])
+            ddl_vals = ddl_checks.get(prop)
+            if ddl_vals is None:
+                if re.search(rf"^\s*{re.escape(prop)}\s+\w", table_sql, re.M):
+                    mismatches.append(f"{table}.{prop}: contract has {len(contract_vals)} enum values, DDL column has no CHECK")
+                # else: column doesn't exist on this table at all -- a different
+                # concern (contract field with no storage), not this check's job.
+            elif ddl_vals != contract_vals:
+                only_contract = sorted(contract_vals - ddl_vals)
+                only_ddl = sorted(ddl_vals - contract_vals)
+                detail = f"{table}.{prop}: DIVERGES"
+                if only_contract:
+                    detail += f"; contract allows and DDL rejects {only_contract}"
+                if only_ddl:
+                    detail += f"; DDL allows and contract rejects {only_ddl}"
+                mismatches.append(detail)
+
+    check("contracts.enum_matches_ddl_check", not mismatches,
+          "; ".join(mismatches) if mismatches else "")
+
+
 def check_spec():
     spec_dir = os.path.join(ROOT, "SPEC")
     files = sorted(f for f in os.listdir(spec_dir) if f.endswith(".md"))
@@ -540,6 +664,7 @@ def main():
     check_date_time_enforcement()
     check_state_machine()
     check_database()
+    check_contract_enum_matches_ddl_check()
     check_spec()
     check_references()
     check_config()

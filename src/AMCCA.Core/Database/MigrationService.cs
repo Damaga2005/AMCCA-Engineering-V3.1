@@ -921,6 +921,141 @@ public class MigrationService
                 DROP TABLE IF EXISTS artifacts;
                 DROP TABLE IF EXISTS production_versions;
             "
+        ),
+        (
+            4,
+            "004_audit_actor_types_and_tool_run_side_effect_check",
+            @"
+                -- I-09 / SPEC/55: audit_log's actor_type is deliberately narrower than every actor in the
+                -- system -- it excludes AGENT so an agent can never be recorded as the authority for a
+                -- protected action, not even by a bug. It was not meant to exclude the other legitimate
+                -- non-agent actors that audit.schema.json already enumerates (SCHEDULER, ORCHESTRATOR,
+                -- RECONCILER): the orchestrator is the sole state committer (DEF-008) and reconciliation
+                -- (SPEC/18) writes decisions no code path currently audits, but both are real actors this
+                -- schema must accept once they do. SQLite has no ALTER TABLE ... ADD CONSTRAINT, so the
+                -- CHECK is widened by rebuilding the table; the append-only triggers are recreated after
+                -- (DROP TABLE removes triggers bound to it).
+                CREATE TABLE audit_log_new (
+                    audit_id TEXT PRIMARY KEY,
+                    action TEXT NOT NULL,
+                    actor_type TEXT NOT NULL CHECK(actor_type IN ('OPERATOR','SCHEDULER','ORCHESTRATOR','RECONCILER','SYSTEM')),
+                    actor_id TEXT NOT NULL,
+                    subject_type TEXT NULL,
+                    subject_id TEXT NULL,
+                    production_id TEXT NULL,
+                    outcome TEXT NOT NULL,
+                    policy_decision_id TEXT NULL,
+                    reason_code TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL
+                );
+                INSERT INTO audit_log_new SELECT * FROM audit_log;
+                DROP TABLE audit_log;
+                ALTER TABLE audit_log_new RENAME TO audit_log;
+
+                CREATE TRIGGER trg_audit_log_prevent_update
+                BEFORE UPDATE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER trg_audit_log_prevent_delete
+                BEFORE DELETE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+
+                -- tool_run.schema.json bounds side_effect_class to five values, and the existing
+                -- conditional CHECK on this table only holds if that domain is actually closed: an
+                -- unconstrained column lets a mistyped value (e.g. lowercase or trailing whitespace)
+                -- evade 'EXTERNAL_UNSAFE requires an intent_id' instead of being rejected by it -- the
+                -- structural defence failing open rather than closed.
+                CREATE TABLE tool_runs_new (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_run_id TEXT NULL,
+                    tool_id TEXT NOT NULL,
+                    tool_version TEXT NOT NULL,
+                    side_effect_class TEXT NOT NULL CHECK(side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')),
+                    state TEXT NOT NULL,
+                    intent_id TEXT NULL,
+                    idempotency_key TEXT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL,
+                    FOREIGN KEY(intent_id) REFERENCES intents(id),
+                    CHECK(side_effect_class<>'EXTERNAL_UNSAFE' OR intent_id IS NOT NULL)
+                );
+                INSERT INTO tool_runs_new SELECT * FROM tool_runs;
+                DROP TABLE tool_runs;
+                ALTER TABLE tool_runs_new RENAME TO tool_runs;
+            ",
+            @"
+                CREATE TABLE tool_runs_old (
+                    run_id TEXT PRIMARY KEY,
+                    production_id TEXT NULL,
+                    job_id TEXT NULL,
+                    agent_run_id TEXT NULL,
+                    tool_id TEXT NOT NULL,
+                    tool_version TEXT NOT NULL,
+                    side_effect_class TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    intent_id TEXT NULL,
+                    idempotency_key TEXT NULL,
+                    input_hash TEXT NOT NULL,
+                    output_hash TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT NULL,
+                    schema_version TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NULL,
+                    FOREIGN KEY(intent_id) REFERENCES intents(id),
+                    CHECK(side_effect_class<>'EXTERNAL_UNSAFE' OR intent_id IS NOT NULL)
+                );
+                INSERT INTO tool_runs_old SELECT * FROM tool_runs;
+                DROP TABLE tool_runs;
+                ALTER TABLE tool_runs_old RENAME TO tool_runs;
+
+                DROP TRIGGER IF EXISTS trg_audit_log_prevent_delete;
+                DROP TRIGGER IF EXISTS trg_audit_log_prevent_update;
+
+                CREATE TABLE audit_log_old (
+                    audit_id TEXT PRIMARY KEY,
+                    action TEXT NOT NULL,
+                    actor_type TEXT NOT NULL CHECK(actor_type IN ('OPERATOR','SYSTEM')),
+                    actor_id TEXT NOT NULL,
+                    subject_type TEXT NULL,
+                    subject_id TEXT NULL,
+                    production_id TEXT NULL,
+                    outcome TEXT NOT NULL,
+                    policy_decision_id TEXT NULL,
+                    reason_code TEXT NULL,
+                    correlation_id TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL
+                );
+                INSERT INTO audit_log_old SELECT * FROM audit_log;
+                DROP TABLE audit_log;
+                ALTER TABLE audit_log_old RENAME TO audit_log;
+
+                CREATE TRIGGER trg_audit_log_prevent_update
+                BEFORE UPDATE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; UPDATE is prohibited (D-001, DEF-015)');
+                END;
+
+                CREATE TRIGGER trg_audit_log_prevent_delete
+                BEFORE DELETE ON audit_log
+                BEGIN
+                    SELECT RAISE(ABORT, 'audit_log table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
+                END;
+            "
         )
     };
 

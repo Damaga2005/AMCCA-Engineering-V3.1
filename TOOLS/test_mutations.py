@@ -669,6 +669,74 @@ def mutation_15_walk_files_oversensitive_filter():
     return ok
 
 
+# ===================================================================
+# Mutation 16: a table's CHECK constraint regresses to no longer enforce its
+# contract's enum (the exact defect this check exists to catch on
+# tool_runs.side_effect_class and audit_log.actor_type -- fixed by migration 4,
+# 004_audit_actor_types_and_tool_run_side_effect_check) -> the comparison must
+# flag that specific column, on both an unconstrained regression and a narrowed
+# one, while leaving every other column's verdict alone.
+# ===================================================================
+
+def mutation_16_ddl_check_regresses_from_contract_enum():
+    import shutil, tempfile
+    import validate_package as vp
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut16_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        mig_rel = os.path.join("src", "AMCCA.Core", "Database", "MigrationService.cs")
+        os.makedirs(os.path.dirname(os.path.join(scratch, mig_rel)), exist_ok=True)
+        shutil.copy2(os.path.join(ROOT, mig_rel), os.path.join(scratch, mig_rel))
+        schemas_dir = os.path.join(scratch, "SCHEMAS")
+        shutil.copytree(os.path.join(ROOT, "SCHEMAS"), schemas_dir)
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_contract_enum_matches_ddl_check()
+        baseline_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation16.baseline_scratch_copy_does_not_flag_the_fixed_columns",
+                    "tool_runs.side_effect_class" not in baseline_detail
+                    and "audit_log.actor_type" not in baseline_detail,
+                    baseline_detail)
+
+        mig_path = os.path.join(scratch, mig_rel)
+        with open(mig_path, encoding="utf-8") as f:
+            source = f.read()
+        needle = "side_effect_class TEXT NOT NULL CHECK(side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')),"
+        assert needle in source, "test fixture assumption violated: migration 4's tool_runs CHECK text has changed"
+        mutated_source = source.replace(needle, "side_effect_class TEXT NOT NULL,", 1)
+
+        with open(mig_path, "w", encoding="utf-8") as f:
+            f.write(mutated_source)
+
+        vp.RESULTS = []
+        vp.check_contract_enum_matches_ddl_check()
+        mutated_ok = vp.RESULTS[0]["ok"]
+        mutated_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation16.check_goes_red_when_regressed_to_unconstrained",
+                    not mutated_ok and "tool_runs.side_effect_class" in mutated_detail
+                    and "DDL column has no CHECK" in mutated_detail,
+                    mutated_detail) and ok
+        ok = record("mutation16.unrelated_fixed_column_still_clean_after_mutation",
+                    "audit_log.actor_type" not in mutated_detail) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, still does not flag
+    # either column this migration fixed.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_contract_enum_matches_ddl_check()
+    real_detail = vp.RESULTS[0]["detail"]
+    real_clean = ("tool_runs.side_effect_class" not in real_detail
+                  and "audit_log.actor_type" not in real_detail)
+    vp.RESULTS = saved
+    ok = record("mutation16.real_package_unaffected_by_mutation", real_clean, real_detail) and ok
+    return ok
+
+
 def read_decisions_declared_and_check():
     import re
     dec_path = os.path.join(ROOT, "DECISIONS.md")
@@ -694,6 +762,7 @@ def run():
         mutation_13_nonnegative_money_accepts_negative,
         mutation_14_reference_to_nonexistent_decision_id,
         mutation_15_walk_files_oversensitive_filter,
+        mutation_16_ddl_check_regresses_from_contract_enum,
     ]
     results = []
     for m in mutations:

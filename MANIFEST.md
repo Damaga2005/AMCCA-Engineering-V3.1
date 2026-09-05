@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 368
-**Total bytes:** 2034219
+**Total bytes:** 2053849
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -187,7 +187,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
 | `TOOLS/test_generation.py` | `8a9074633c8f3fc284e35c4f3ebcc9a50188802d1ffecdc21fce656bb3246193` | 1371 |
 | `TOOLS/test_money_precision.py` | `902fa1490e7bea2881774a9c0be863686e5f1595e39acab2575c2a9541669d91` | 1289 |
-| `TOOLS/test_mutations.py` | `4ad5761a02971f59e2c90f9ccb0c7dc93ea7d861890076a214f3d682ee168f45` | 34899 |
+| `TOOLS/test_mutations.py` | `376c2df547bd08c25a59c5d072371bfb0f4508fd4f58ae9be7b1896dd342ed6f` | 38404 |
 | `TOOLS/test_no_contract_duplication.py` | `1b0c10d42b296ea84d19d4f4089b1bd13e40f33f784cc50e6cd685dfee7883d4` | 3090 |
 | `TOOLS/test_no_duplicated_version_constants.py` | `82af520ef60a0a0f41c2d80a164f83879febd93356d513de8f54fb10a4e13632` | 3933 |
 | `TOOLS/test_platform_evidence.py` | `6f4964998994dbd9015c40a74db509ed3b2684e9867414bac4fcff7bd1284280` | 2135 |
@@ -197,7 +197,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
-| `TOOLS/validate_package.py` | `0bc235d4e663db0f1c718c37e682f5aa60f10ae3360a07d4f287f97746ff7410` | 25583 |
+| `TOOLS/validate_package.py` | `9648208ad53bd07d667a03664e07bc73000db05d7f4e2a751577bdd7cf777864` | 31459 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
 | `installer/build_installer.ps1` | `278172cf412c60b94179cd1e6535c7bf5e5af67e6b25ed0b7bd839ffcb728f62` | 5197 |
@@ -247,7 +247,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
 | `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `65f3deaff3ee237abd7bde855772dc145680fcbcbd0bf622469b4054724e7ba7` | 3299 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
-| `src/AMCCA.Core/Database/MigrationService.cs` | `b57ca978d207398d9b12f9cdbfffb565a9f67b37d0eca65cbac8d88055519499` | 47945 |
+| `src/AMCCA.Core/Database/MigrationService.cs` | `2629f9be5da004b80e211bcdf651f6247600534bbab76be93261981ecbfd3902` | 54892 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
 | `src/AMCCA.Core/Domain/Production.cs` | `d9f7e9d25b3436a72cf18106485d364b4324447aeafb797e82e8f17970cfc392` | 1376 |
 | `src/AMCCA.Core/Domain/ProductionService.cs` | `77ab9bd59b74d53f451b493d58ebb36f32840b4012fca17d5e2d2f286b0d5e34` | 13634 |
@@ -336,7 +336,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `c11056b5af8e32f641dd61177212a2a2763126a9f42c716c7240f5b7dd62f88b` | 5982 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
 | `tests/AMCCA.Core.Tests/DagReworkAndInvalidationContractTests.cs` | `0402ffa482753f07cdacbe3e1c4fa38e865322166161ad8828f52d2bd6ab4c45` | 6562 |
-| `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `48b984167075f38e53694898de538626cba4bdaf40a3aa363f72f81164328011` | 7589 |
+| `tests/AMCCA.Core.Tests/DatabaseAndMigrationContractTests.cs` | `e6f1882427bcd6e03bb36381e446fe9ca9597e4e62a7f35ef8b22e5102e5dae4` | 10891 |
 | `tests/AMCCA.Core.Tests/EndToEndProductionPipelineTests.cs` | `c433e8a486ab76ae1d8302edd3ef3f8c574daedee876890975a71a6e7e05d09e` | 7949 |
 | `tests/AMCCA.Core.Tests/EventsAppendOnlyPhysicalEnforcementRegressionTests.cs` | `271a66cc75a62b2b4d29c72d563ba89e63dafcdd696f0f51d7df925fa08d022d` | 7403 |
 | `tests/AMCCA.Core.Tests/FakeSafeHttpClientFactory.cs` | `9f537b89d577a5c6dc9db60127d02b5ff1455252f7090bf12d82703b8ec762e3` | 860 |
