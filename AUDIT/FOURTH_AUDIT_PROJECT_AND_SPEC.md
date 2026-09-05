@@ -292,13 +292,25 @@ confirmados por los hallazgos anteriores:
    `AmccaErrors.Xxx` que aparece en un `throw new AmccaException(...)` real del código (incluyendo el alias
    `Cst002 = Bud002`) a su valor `"AMCCA-..."` literal y exige que esté catalogado en `SPEC/05`, en vez de
    solo escanear citas en prosa `.md` como hacía `refs.all_error_codes_catalogued`.
-3. No comprueba las obligaciones normativas de SPEC/60 → §3.1 pasa en verde.
+3. ~~No comprueba las obligaciones normativas de SPEC/60~~ **Parcialmente resuelto**
+   (`spec60.obligation_1_kill_switch_in_shared_chrome`, `spec60.obligation_2_autonomy_and_publishing_visible`,
+   `spec60.obligation_5_approval_detail_columns`, `spec60.obligation_6_no_bare_generic_failure_text`, con
+   mutation test `mutation_18`) → §3.1 deja de pasar en verde de forma incondicional para las obligaciones
+   1, 2 y 5, que ya tenían una firma textual concreta y verificable en el build de seis pantallas (el
+   binding del kill switch y de autonomía/publicación en `MainWindow.xaml`, las columnas de
+   `ApprovalQueueView.xaml`), más una comprobación parcial de la obligación 6 (que ningún fichero de
+   `src/AMCCA.App` contenga una frase de fallo genérico tipo "algo salió mal"). No se intentó un verificador
+   general de "el kill switch es alcanzable desde cada pantalla": eso no es un grep, es una propiedad de
+   comportamiento en tiempo de ejecución. Lo que se comprueba es la firma concreta que ya existe, así que
+   una regresión que la elimine se vuelve un fallo del gate en vez de un cambio silencioso — no más ni
+   menos que eso.
 4. No detecta campos de contrato sin columna → `cost_events.reconciliation_state` pasa en verde.
 
-Las dos restantes son automatizables igualmente. La tercera (obligaciones normativas de SPEC/60) es la de
-mayor rendimiento pendiente: convertiría §3.1 en fallos visibles en lugar de deuda invisible, pero requiere
-antes decidir cómo verificar mecánicamente algo tan poco estructurado como "el kill switch es alcanzable
-desde cada pantalla" — no es un simple grep ni una comparación de esquemas.
+La restante (blind spot 4) es automatizable igual que las tres ya resueltas. Las obligaciones 3, 4 y 7 de
+SPEC/60, y la otra mitad de la 6 (que todo fallo real muestre su código de SPEC/05, no solo que no aparezca
+una frase prohibida), siguen sin comprobación mecánica posible sin ejecutar la UI — documentarlas como
+"comprobadas" sería exactamente el tipo de gate que pasa en verde sin significar nada, que es lo que esta
+sección entera existe para evitar.
 
 ---
 

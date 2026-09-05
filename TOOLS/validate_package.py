@@ -443,6 +443,62 @@ def check_thrown_error_codes_catalogued():
           f"thrown by code but uncatalogued: {sorted(thrown_codes - catalogued)}")
 
 
+def check_spec60_obligations():
+    """SPEC/60's seven interface obligations are normative, but nothing here checked any of them --
+    the fourth audit named this gate blind spot 3. A screen is not source a regex can meaningfully
+    parse for "is the kill switch reachable" in general, so this does not attempt a general obligation
+    checker. It instead pins the four obligations that already have one concrete, textually verifiable
+    signature in the current six-screen build, so a future edit that silently removes what this session
+    already built for them is a release-gate failure instead of a silent regression:
+
+    - Obligation 1 (kill switch reachable in one action from every screen) and obligation 2 (autonomy
+      mode and publishing state visible on every screen) are satisfied once, in MainWindow.xaml's shared
+      sidebar chrome, for every screen reachable through it (see MainViewModel/MainWindow.xaml commit
+      history). This checks that chrome still binds what it must.
+    - Obligation 5 (every approval request shows the exact action, subject, cost ceiling and expiry)
+      is satisfied by ApprovalQueueView.xaml's grid columns.
+    - Obligation 6's "never a bare 'something went wrong'" half is checked by scanning App/ for the
+      generic phrasing obligation 6 forbids; it cannot check the other half (every real failure carries
+      a SPEC/05 code) without executing the UI, so it only guards the phrasing regression.
+
+    Obligations 3, 4 and 7, and the rest of obligation 6, are not checked here: they describe a
+    property of runtime behaviour (a shown number's provenance, a blocked item's live policy version, a
+    cancellable progress indicator) that no static scan of this repository can verify -- claiming
+    otherwise would be exactly the kind of gate that passes green without meaning anything, which is
+    what this whole check exists to avoid doing."""
+    main_window = read("src", "AMCCA.App", "MainWindow.xaml")
+    check("spec60.obligation_1_kill_switch_in_shared_chrome",
+          "ToggleKillSwitchCommand" in main_window and "IsKillSwitchActive" in main_window,
+          "MainWindow.xaml no longer binds a kill-switch toggle in its shared sidebar chrome")
+    check("spec60.obligation_2_autonomy_and_publishing_visible",
+          "AutonomyMode" in main_window and "PublishingEnabled" in main_window,
+          "MainWindow.xaml no longer binds AutonomyMode/PublishingEnabled in its shared sidebar chrome")
+
+    approval_view_path = os.path.join(ROOT, "src", "AMCCA.App", "Views", "ApprovalQueueView.xaml")
+    if os.path.exists(approval_view_path):
+        approval_view = read("src", "AMCCA.App", "Views", "ApprovalQueueView.xaml")
+        required = ["Binding Action", "SubjectDisplay", "CostCeilingDisplay", "Binding ExpiresAt"]
+        missing = [r for r in required if r not in approval_view]
+        check("spec60.obligation_5_approval_detail_columns", not missing,
+              f"ApprovalQueueView.xaml is missing column(s) for: {missing}")
+    else:
+        check("spec60.obligation_5_approval_detail_columns", False, "ApprovalQueueView.xaml not found")
+
+    app_dir = os.path.join(ROOT, "src", "AMCCA.App")
+    banned = re.compile(r"something went wrong|an error occurred|unexpected error", re.I)
+    offenders = []
+    for dirpath, dirnames, filenames in os.walk(app_dir):
+        dirnames[:] = [d for d in dirnames if d not in ("bin", "obj")]
+        for fn in filenames:
+            if fn.endswith((".xaml", ".cs")):
+                path = os.path.join(dirpath, fn)
+                with open(path, encoding="utf-8") as f:
+                    if banned.search(f.read()):
+                        offenders.append(os.path.relpath(path, ROOT).replace(os.sep, "/"))
+    check("spec60.obligation_6_no_bare_generic_failure_text", not offenders,
+          f"generic failure phrasing found in: {sorted(offenders)}")
+
+
 def check_spec():
     spec_dir = os.path.join(ROOT, "SPEC")
     files = sorted(f for f in os.listdir(spec_dir) if f.endswith(".md"))
@@ -705,6 +761,7 @@ def main():
     check_database()
     check_contract_enum_matches_ddl_check()
     check_thrown_error_codes_catalogued()
+    check_spec60_obligations()
     check_spec()
     check_references()
     check_config()

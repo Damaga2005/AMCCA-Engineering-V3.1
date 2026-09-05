@@ -787,6 +787,81 @@ def mutation_17_thrown_error_code_regresses_from_spec_catalogue():
     return ok
 
 
+def mutation_18_spec60_obligation_signatures_regress():
+    import shutil, tempfile
+    import validate_package as vp
+
+    def results_by_name():
+        return {r["check"]: r for r in vp.RESULTS}
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut18_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        shutil.copytree(os.path.join(ROOT, "src", "AMCCA.App"), os.path.join(scratch, "src", "AMCCA.App"))
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_spec60_obligations()
+        baseline = results_by_name()
+        ok = record("mutation18.baseline_scratch_copy_is_clean",
+                    all(r["ok"] for r in baseline.values()),
+                    "; ".join(f"{n}: {r['detail']}" for n, r in baseline.items() if not r["ok"]))
+
+        main_window_path = os.path.join(scratch, "src", "AMCCA.App", "MainWindow.xaml")
+        with open(main_window_path, encoding="utf-8") as f:
+            mw_source = f.read()
+        needle = 'Command="{Binding ToggleKillSwitchCommand}"'
+        assert needle in mw_source, "test fixture assumption violated: MainWindow.xaml's kill-switch binding text has changed"
+        with open(main_window_path, "w", encoding="utf-8") as f:
+            f.write(mw_source.replace(needle, "", 1))
+
+        approval_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "ApprovalQueueView.xaml")
+        with open(approval_view_path, encoding="utf-8") as f:
+            av_source = f.read()
+        needle2 = '<DataGridTextColumn Header="Cost Ceiling" Binding="{Binding CostCeilingDisplay}" Width="100"/>\n'
+        assert needle2 in av_source, "test fixture assumption violated: ApprovalQueueView.xaml's Cost Ceiling column text has changed"
+        with open(approval_view_path, "w", encoding="utf-8") as f:
+            f.write(av_source.replace(needle2, "", 1))
+
+        settings_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "SettingsView.xaml")
+        with open(settings_view_path, encoding="utf-8") as f:
+            sv_source = f.read()
+        with open(settings_view_path, "a", encoding="utf-8") as f:
+            f.write("<!-- Something went wrong -->\n")
+
+        vp.RESULTS = []
+        vp.check_spec60_obligations()
+        mutated = results_by_name()
+
+        ok = record("mutation18.obligation_1_goes_red_when_kill_switch_binding_removed",
+                    not mutated["spec60.obligation_1_kill_switch_in_shared_chrome"]["ok"],
+                    mutated["spec60.obligation_1_kill_switch_in_shared_chrome"]["detail"]) and ok
+        ok = record("mutation18.obligation_2_unaffected_by_unrelated_mutation",
+                    mutated["spec60.obligation_2_autonomy_and_publishing_visible"]["ok"]) and ok
+        ok = record("mutation18.obligation_5_goes_red_when_cost_ceiling_column_removed",
+                    not mutated["spec60.obligation_5_approval_detail_columns"]["ok"]
+                    and "CostCeilingDisplay" in mutated["spec60.obligation_5_approval_detail_columns"]["detail"],
+                    mutated["spec60.obligation_5_approval_detail_columns"]["detail"]) and ok
+        ok = record("mutation18.obligation_6_goes_red_when_generic_failure_text_introduced",
+                    not mutated["spec60.obligation_6_no_bare_generic_failure_text"]["ok"]
+                    and "SettingsView.xaml" in mutated["spec60.obligation_6_no_bare_generic_failure_text"]["detail"],
+                    mutated["spec60.obligation_6_no_bare_generic_failure_text"]["detail"]) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, still satisfies all four.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_spec60_obligations()
+    real_results_by_name = results_by_name()
+    real_clean = all(r["ok"] for r in real_results_by_name.values())
+    real_detail = "; ".join(f"{n}: {r['detail']}" for n, r in real_results_by_name.items() if not r["ok"])
+    vp.RESULTS = saved
+    ok = record("mutation18.real_package_unaffected_by_mutation", real_clean, real_detail) and ok
+    return ok
+
+
 def read_decisions_declared_and_check():
     import re
     dec_path = os.path.join(ROOT, "DECISIONS.md")
@@ -814,6 +889,7 @@ def run():
         mutation_15_walk_files_oversensitive_filter,
         mutation_16_ddl_check_regresses_from_contract_enum,
         mutation_17_thrown_error_code_regresses_from_spec_catalogue,
+        mutation_18_spec60_obligation_signatures_regress,
     ]
     results = []
     for m in mutations:
