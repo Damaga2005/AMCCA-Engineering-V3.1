@@ -27,7 +27,7 @@ public partial class App : Application
 
     public static IServiceProvider? ServiceProvider { get; private set; }
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -50,43 +50,46 @@ public partial class App : Application
         // SEC-05: fail closed if the resolved secret store is not production-grade.
         SecretStoreGuard.EnsureProductionGrade(_serviceProvider.GetService<ISecretStore>());
 
-        // SPEC/49: system startup preflight, before recovery. Runs before anything else touches the
-        // database or shows UI -- migrations (gates 4-5) are applied as part of this call, so no
-        // separate MigrationService.UpgradeAsync() call happens outside the preflight gate.
+        // SPEC/60: "The UI thread performs no I/O, no database access and no waiting." Show the window
+        // right away -- MainViewModel starts in its "starting up" state, so it renders a checks overlay
+        // and touches no database until the preflight below has run the migrations that create it.
+        var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
+        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
+
+        // SPEC/49: system startup preflight, before recovery. Migrations (gates 4-5) are applied as
+        // part of this call. Task.Run keeps its synchronous prefix and any pool continuations
+        // (gate 8's Process.WaitForExitAsync genuinely suspends) off the UI thread; awaiting the
+        // result -- rather than blocking on it -- lets the dispatcher keep pumping the window we
+        // just showed.
         var config = _serviceProvider.GetRequiredService<AmccaConfig>();
         var secretStore = _serviceProvider.GetRequiredService<ISecretStore>();
         var preflightService = _serviceProvider.GetRequiredService<IPreflightService>();
 
-        // Run it on the thread pool rather than awaiting it inline on the UI thread. OnStartup runs under
-        // a DispatcherSynchronizationContext, so blocking here on a preflight whose continuations post
-        // back to that dispatcher would deadlock: gate 8 awaits Process.WaitForExitAsync, which really
-        // does suspend (the SQLite awaits happen to complete synchronously, which is why the migration
-        // call this replaced got away with the same shape). Inside Task.Run there is no captured context,
-        // so every continuation lands on the pool and the UI thread only waits on a completed task.
-        var report = Task.Run(() => preflightService.RunSystemStartupPreflightAsync(config, secretStore))
-            .GetAwaiter().GetResult();
+        PreflightReport report;
+        try
+        {
+            report = await Task.Run(() => preflightService.RunSystemStartupPreflightAsync(config, secretStore));
+        }
+        catch (Exception ex)
+        {
+            mainWindow.Close();
+            ShowAbortAndShutdown(PreflightStatus.Abort, new[] { $"Preflight threw before completing: {ex.Message}" });
+            return;
+        }
 
         if (!report.IsStartupPermitted)
         {
+            mainWindow.Close();
             ShowAbortAndShutdown(report.Status, report.FailureDetails);
             return;
         }
 
-        var navService = _serviceProvider.GetRequiredService<INavigationService>();
-        navService.NavigateTo<DashboardViewModel>();
-
-        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-
-        if (report.Status == PreflightStatus.Degraded)
-        {
-            var notificationService = _serviceProvider.GetRequiredService<INotificationService>();
-            foreach (var warning in report.Warnings)
-            {
-                notificationService.AddNotification(warning, "Warning");
-            }
-        }
-
-        mainWindow.Show();
+        // Preflight passed (or degraded): the database now exists. Hand control to the window --
+        // navigate to the Dashboard, take the first status reading, surface any degraded warnings.
+        await mainViewModel.CompleteStartupAsync(
+            degraded: report.Status == PreflightStatus.Degraded,
+            warnings: report.Warnings);
     }
 
     private void ShowAbortAndShutdown(PreflightStatus status, IReadOnlyList<string> failureDetails)

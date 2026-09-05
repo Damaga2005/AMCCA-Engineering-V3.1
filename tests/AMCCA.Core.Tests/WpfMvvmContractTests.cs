@@ -116,6 +116,32 @@ public class WpfMvvmContractTests : IDisposable
         });
     }
 
+    /// <summary>
+    /// SPEC/60: "The UI thread performs no I/O, no database access and no waiting." App shows MainWindow
+    /// immediately and runs the SPEC/49 preflight (which creates the database via migrations) in the
+    /// background; MainViewModel must stay in its checking state -- no screen, navigation disabled --
+    /// until App calls CompleteStartupAsync, and only then read status and reveal the Dashboard.
+    /// </summary>
+    [Fact]
+    public async Task MainViewModel_StaysInCheckingState_UntilStartupCompletes()
+    {
+        var nav = CreateNavigationService(out _, out _, out _, out _, out _);
+        var mainVm = new MainViewModel(nav, _operatorControlService, new AmccaConfig(), _dialogService, _notificationService);
+
+        mainVm.IsStartingUp.Should().BeTrue();
+        mainVm.IsReady.Should().BeFalse();
+        mainVm.CurrentView.Should().BeNull("no screen is shown while the preflight is still running");
+
+        await mainVm.CompleteStartupAsync(degraded: true, warnings: new[] { "FFmpeg missing; media rendering disabled." });
+
+        mainVm.IsStartingUp.Should().BeFalse();
+        mainVm.IsReady.Should().BeTrue();
+        mainVm.CurrentView.Should().BeOfType<DashboardViewModel>("startup navigates to the Dashboard once the DB exists");
+        _notificationService.Notifications.Should().Contain(
+            n => n.Type == "Warning" && n.Message.Contains("FFmpeg"),
+            "degraded-startup warnings are surfaced to the operator");
+    }
+
     [Fact]
     public void MainViewModel_NavigationCommands_SwitchCurrentViewProperly()
     {
@@ -166,7 +192,8 @@ public class WpfMvvmContractTests : IDisposable
         var config = new AmccaConfig { PublishingEnabled = true };
         var mainVm = new MainViewModel(nav, _operatorControlService, config, _dialogService, _notificationService);
 
-        // RefreshStatusAsync from the constructor is fire-and-forget; await one explicitly before asserting.
+        // The constructor no longer reads status (the DB does not exist until App's preflight runs);
+        // take the first reading explicitly, the way CompleteStartupAsync does.
         await mainVm.RefreshStatusAsync();
         mainVm.IsKillSwitchActive.Should().BeFalse();
         mainVm.PublishingEnabled.Should().BeTrue();

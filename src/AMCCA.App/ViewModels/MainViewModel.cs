@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
@@ -28,6 +29,7 @@ public class MainViewModel : ViewModelBase
     private bool _isKillSwitchActive;
     private string _autonomyMode = "-";
     private bool _publishingEnabled;
+    private bool _isStartingUp = true;
 
     public ViewModelBase? CurrentView
     {
@@ -73,6 +75,25 @@ public class MainViewModel : ViewModelBase
         private set => SetProperty(ref _publishingEnabled, value);
     }
 
+    /// <summary>
+    /// True until <see cref="CompleteStartupAsync"/> runs. While set, MainWindow shows a "running system
+    /// checks" overlay and disables navigation -- SPEC/49 preflight (which creates the database) has not
+    /// finished, so no screen may touch it yet.
+    /// </summary>
+    public bool IsStartingUp
+    {
+        get => _isStartingUp;
+        private set
+        {
+            if (SetProperty(ref _isStartingUp, value))
+            {
+                OnPropertyChanged(nameof(IsReady));
+            }
+        }
+    }
+
+    public bool IsReady => !_isStartingUp;
+
     public ICommand NavigateDashboardCommand { get; }
     public ICommand NavigateProductionsCommand { get; }
     public ICommand NavigateProductionInspectorCommand { get; }
@@ -115,7 +136,27 @@ public class MainViewModel : ViewModelBase
         ToggleKillSwitchCommand = new AsyncRelayCommand(ToggleKillSwitchAsync);
         RefreshStatusCommand = new AsyncRelayCommand(RefreshStatusAsync);
 
-        _ = RefreshStatusAsync();
+        // No status read here: the database does not exist until App's preflight has run its
+        // migrations. App calls CompleteStartupAsync once that is done.
+    }
+
+    /// <summary>
+    /// Called by App once SPEC/49 preflight has passed and the database exists: reveal the UI, take the
+    /// first status reading, and surface any degraded-startup warnings.
+    /// </summary>
+    public async Task CompleteStartupAsync(bool degraded, IReadOnlyList<string> warnings)
+    {
+        if (degraded)
+        {
+            foreach (var warning in warnings)
+            {
+                _notificationService.AddNotification(warning, "Warning");
+            }
+        }
+
+        _navigationService.NavigateTo<DashboardViewModel>();
+        await RefreshStatusAsync();
+        IsStartingUp = false;
     }
 
     public async Task RefreshStatusAsync()

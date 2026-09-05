@@ -921,6 +921,16 @@ def mutation_18_spec60_obligation_signatures_regress():
         with open(jobqueue_view_path, "w", encoding="utf-8") as f:
             f.write(jv_source.replace(needle7, "", 1))
 
+        # "UI thread does no waiting": reintroduce a blocking wait in App startup.
+        app_startup_path = os.path.join(scratch, "src", "AMCCA.App", "App.xaml.cs")
+        with open(app_startup_path, encoding="utf-8") as f:
+            app_source = f.read()
+        with open(app_startup_path, "w", encoding="utf-8") as f:
+            f.write(app_source.replace(
+                "protected override async void OnStartup(StartupEventArgs e)\n    {",
+                "protected override async void OnStartup(StartupEventArgs e)\n    {\n        var _blocked = System.Threading.Tasks.Task.CompletedTask.GetAwaiter().GetResult();",
+                1))
+
         vp.RESULTS = []
         vp.check_spec60_obligations()
         mutated = results_by_name()
@@ -948,6 +958,9 @@ def mutation_18_spec60_obligation_signatures_regress():
                     not mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["ok"]
                     and "Job Queue" in mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["detail"],
                     mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["detail"]) and ok
+        ok = record("mutation18.ui_thread_startup_goes_red_when_blocking_wait_reintroduced",
+                    not mutated["spec60.ui_thread_startup_does_not_block"]["ok"],
+                    mutated["spec60.ui_thread_startup_does_not_block"]["detail"]) and ok
     finally:
         vp.ROOT, vp.RESULTS = real_root, real_results
         shutil.rmtree(scratch, ignore_errors=True)

@@ -570,6 +570,9 @@ def check_spec60_obligations():
       bound to IsLoading and a per-load CancellationTokenSource that is cancelled when a new load
       starts. This checks both views bind the progress indicator and both VMs create and cancel that
       token source.
+    - "The UI thread performs no ... waiting" (para 1): the one violation was App.OnStartup blocking
+      on the preflight task. It now shows the window and awaits. This guards against a blocking wait
+      (.GetAwaiter().GetResult(), .Wait(), .Result) reappearing in App.xaml.cs.
 
     The other half of obligation 6 -- that every real failure surfaces a SPEC/05 code -- is still not
     checked: it is a property of runtime behaviour that no static scan of this repository can verify,
@@ -656,6 +659,18 @@ def check_spec60_obligations():
     check("spec60.obligation_7_long_operations_show_progress_and_cancel",
           ob7_missing == [],
           f"progress/cancellation regressed; missing: {ob7_missing}")
+
+    # SPEC/60 para 1: "The UI thread performs no I/O, no database access and no waiting." The one place
+    # that violated it was App.OnStartup blocking on the preflight task; it now shows the window and
+    # awaits. This guards that exact regression -- a blocking wait back in startup.
+    app_startup = _view("src", "AMCCA.App", "App.xaml.cs")
+    blocking = None if app_startup is None else [
+        p for p in (".GetAwaiter().GetResult()", ".Wait()", ".Result;") if p in app_startup
+    ]
+    check("spec60.ui_thread_startup_does_not_block",
+          blocking == [],
+          "App.xaml.cs not found" if app_startup is None
+          else f"App startup blocks the UI thread on: {blocking}")
 
 
 def check_spec():

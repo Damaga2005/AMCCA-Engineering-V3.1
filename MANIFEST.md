@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 370
-**Total bytes:** 2291682
+**Total bytes:** 2297831
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -187,7 +187,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
 | `TOOLS/test_generation.py` | `8a9074633c8f3fc284e35c4f3ebcc9a50188802d1ffecdc21fce656bb3246193` | 1371 |
 | `TOOLS/test_money_precision.py` | `902fa1490e7bea2881774a9c0be863686e5f1595e39acab2575c2a9541669d91` | 1289 |
-| `TOOLS/test_mutations.py` | `4fe3aab8c218c20f6f0c00e94cfb74cf367240da50f0a7f3ee0f60234404b1f3` | 51254 |
+| `TOOLS/test_mutations.py` | `7e8ba1dc0dea28504186d6bf2c8197540b072a67a92019d744694420345804e6` | 52169 |
 | `TOOLS/test_no_contract_duplication.py` | `1b0c10d42b296ea84d19d4f4089b1bd13e40f33f784cc50e6cd685dfee7883d4` | 3090 |
 | `TOOLS/test_no_duplicated_version_constants.py` | `82af520ef60a0a0f41c2d80a164f83879febd93356d513de8f54fb10a4e13632` | 3933 |
 | `TOOLS/test_platform_evidence.py` | `6f4964998994dbd9015c40a74db509ed3b2684e9867414bac4fcff7bd1284280` | 2135 |
@@ -197,18 +197,18 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
-| `TOOLS/validate_package.py` | `d89d48e2f2f3c1c89347efc9589255a08b336692eab7cadc47963df4974d63f8` | 47683 |
+| `TOOLS/validate_package.py` | `e3c982939c9c53285ba15ccfea1e6ceb410eea4885116e8411d69de19ea5013e` | 48665 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
 | `installer/build_installer.ps1` | `278172cf412c60b94179cd1e6535c7bf5e5af67e6b25ed0b7bd839ffcb728f62` | 5197 |
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `e86f58445328d8c20c8b68052dddc1a993c58432ecca5d82f67e4199848b5904` | 841 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
-| `src/AMCCA.App/App.xaml.cs` | `af51d94fcedb7a786ddc8e019016717688c00e9dd97c2a97f2b173b595699e43` | 7073 |
+| `src/AMCCA.App/App.xaml.cs` | `a3b60edf1a96bcbda69942304b1710b377d2d2d510b0aa69a553f74a69ca4e2d` | 7137 |
 | `src/AMCCA.App/Common/RelayCommand.cs` | `7cbfae6aaac6658c5cd498d8d322c1b11164440001a42e9492640b7508472071` | 2354 |
 | `src/AMCCA.App/Common/StatusConverters.cs` | `d0d25931faf195950b92cda8285c7ef5a77718873b0cb4fcf0052e417f85eac9` | 1241 |
 | `src/AMCCA.App/Common/ViewModelBase.cs` | `2446920133a472d99e9ab606a65aa38451d07b9385894823343179d01df16e84` | 689 |
-| `src/AMCCA.App/MainWindow.xaml` | `a5616ea0c20581c010b45dffef5591dfbf65505bae08fe49d14565ef5315c794` | 6664 |
+| `src/AMCCA.App/MainWindow.xaml` | `4375696d75f5da51464e7861cfeaf581c738e9fb7a1014fcad8e0e448b50f4fd` | 7857 |
 | `src/AMCCA.App/MainWindow.xaml.cs` | `d4a6f13a7e43f9c71ac06a9ba23bf0a17df3a8661211cbe25bd2e0358c502f50` | 245 |
 | `src/AMCCA.App/Program.cs` | `cf1bd6d02793dc20e509553281a14cd192efe8456e57eb404405b085a6fbecf1` | 604 |
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
@@ -218,7 +218,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/ViewModels/AuditLogViewModel.cs` | `a4baa3ad38807404ededb6944f17b768993de11c9ad0e0ba29d52c0ca8aa9532` | 2204 |
 | `src/AMCCA.App/ViewModels/DashboardViewModel.cs` | `45210e53e3b6dd870819e9e9ef914821d7cc791886e073ed1f758b24f11b3c1c` | 2870 |
 | `src/AMCCA.App/ViewModels/JobQueueViewModel.cs` | `f8891b8dde20ae088458c03f037942a48e64de4c53448cc0b334bc25ab53da9c` | 11230 |
-| `src/AMCCA.App/ViewModels/MainViewModel.cs` | `e08e6cbc9dfce9b012d071674f572ca573aff67c69d207f8d62c33e81d600234` | 7631 |
+| `src/AMCCA.App/ViewModels/MainViewModel.cs` | `078534eaaa02700858eb7366454689023db9e16b1fffccdb370eb315de7ef965` | 9062 |
 | `src/AMCCA.App/ViewModels/ProductionInspectorViewModel.cs` | `a8bcc1b72d46189f42e2312a8608e39b464c5ca4690a8f6a7d5babe6486971f6` | 19914 |
 | `src/AMCCA.App/ViewModels/ProductionsViewModel.cs` | `c8533286fd2225aa7d80825083f5ed24560845a2b2fcecf30b5716dbee4501d2` | 5503 |
 | `src/AMCCA.App/ViewModels/SettingsViewModel.cs` | `92415b15f01adcb8e1e7b1deb1f061e851b7fbce0e2216fb2ef9c426af4dd390` | 3574 |
@@ -380,4 +380,4 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/StateMachineContractTests.cs` | `82893bdcd595c9ad2fefad61f9a36d3016d2687d89bcca93c5e5a4c3110a0b9b` | 6875 |
 | `tests/AMCCA.Core.Tests/TestSecretStores.cs` | `b50f6419786f2b86cfdac2bb0e48b5f77abb129bc0bee1d217ec86b38fad1453` | 744 |
 | `tests/AMCCA.Core.Tests/ToolRegistryAndAgentRuntimeContractTests.cs` | `a0aa6a6d9255b7a11e7e8397989a4a1559109533f76360aa205cf7205adb0149` | 7067 |
-| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `e344e81220914da812893977e51cb5efd0d83b290972cda37247e709e65ffe61` | 34033 |
+| `tests/AMCCA.Core.Tests/WpfMvvmContractTests.cs` | `c5cbda073fc06a23a30b09d98bbddd14c35cf28d2ad07e2bac444603cceb77d6` | 35597 |

@@ -13,6 +13,7 @@
     <Window.Resources>
         <common:KillSwitchLabelConverter x:Key="KillSwitchLabelConverter"/>
         <common:EnabledDisabledConverter x:Key="EnabledDisabledConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardView/>
         </DataTemplate>
@@ -42,8 +43,9 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Sidebar Navigation -->
-        <Border Grid.Column="0" Background="#11111B" Padding="15">
+        <!-- Sidebar Navigation. Disabled until App's SPEC/49 preflight has finished (IsReady): the
+             screens it navigates to all read the database, which does not exist until then. -->
+        <Border Grid.Column="0" Background="#11111B" Padding="15" IsEnabled="{Binding IsReady}">
             <DockPanel>
                 <!-- Header -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,25">
@@ -101,6 +103,19 @@
         <!-- Content Area -->
         <Grid Grid.Column="1">
             <ContentControl Content="{Binding CurrentView}"/>
+
+            <!-- SPEC/49 startup overlay: shown while the preflight runs so the operator sees progress
+                 instead of a frozen or empty window (SPEC/60: the UI thread does no waiting). -->
+            <Border Background="#181825"
+                    Visibility="{Binding IsStartingUp, Converter={StaticResource BoolToVis}}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="Running system checks…" Foreground="#CDD6F4" FontSize="16"
+                               HorizontalAlignment="Center" Margin="0,0,0,14"/>
+                    <ProgressBar IsIndeterminate="True" Width="220" Height="6"/>
+                    <TextBlock Text="SPEC/49 preflight — database, storage, secrets, media"
+                               Foreground="#6C7086" FontSize="11" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>
