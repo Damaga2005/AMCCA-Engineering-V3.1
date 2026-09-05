@@ -63,7 +63,7 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-MED-002` | MEDIA | No | FFmpeg timeout or output ceiling exceeded |
 | `AMCCA-QA-001` | VALIDATION | No | QA failure; rework |
 | `AMCCA-QA-002` | INTERNAL | No | AI-assisted finding attempted to set a verdict |
-| `AMCCA-QA-003` | INTERNAL | No | Reserved for a named QA threshold-profile lookup. `QaVerdictEvaluator` does not implement threshold profiles yet — it takes `minOverall`/`minCritical` as fixed caller-supplied defaults, so this condition cannot currently occur. Kept catalogued (not thrown) until threshold-profile selection is built. |
+| `AMCCA-QA-003` | INTERNAL | No | Named QA threshold-profile lookup failed. `QaThresholdProfileRegistry.Resolve` throws it for an unknown `threshold_profile_id`; the constructor throws it for a stricter profile that lowers a threshold below the base (SPEC/35: a profile may raise thresholds, never lower them). `qa_reports` has no production writer yet, so the profile id is an in-memory `QaVerdictEvaluator` input today; a persisted `threshold_profiles` table keyed by the ULID `qa.schema.json` describes is deferred until QA verdicts are recorded. |
 | `AMCCA-RGT-001` | RIGHTS | No | Asset not GREEN; review rights |
 | `AMCCA-CMP-001` | COMPLIANCE | No | Required synthetic-content label not applied |
 | `AMCCA-CMP-002` | COMPLIANCE | No | Required affiliate disclosure missing |

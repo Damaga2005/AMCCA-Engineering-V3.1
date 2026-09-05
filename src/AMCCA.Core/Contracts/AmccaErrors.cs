@@ -40,7 +40,7 @@ public static class AmccaErrors
     // QA Domain
     public const string Qa001 = "AMCCA-QA-001";   // QA check failed on critical dimension
     public const string Qa002 = "AMCCA-QA-002";   // Verdict set from AI-assisted check alone (prohibited)
-    public const string Qa003 = "AMCCA-QA-003";   // Reserved, unused: no named threshold-profile lookup exists yet; QaVerdictEvaluator takes fixed caller-supplied minOverall/minCritical
+    public const string Qa003 = "AMCCA-QA-003";   // Named QA threshold-profile lookup failed: unknown profile id, or a profile that lowers a threshold below the base (SPEC/35). Thrown by QaThresholdProfileRegistry.
 
     // Cost / Budget Domain
     public const string Bud002 = "AMCCA-BUD-002"; // Budget reservation refused; insufficient remaining budget

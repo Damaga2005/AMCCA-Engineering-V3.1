@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 369
-**Total bytes:** 2284883
+**Files:** 370
+**Total bytes:** 2291682
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -93,7 +93,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SPEC/02_RUNTIME.md` | `4d9053f1ff8176b373f4643dd0e7d5721ef11c23b240711af56772a351415489` | 2524 |
 | `SPEC/03_CONFIGURATION.md` | `369a3a08f0e8caa9f42506c694fe0847c1fd923e26cf9409b71ad51a29769e5d` | 3085 |
 | `SPEC/04_CONTRACTS.md` | `37aaf7ef03fec250fc4ca1ac05a03162dd5e633abd43f5426ef2bae99708615a` | 3199 |
-| `SPEC/05_ERROR_MODEL.md` | `5200033ad360fa78295e059ec699ab3077859223bff0414adb34d2330e99d5b4` | 7658 |
+| `SPEC/05_ERROR_MODEL.md` | `e32a81328603f6d1f6cf1c9fe76fa65b55b07c835e7bec9769b888e06b99a365` | 7871 |
 | `SPEC/06_AGENT_SYSTEM.md` | `6c39018c3f550a8cb413be2326aedb807977b0227713ec849ac4242128281e8e` | 2723 |
 | `SPEC/07_TOOL_REGISTRY.md` | `a41f18c333253307e3e5d60c7331051c47e7105b36e9e5cc48b3bd8419d6eaf2` | 2117 |
 | `SPEC/08_POLICY_ENGINE.md` | `7bc7098df75726473aacf31dc44755534d740ccf5763ce4295403bce4f637bd4` | 1879 |
@@ -242,7 +242,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Agents/AgentRuntime.cs` | `26b7153ec49755f74e6952661f28308e91e930f84d73001b83161cebf91ebbc2` | 9665 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `1f710a275f7fb5336cc1d11717ba87a09d848ecbf84f0d3e81764aef161838bf` | 8094 |
-| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `f2d89f4c7bc31bb0c5bc1903bc2df4394c2eb885437cdfa92ad4e52f693edb33` | 5023 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `395a398c8df1e56ab3c8b9db5ff8d939d53d31fb346f7b0378d5e89acddf73d1` | 5052 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
@@ -296,7 +296,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Publishing/YouTubePlatformAdapter.cs` | `be290a99b2201b060e06e1cc91e1a4e703a36fddf29e75ff0c8c9f1dc6017240` | 6460 |
 | `src/AMCCA.Core/QA/ArtifactDag.cs` | `3c02d9c265f7ca53837f53f8a63b350ac4702e171305e5ab183b27b4ca395020` | 8025 |
 | `src/AMCCA.Core/QA/QaModels.cs` | `f5210afa9329f5a237558e451f73aca7d5cf4b9380bab9d948e8b023cc53041c` | 958 |
-| `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `4921945956ad5419f57cb662736275ce4b91817d6a8999f46012bcd7c3a0e82a` | 1777 |
+| `src/AMCCA.Core/QA/QaThresholdProfile.cs` | `bdeae4526451082e60d0a0c0e641b6531adbf175207c3f01ea48f0e0b671dcef` | 3651 |
+| `src/AMCCA.Core/QA/QaVerdictEvaluator.cs` | `90c6de986b290719b36af30116664cb02c186da3682e5df4984baafcbf70df38` | 2404 |
 | `src/AMCCA.Core/Research/ClaimValidator.cs` | `b16d3aff481491822ecdcb2d8da60e7998a3ef5fdd15260e1a00795b3e59eada` | 2040 |
 | `src/AMCCA.Core/Research/ResearchModels.cs` | `681ef7c07810e4f89c8cc97ef46fee8112037f1e299991f96c50bc3828c2e20b` | 1450 |
 | `src/AMCCA.Core/Research/ResearchScraper.cs` | `deb3756e131bee488bb3410b6dc5d2a09a6722a6a46242bfaaa2fc99ef060771` | 471 |
@@ -367,7 +368,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ProviderGatewayAndModelRegistryContractTests.cs` | `8141a09397cbc630787faa6ffa52fd48bd7313f810b158b0eeb274b92cf5646a` | 6159 |
 | `tests/AMCCA.Core.Tests/ProviderLoopbackIntegrationTests.cs` | `35194604db24908501d4ffe78a089c087d047396086a1d8a755086e405e206dd` | 10499 |
 | `tests/AMCCA.Core.Tests/PublishingAndPlatformHubContractTests.cs` | `c637e9101bd87e4e3eb55629cbdecdc38e31771636ae616f4c345e90d250a112` | 5598 |
-| `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e44e2cbf8c14f9b3516594970cb4093178314e1a95d66c2623a39c8534c9dc0b` | 4735 |
+| `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e72698af24a6b162648169405fbecf5f068827dcc00823ce1f33134f6e53e5cc` | 7014 |
 | `tests/AMCCA.Core.Tests/ReparsePointConfinementRegressionTests.cs` | `5c1294595078008fd07574007254ce663ba8678a168c0dd69f3304cb84e42303` | 5485 |
 | `tests/AMCCA.Core.Tests/ResearchAndClaimValidationContractTests.cs` | `6f8f5f74b84d403fafb4e5fdda9539dd2806faac033efcd2038ecfb4b6b0ce49` | 8662 |
 | `tests/AMCCA.Core.Tests/SecretRefResolutionRegressionTests.cs` | `601d2c20cd99d8a7ebeef17f5ba397fb160e657c1aa0549a1fdae518b5cff21e` | 5504 |

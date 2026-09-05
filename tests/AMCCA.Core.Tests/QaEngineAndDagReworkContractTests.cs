@@ -75,6 +75,58 @@ public class QaEngineAndDagReworkContractTests
     }
 
     [Fact]
+    public void ThresholdProfile_Default_YieldsTheBaseThresholds()
+    {
+        var registry = QaThresholdProfileRegistry.Base(overallMin: 8.5, criticalMin: 8.0);
+
+        registry.Resolve("default").Should().Be(new QaThresholdProfile("default", 8.5, 8.0));
+        registry.Resolve(null).Should().Be(new QaThresholdProfile("default", 8.5, 8.0));
+    }
+
+    [Fact]
+    public void ThresholdProfile_UnknownId_RaisesQa003()
+    {
+        var registry = QaThresholdProfileRegistry.Base(8.5, 8.0);
+
+        var act = () => registry.Resolve("youtube_strict");
+
+        act.Should().Throw<AmccaException>().Where(e => e.ErrorCode == AmccaErrors.Qa003);
+    }
+
+    [Fact]
+    public void ThresholdProfile_ThatLowersAThreshold_IsRejectedAtConstructionWithQa003()
+    {
+        // SPEC/35: "A stricter platform profile may raise thresholds; nothing may lower them."
+        var act = () => new QaThresholdProfileRegistry(8.5, 8.0, new[]
+        {
+            new QaThresholdProfile("lax", OverallMin: 8.0, CriticalMin: 8.0)
+        });
+
+        act.Should().Throw<AmccaException>().Where(e => e.ErrorCode == AmccaErrors.Qa003);
+    }
+
+    [Fact]
+    public void ThresholdProfile_StricterProfile_RaisesTheBarSoAMarginalScoreNowFails()
+    {
+        var registry = new QaThresholdProfileRegistry(8.5, 8.0, new[]
+        {
+            new QaThresholdProfile("youtube_strict", OverallMin: 9.0, CriticalMin: 8.5)
+        });
+        var criticalScores = new CriticalScores(8.8, 9.0, 9.5, 8.6, 9.0);
+        var findings = new List<QaFinding>
+        {
+            new("f-det", "rep-1", "codec_check", CheckKind.DETERMINISTIC, CheckStatus.PASS, Severity.INFO, "art-render-1", null, "h264", "h264", "Codec matches profile")
+        };
+
+        // 8.9 clears the base overall_min (8.5) but not the strict profile's 9.0.
+        var underDefault = QaVerdictEvaluator.EvaluateVerdict(8.9, criticalScores, findings, thresholdProfiles: registry, thresholdProfileId: "default");
+        var underStrict = QaVerdictEvaluator.EvaluateVerdict(8.9, criticalScores, findings, thresholdProfiles: registry, thresholdProfileId: "youtube_strict");
+
+        underDefault.Should().Be("PASS");
+        underStrict.Should().Be("FAIL", "the stricter platform profile raises overall_min to 9.0");
+    }
+
+    [Fact]
     public void DagRework_InvalidatesDownstreamDescendants_WithoutDeletingThem()
     {
         // SPEC/37: "Locate X in the artifact DAG. Compute all descendants through artifact_edges. Mark descendants INVALIDATED. Never delete."
