@@ -6,6 +6,8 @@ using AMCCA.Core.Database;
 using AMCCA.Core.Jobs;
 using AMCCA.Core.Orchestration;
 using AMCCA.Core.Orchestration.Handlers;
+using AMCCA.Core.Providers;
+using AMCCA.Core.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -50,6 +52,15 @@ public static class Program
 
         var builder = Host.CreateApplicationBuilder(args);
         Composition.AddAmccaCore(builder.Services, connectionFactory, config);
+
+        // The model provider gateway, if config.providers.gateway is enabled and complete. Registered
+        // only when present; the stage-handler agents block a production when it is absent rather than
+        // faking a model call.
+        var gateway = ProviderGatewayComposer.Compose(config, new WindowsDpapiSecretStore());
+        if (gateway is not null)
+        {
+            builder.Services.AddSingleton(gateway);
+        }
 
         builder.Services.AddSingleton(sp =>
         {
