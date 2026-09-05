@@ -55,7 +55,7 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-AI-002` | UNKNOWN_EXTERNAL_STATE | No | Reconcile before any retry |
 | `AMCCA-AI-003` | VALIDATION | No | Agent output failed its declared schema |
 | `AMCCA-AI-004` | POLICY | No | Agent attempted a forbidden tool |
-| `AMCCA-AI-005` | BUDGET | No | Agent cost ceiling exceeded |
+| `AMCCA-AI-005` | BUDGET | No | Reserved; not currently thrown. Its cost-ceiling half is a duplicate of `AMCCA-BUD-002` (`AgentRuntime.ExecuteToolCallAsync` throws that instead, DEF-004); its timeout half deliberately surfaces as a raw, unwrapped `OperationCanceledException` — an established, tested contract (`TimeoutSeconds_CancelsExecutionWhenExceeded`) that matches .NET's own cancellation convention and should not be wrapped. |
 | `AMCCA-RES-001` | VALIDATION | No | Material claim lacks sufficient independent sources |
 | `AMCCA-RES-002` | TRANSIENT | Yes | Research source unavailable |
 | `AMCCA-RES-003` | SECURITY | No | Reserved; duplicate of `AMCCA-SEC-003` (`SsrfValidator` throws `AMCCA-SEC-003` for every SSRF/domain-policy rejection). Not currently thrown by any code path — kept catalogued rather than removed so a future caller cannot silently reuse the code for an unrelated condition. |

@@ -30,7 +30,7 @@ public static class AmccaErrors
     public const string Ai002 = "AMCCA-AI-002";   // Rate limit exceeded on AI gateway
     public const string Ai003 = "AMCCA-AI-003";   // Agent output failed schema validation
     public const string Ai004 = "AMCCA-AI-004";   // Agent attempted to call a tool outside its allowed_tools set (blocked and audited)
-    public const string Ai005 = "AMCCA-AI-005";   // Agent run exceeded timeout or max_cost ceiling
+    public const string Ai005 = "AMCCA-AI-005";   // Reserved, unused. Cost-ceiling half is a duplicate of Cst002/Bud002, which AgentRuntime.ExecuteToolCallAsync actually throws (DEF-004). Timeout half deliberately surfaces as a raw OperationCanceledException instead (established, tested contract -- TimeoutSeconds_CancelsExecutionWhenExceeded et al.), matching .NET cancellation convention; wrapping it here would be a regression, not a fix.
 
     // Research Domain
     public const string Res001 = "AMCCA-RES-001"; // Source count below policy minimum or missing backing claim

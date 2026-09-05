@@ -162,9 +162,23 @@ responsable de la especificación:
   el código hubiera ocultado, en el caso de `QA-003`, que la selección de perfil de umbral es una
   funcionalidad que la especificación da por hecha y el código no tiene.
 
-Nunca lanzados, entre ellos: `AMCCA-AI-005` (techo de coste de agente excedido, sigue sin resolver — no es
-parte del sistema de Jobs) y `AMCCA-JOB-001` (*lease* expirado, token de vallado obsoleto, trabajo
+Nunca lanzados, entre ellos: ~~`AMCCA-AI-005`~~ (techo de coste de agente excedido) y `AMCCA-JOB-001`
+(*lease* expirado, token de vallado obsoleto, trabajo
 abandonado).
+
+**`AMCCA-AI-005` investigado, sin defecto que corregir en el código:** su propio comentario en
+`AmccaErrors.cs` decía "timeout or max_cost ceiling" (dos condiciones en un código), pero SPEC/05 solo
+documentaba la mitad de coste. Revisadas ambas mitades en `AgentRuntime.ExecuteToolCallAsync`:
+- El techo de coste ya lo lanza `AMCCA-BUD-002` (vía su alias `Cst002`) en los dos puntos donde se
+  comprueba (DEF-004) — `AI-005` es un duplicado nunca alcanzado, no una implementación pendiente.
+- El timeout se aplica con un `CancellationTokenSource.CancelAfter` y se deja propagar como
+  `OperationCanceledException` sin envolver — comprobado que esto es un contrato ya probado
+  deliberadamente (`TimeoutSeconds_CancelsExecutionWhenExceeded` y otro test en
+  `AgentCostReservationOrderRegressionTests`), y es la convención correcta de .NET para cancelación.
+  Envolverlo en `AmccaException` sería una regresión, no una corrección.
+
+Catalogado con nota explícita en `SPEC/05` y `AmccaErrors.cs` en vez de borrado, mismo tratamiento que
+`AMCCA-QA-003`/`AMCCA-RES-003`/`AMCCA-JOB-002`. No se tocó ningún test ni código de `AgentRuntime`.
 
 **Resuelto para `AMCCA-JOB-001`, y con un defecto real detrás:** no solo nunca se lanzaba — donde debía
 lanzarse, el código lanzaba `AMCCA-JOB-003` en su lugar. `CompleteJobOrThrowAsync` y la sobrecarga de

@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2101643
+**Total bytes:** 2103462
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -23,7 +23,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
-| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `94138dc3e885494eddd7c284a1d3894778a1bfa477022f5835864223a3ff4eab` | 22582 |
+| `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `b02dc0131429e4e1d3d373fbbb7705e6d01a20cefc172cacbcddda56eb11ddf5` | 23682 |
 | `AUDIT/IMPLEMENTATION_GAP_MATRIX.md` | `5b8449f4c6ec83337c40dc0c03df69d8c351d99fda1fe451f5577d595cd34ca4` | 30882 |
 | `AUDIT/SECOND_AUDIT_PHASE_MATRIX.md` | `2ff73995d578be8e74ec5de7dadb970358d7aa939a6c3b3b7751461486fb464f` | 10877 |
 | `AUDIT/SECOND_AUDIT_REPORT.md` | `71f3271fabcabecc6966b99807cd4b87ce2cee8cde2f75859e115c36c32b250e` | 20032 |
@@ -93,7 +93,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `SPEC/02_RUNTIME.md` | `4d9053f1ff8176b373f4643dd0e7d5721ef11c23b240711af56772a351415489` | 2524 |
 | `SPEC/03_CONFIGURATION.md` | `369a3a08f0e8caa9f42506c694fe0847c1fd923e26cf9409b71ad51a29769e5d` | 3085 |
 | `SPEC/04_CONTRACTS.md` | `37aaf7ef03fec250fc4ca1ac05a03162dd5e633abd43f5426ef2bae99708615a` | 3199 |
-| `SPEC/05_ERROR_MODEL.md` | `a253a7ff4e4cbbe6607bcbd44443c268c56e64a389e0e455318c1f85dc6f3e9c` | 7351 |
+| `SPEC/05_ERROR_MODEL.md` | `e0110c4363c54ab694735dbbfa86ec9bd3f80b33d01c680744656ef18ea4814c` | 7726 |
 | `SPEC/06_AGENT_SYSTEM.md` | `6c39018c3f550a8cb413be2326aedb807977b0227713ec849ac4242128281e8e` | 2723 |
 | `SPEC/07_TOOL_REGISTRY.md` | `a41f18c333253307e3e5d60c7331051c47e7105b36e9e5cc48b3bd8419d6eaf2` | 2117 |
 | `SPEC/08_POLICY_ENGINE.md` | `7bc7098df75726473aacf31dc44755534d740ccf5763ce4295403bce4f637bd4` | 1879 |
@@ -242,7 +242,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Agents/AgentRuntime.cs` | `26b7153ec49755f74e6952661f28308e91e930f84d73001b83161cebf91ebbc2` | 9665 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `681656daaf46e3236650ed92dd65c004a3afdbb3cab4e45c239d712d526c229c` | 4071 |
 | `src/AMCCA.Core/Configuration/ConfigService.cs` | `1f710a275f7fb5336cc1d11717ba87a09d848ecbf84f0d3e81764aef161838bf` | 8094 |
-| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `c5abed5209e2725127d326136641c9a4fb7ecba266c87067a7cb384f0c80b83d` | 4669 |
+| `src/AMCCA.Core/Contracts/AmccaErrors.cs` | `c4b53f8d19601ae63c93ccfd192df22f0eb4010085580c9ca6f38626c5a4c11a` | 5013 |
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `59967c40cabf613fc1b257df2ce6e937a56a65dc2e3e54fdbfc3ef02db2848f9` | 512 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
