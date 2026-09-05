@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AMCCA.Core.Diagnostics;
 using AMCCA.Core.Orchestration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -68,6 +69,7 @@ public sealed class OrchestratorHostedService : BackgroundService
 
         foreach (var a in r.Actions)
         {
+            AmccaMetrics.CountTransition(a.ToState);
             _logger.LogInformation("Production {ProductionId}: {From} -> {To} ({Outcome}{Reason}).",
                 a.ProductionId, a.FromState, a.ToState, a.Outcome,
                 a.ReasonCode is null ? "" : $" {a.ReasonCode}");
@@ -75,6 +77,7 @@ public sealed class OrchestratorHostedService : BackgroundService
 
         foreach (var e in r.Errors)
         {
+            AmccaMetrics.OrchestratorErrors.Add(1);
             _logger.LogError("Production {ProductionId} in {State}: {Message}", e.ProductionId, e.State, e.Message);
         }
 

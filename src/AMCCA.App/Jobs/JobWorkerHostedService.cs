@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AMCCA.Core.Diagnostics;
 using AMCCA.Core.Jobs;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,7 @@ public sealed class JobWorkerHostedService : BackgroundService
                 }
                 else
                 {
+                    AmccaMetrics.CountJob(outcome.ToString());
                     _logger.Log(
                         outcome == JobProcessingOutcome.Completed ? LogLevel.Information : LogLevel.Warning,
                         "{Worker}: {Outcome}.", workerId, outcome);

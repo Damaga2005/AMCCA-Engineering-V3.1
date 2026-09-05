@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using AMCCA.App.Jobs;
 using AMCCA.App.Orchestration;
@@ -10,6 +11,8 @@ using AMCCA.Core.Providers;
 using AMCCA.Core.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace AMCCA.App;
 
@@ -50,7 +53,22 @@ public static class Program
         var connectionFactory = new DatabaseConnectionFactory(dbPath);
         var config = Composition.LoadConfig(dbDir);
 
+        var logDir = Path.Combine(dbDir, "logs");
+        Directory.CreateDirectory(logDir);
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .Enrich.FromLogContext()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+            .WriteTo.File(
+                Path.Combine(logDir, "orchestrator-.log"),
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 14,
+                outputTemplate: "{Timestamp:o} [{Level:u3}] {SourceContext} {Message:lj} {Properties:j}{NewLine}{Exception}")
+            .CreateLogger();
+
         var builder = Host.CreateApplicationBuilder(args);
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog(Log.Logger, dispose: true);
         Composition.AddAmccaCore(builder.Services, connectionFactory, config);
 
         // The model provider gateway, if config.providers.gateway is enabled and complete. Registered
@@ -104,6 +122,7 @@ public static class Program
         builder.Services.AddSingleton(JobWorkerOptions.Default);
         builder.Services.AddSingleton<JobWorkerEngine>();
         builder.Services.AddHostedService<JobWorkerHostedService>();
+        builder.Services.AddHostedService<SystemHealthReporter>();
 
         var host = builder.Build();
 
