@@ -220,12 +220,10 @@ public class OperatorJourneyEndToEndTests : IDisposable
         requeued!.State.Should().Be("QUEUED");
         requeued.ProductionId.Should().Be(productionId, "a job must be traceable to the production it serves");
 
-        // Then a worker picks it up again and finishes it. This asserts COMPLETED because that is what
-        // JobManager writes; job.schema.json enumerates SUCCEEDED instead. The assertion tracks the
-        // implementation rather than taking a side in that contradiction, which is raised separately.
+        // Then a worker picks it up again and finishes it.
         var retryLease = await _jobManager.AcquireLeaseAsync(job.Id, "render-worker-2", TimeSpan.FromMinutes(2));
         await _jobManager.CompleteJobOrThrowAsync(job.Id, "render-worker-2", retryLease!.FenceToken);
-        (await _jobManager.GetJobAsync(job.Id))!.State.Should().Be("COMPLETED");
+        (await _jobManager.GetJobAsync(job.Id))!.State.Should().Be("SUCCEEDED"); // job.schema.json's terminal success state (migration 006)
 
         // ------------------------------------- 7. The protected action needs a human approval (SPEC/09)
         // Policy refuses to let a protected action through on its own.

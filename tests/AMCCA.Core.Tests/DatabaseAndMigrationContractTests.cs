@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Events;
+using Dapper;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -282,5 +283,130 @@ public class DatabaseAndMigrationContractTests : IDisposable
         // since a value this close to correct is the one a hand-written call site is most likely to send.
         var act = async () => await insert();
         await act.Should().ThrowAsync<SqliteException>();
+    }
+
+    /// <summary>
+    /// DEF-001/DEF-003: an installation that had the kill switch engaged through the old
+    /// settings['kill_switch.global'] path must not silently lose that fact when it upgrades to the
+    /// version that reads kill_switch_state instead. Migration 5 is that carry-over.
+    ///
+    /// The scenario is built with only the public API: apply every migration, roll back just the last
+    /// one (settings and kill_switch_state both predate it, from migration 1, so they survive), insert
+    /// the legacy row the old SettingsViewModel code used to write, then upgrade again so migration 5
+    /// runs against a database that genuinely has that row -- not a hand-constructed shortcut.
+    /// </summary>
+    [Theory]
+    [InlineData(true, "EMERGENCY_STOP")]
+    [InlineData(false, "NORMAL")]
+    public async Task Migration005_CarriesLegacySettingsKillSwitchIntoKillSwitchState(bool legacyActive, string expectedMode)
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 4);
+
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync(@"
+                INSERT INTO settings (key, value_json, schema_version, updated_by, updated_at)
+                VALUES ('kill_switch.global', @ValueJson, '3.1.0', 'legacy-operator', '2026-01-01T00:00:00Z');
+            ", new { ValueJson = legacyActive ? "{\"active\":true}" : "{\"active\":false}" });
+        }
+
+        await migrationService.UpgradeAsync();
+
+        using var verifyConnection = await factory.CreateOpenConnectionAsync();
+        var mode = await verifyConnection.ExecuteScalarAsync<string>(
+            "SELECT mode FROM kill_switch_state WHERE id = 1;");
+        mode.Should().Be(expectedMode);
+
+        var remainingLegacyKeys = await verifyConnection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM settings WHERE key = 'kill_switch.global';");
+        remainingLegacyKeys.Should().Be(0, "the old key must not linger once its value has been carried over");
+    }
+
+    [Fact]
+    public async Task Migration005_OnFreshInstallWithNoLegacyKey_CreatesNoKillSwitchStateRow()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+
+        await migrationService.UpgradeAsync();
+
+        using var connection = await factory.CreateOpenConnectionAsync();
+        var rowCount = await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM kill_switch_state;");
+        rowCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Migration005_NeverOverwritesAKillSwitchStateRowThatAlreadyExists()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 4);
+
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync(@"
+                INSERT INTO settings (key, value_json, schema_version, updated_by, updated_at)
+                VALUES ('kill_switch.global', '{""active"":true}', '3.1.0', 'legacy-operator', '2026-01-01T00:00:00Z');
+            ");
+            // Simulates a row already written through the new path before migration 5 ever runs.
+            await connection.ExecuteAsync(@"
+                INSERT INTO kill_switch_state (id, mode, cleared_at, cleared_by)
+                VALUES (1, 'NORMAL', '2026-02-01T00:00:00Z', 'new-operator');
+            ");
+        }
+
+        await migrationService.UpgradeAsync();
+
+        using var verifyConnection = await factory.CreateOpenConnectionAsync();
+        var row = await verifyConnection.QuerySingleAsync<(string Mode, string? ClearedBy)>(
+            "SELECT mode AS Mode, cleared_by AS ClearedBy FROM kill_switch_state WHERE id = 1;");
+        row.Mode.Should().Be("NORMAL");
+        row.ClearedBy.Should().Be("new-operator", "a decision already made through the new path must never be overwritten by the legacy carry-over");
+    }
+
+    /// <summary>
+    /// job.schema.json has always enumerated SUCCEEDED as the terminal success state; JobManager wrote
+    /// COMPLETED instead (fourth audit, section 2.3). Migration 6 renames the value on rows written
+    /// before the code was corrected, so a job that already finished successfully does not read as if
+    /// it silently reverted to never having completed.
+    /// </summary>
+    [Fact]
+    public async Task Migration006_RenamesLegacyCompletedJobsToSucceeded()
+    {
+        var factory = new DatabaseConnectionFactory(_dbPath);
+        var migrationService = new MigrationService(factory, _testDir);
+
+        await migrationService.UpgradeAsync();
+        await migrationService.RollbackAsync(targetVersion: 5);
+
+        using (var connection = await factory.CreateOpenConnectionAsync())
+        {
+            await connection.ExecuteAsync(@"
+                INSERT INTO jobs (id, type, state, priority, idempotency_key, attempt, max_attempts, payload_json, created_at, updated_at)
+                VALUES ('job-legacy-completed', 'RENDER', 'COMPLETED', 3, 'idem-legacy-1', 1, 3, '{}', datetime('now'), datetime('now'));
+            ");
+            // A job in some other state must be left alone by a migration scoped to exactly one value.
+            await connection.ExecuteAsync(@"
+                INSERT INTO jobs (id, type, state, priority, idempotency_key, attempt, max_attempts, payload_json, created_at, updated_at)
+                VALUES ('job-still-queued', 'RENDER', 'QUEUED', 3, 'idem-legacy-2', 0, 3, '{}', datetime('now'), datetime('now'));
+            ");
+        }
+
+        await migrationService.UpgradeAsync();
+
+        using var verifyConnection = await factory.CreateOpenConnectionAsync();
+        var renamedState = await verifyConnection.ExecuteScalarAsync<string>(
+            "SELECT state FROM jobs WHERE id = 'job-legacy-completed';");
+        renamedState.Should().Be("SUCCEEDED");
+
+        var untouchedState = await verifyConnection.ExecuteScalarAsync<string>(
+            "SELECT state FROM jobs WHERE id = 'job-still-queued';");
+        untouchedState.Should().Be("QUEUED");
     }
 }

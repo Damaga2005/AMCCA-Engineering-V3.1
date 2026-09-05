@@ -1056,6 +1056,75 @@ public class MigrationService
                     SELECT RAISE(ABORT, 'audit_log table is strictly append-only; DELETE is prohibited (D-001, DEF-015)');
                 END;
             "
+        ),
+        (
+            5,
+            "005_migrate_kill_switch_from_settings_table",
+            @"
+                -- DEF-001/DEF-003: SettingsViewModel used to persist the operator's kill switch as
+                -- settings['kill_switch.global'] = a JSON object with an 'active' boolean. That path was
+                -- replaced with OperatorControlService.ToggleGlobalKillSwitchAsync writing
+                -- kill_switch_state directly -- the same table SPEC/49 preflight gate 10 reads -- but
+                -- nothing carried an existing operator's choice across the cutover: an installation with
+                -- the kill switch engaged would have silently lost that fact on upgrade, since the code
+                -- that used to read it was deleted along with the code that used to write it. This
+                -- migration is that carry-over, run once.
+                --
+                -- Guarded by 'NOT EXISTS (kill_switch_state row)' so it never overwrites a decision an
+                -- operator has already made through the new path on this database. Exactly two literal
+                -- value_json strings were ever written by the old code, differing only in true/false, so
+                -- a LIKE match on that literal is precise; the pattern is built with char(34) for the
+                -- quote character rather than embedding one literally, so this file has no C#
+                -- verbatim-string-escaped quotes for TOOLS/validate_package.py's migration parser to trip
+                -- over (it assumes none appear in these strings, and none did before this).
+                INSERT INTO kill_switch_state (id, mode, engaged_at, engaged_by, reason)
+                SELECT 1, 'EMERGENCY_STOP', updated_at, updated_by,
+                       'Migrated from settings.kill_switch.global (migration 005)'
+                FROM settings
+                WHERE key = 'kill_switch.global'
+                  AND value_json LIKE '%' || char(34) || 'active' || char(34) || ':true%'
+                  AND NOT EXISTS (SELECT 1 FROM kill_switch_state WHERE id = 1);
+
+                INSERT INTO kill_switch_state (id, mode, cleared_at, cleared_by)
+                SELECT 1, 'NORMAL', updated_at, updated_by
+                FROM settings
+                WHERE key = 'kill_switch.global'
+                  AND value_json LIKE '%' || char(34) || 'active' || char(34) || ':false%'
+                  AND NOT EXISTS (SELECT 1 FROM kill_switch_state WHERE id = 1);
+
+                DELETE FROM settings WHERE key = 'kill_switch.global';
+            ",
+            @"
+                INSERT INTO settings (key, value_json, schema_version, updated_by, updated_at)
+                SELECT 'kill_switch.global',
+                       char(123) || char(34) || 'active' || char(34) || ':' ||
+                           (CASE WHEN mode = 'EMERGENCY_STOP' THEN 'true' ELSE 'false' END) || char(125),
+                       '3.1.0',
+                       COALESCE(engaged_by, cleared_by, 'migration'),
+                       COALESCE(engaged_at, cleared_at, datetime('now'))
+                FROM kill_switch_state
+                WHERE id = 1
+                ON CONFLICT(key) DO UPDATE SET
+                    value_json = excluded.value_json,
+                    updated_by = excluded.updated_by,
+                    updated_at = excluded.updated_at;
+            "
+        ),
+        (
+            6,
+            "006_job_success_state_renamed_to_succeeded",
+            @"
+                -- job.schema.json has always enumerated 'SUCCEEDED' as the terminal success state; the
+                -- code path that completes a job (JobManager.CompleteJobAsync/CompleteJobOrThrowAsync)
+                -- wrote 'COMPLETED' instead, a contract/implementation contradiction the jobs.state column
+                -- had no CHECK to catch (fourth audit, AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md section 2.3).
+                -- The code now writes 'SUCCEEDED'; this migration renames the value on rows written before
+                -- that change so a job that already finished successfully does not read as if it never did.
+                UPDATE jobs SET state = 'SUCCEEDED' WHERE state = 'COMPLETED';
+            ",
+            @"
+                UPDATE jobs SET state = 'COMPLETED' WHERE state = 'SUCCEEDED';
+            "
         )
     };
 

@@ -254,6 +254,55 @@ public class WpfMvvmContractTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// SPEC/60 obligation 5: "Every approval request shows the exact action, subject, cost ceiling and
+    /// expiry being approved." Before this, the queue showed only id/production/action/state/created --
+    /// an operator approved a scoped, cost-ceilinged, time-bounded request without ever seeing the scope,
+    /// ceiling or expiry that made it safe to approve in the first place.
+    /// </summary>
+    [Fact]
+    public async Task ApprovalQueueViewModel_ExposesScopeSubjectCostCeilingAndExpiry()
+    {
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            await conn.ExecuteAsync(@"
+                INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
+                VALUES ('prod-scope-1', 'APPROVAL_PENDING', 'Topic', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+            ");
+
+            var scopeJson = System.Text.Json.JsonSerializer.Serialize(
+                new AMCCA.Core.Policy.ApprovalScope(Target: "youtube", Subject: "documental-1920", CostCeiling: 42.50m));
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO approvals (id, production_id, action, scope_json, state, expires_at, created_at)
+                VALUES ('app-scoped-1', 'prod-scope-1', 'PUBLISH', @ScopeJson, 'PENDING', '2026-12-31T00:00:00Z', datetime('now'));
+            ", new { ScopeJson = scopeJson });
+
+            // A legacy/scope-less approval must still surface in the queue -- just with an explicit
+            // "no scope recorded" rather than a silently blank cell.
+            await conn.ExecuteAsync(@"
+                INSERT INTO approvals (id, production_id, action, scope_json, state, expires_at, created_at)
+                VALUES ('app-noscope-1', 'prod-scope-1', 'PUBLISH', '{}', 'PENDING', '2026-12-31T00:00:00Z', datetime('now'));
+            ");
+        }
+
+        var queueVm = new ApprovalQueueViewModel(_operatorControlService, _dialogService, _notificationService);
+        await queueVm.LoadApprovalsAsync();
+
+        var scoped = queueVm.Approvals.Should().ContainSingle(a => a.Id == "app-scoped-1").Subject;
+        scoped.Subject.Should().Be("documental-1920");
+        scoped.CostCeiling.Should().Be(42.50m);
+        scoped.ExpiresAt.Should().Be("2026-12-31T00:00:00Z");
+        scoped.SubjectDisplay.Should().Be("documental-1920");
+        scoped.CostCeilingDisplay.Should().Be("42.50");
+
+        var noScope = queueVm.Approvals.Should().ContainSingle(a => a.Id == "app-noscope-1").Subject;
+        noScope.Subject.Should().BeNull();
+        noScope.CostCeiling.Should().BeNull();
+        noScope.SubjectDisplay.Should().Be("(no scope recorded)");
+        noScope.CostCeilingDisplay.Should().Be("(no scope recorded)");
+    }
+
     [Fact]
     public async Task SettingsViewModel_TogglesKillSwitch_PersistsToDatabase()
     {

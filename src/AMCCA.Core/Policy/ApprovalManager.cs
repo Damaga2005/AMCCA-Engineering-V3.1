@@ -14,7 +14,11 @@ public record PendingApproval(
     string ProductionId,
     string Action,
     string State,
-    string CreatedAt);
+    string CreatedAt,
+    string ExpiresAt,
+    string? Target,
+    string? Subject,
+    decimal? CostCeiling);
 
 public class ApprovalManager
 {
@@ -29,13 +33,51 @@ public class ApprovalManager
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
-            SELECT id AS Id, production_id AS ProductionId, action AS Action, state AS State, created_at AS CreatedAt
+            SELECT id AS Id, production_id AS ProductionId, action AS Action, state AS State,
+                   created_at AS CreatedAt, expires_at AS ExpiresAt, scope_json AS ScopeJson
             FROM approvals
             WHERE state = 'PENDING'
             ORDER BY created_at ASC;
         ";
-        var rows = await connection.QueryAsync<PendingApproval>(sql);
-        return new List<PendingApproval>(rows);
+        var rows = await connection.QueryAsync<(string Id, string ProductionId, string Action, string State,
+            string CreatedAt, string ExpiresAt, string ScopeJson)>(sql);
+
+        var result = new List<PendingApproval>();
+        foreach (var r in rows)
+        {
+            // SPEC/60 obligation 5: every approval request must show the exact action, subject, cost
+            // ceiling and expiry being approved -- an operator approving without seeing the scope is
+            // approving blind. scope_json is tolerated empty/malformed here exactly as
+            // ExecuteWithApprovalAsync tolerates it when consuming the approval: a legacy or
+            // scope-less request still needs to be visible in the queue, just without those three
+            // fields filled in.
+            string? target = null, subject = null;
+            decimal? costCeiling = null;
+            if (!string.IsNullOrWhiteSpace(r.ScopeJson) && r.ScopeJson != "{}")
+            {
+                try
+                {
+                    var scope = JsonSerializer.Deserialize<ApprovalScope>(r.ScopeJson, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    if (scope != null)
+                    {
+                        target = scope.Target;
+                        subject = scope.Subject;
+                        costCeiling = scope.CostCeiling;
+                    }
+                }
+                catch (JsonException)
+                {
+                    // malformed scope json -> surface the approval with blank scope fields rather
+                    // than hiding it from the queue or throwing.
+                }
+            }
+
+            result.Add(new PendingApproval(r.Id, r.ProductionId, r.Action, r.State, r.CreatedAt, r.ExpiresAt, target, subject, costCeiling));
+        }
+        return result;
     }
 
     public async Task<string> CreateApprovalRequestAsync(

@@ -197,6 +197,32 @@ public class OperatorControlAndAuditContractTests : IDisposable
     }
 
     /// <summary>
+    /// SPEC/60 obligation 5: an approval must show the exact subject, cost ceiling and expiry being
+    /// approved. This is the Core-level contract GetPendingApprovalsAsync must uphold regardless of
+    /// which UI reads it -- ApprovalScope's fields, parsed out of scope_json, and expires_at.
+    /// </summary>
+    [Fact]
+    public async Task GetPendingApprovalsAsync_ExposesScopeAndExpiryFromApprovalScope()
+    {
+        var scopeJson = System.Text.Json.JsonSerializer.Serialize(
+            new ApprovalScope(Target: "youtube", Subject: "video-77", CostCeiling: 12.34m));
+
+        var approvalId = await _approvalManager.CreateApprovalRequestAsync(
+            productionId: "prod-scope-core-1",
+            action: "publish",
+            scopeJson: scopeJson,
+            validFor: TimeSpan.FromHours(2));
+
+        var pending = await _controlService.GetPendingApprovalsAsync();
+        var found = pending.Should().ContainSingle(p => p.Id == approvalId).Subject;
+
+        found.Target.Should().Be("youtube");
+        found.Subject.Should().Be("video-77");
+        found.CostCeiling.Should().Be(12.34m);
+        found.ExpiresAt.Should().NotBeNullOrWhiteSpace();
+    }
+
+    /// <summary>
     /// Drives a job to DEAD_LETTER the way production does: one attempt allowed, claimed once, failed once.
     /// </summary>
     private async Task<string> CreateDeadLetteredJobAsync(string idempotencyKey)

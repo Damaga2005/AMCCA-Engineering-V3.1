@@ -13,7 +13,17 @@ public record ApprovalItem(
     string ProductionId,
     string Action,
     string State,
-    string CreatedAt);
+    string CreatedAt,
+    string ExpiresAt,
+    string? Subject,
+    decimal? CostCeiling)
+{
+    // SPEC/60 obligation 5: "Every approval request shows the exact action, subject, cost ceiling and
+    // expiry being approved." A legacy or scope-less approval has no subject/cost ceiling to show;
+    // this states that plainly instead of leaving a blank cell that reads as a loading glitch.
+    public string SubjectDisplay => Subject ?? "(no scope recorded)";
+    public string CostCeilingDisplay => CostCeiling is { } c ? c.ToString("F2") : "(no scope recorded)";
+}
 
 public class ApprovalQueueViewModel : ViewModelBase
 {
@@ -78,7 +88,7 @@ public class ApprovalQueueViewModel : ViewModelBase
             Approvals.Clear();
             foreach (var p in pending)
             {
-                Approvals.Add(new ApprovalItem(p.Id, p.ProductionId, p.Action, p.State, p.CreatedAt));
+                Approvals.Add(new ApprovalItem(p.Id, p.ProductionId, p.Action, p.State, p.CreatedAt, p.ExpiresAt, p.Subject, p.CostCeiling));
             }
         }
         catch (Exception ex)

@@ -265,7 +265,7 @@ public class JobManager
         }
 
         var now = DateTimeOffset.UtcNow.ToString("O");
-        await connection.ExecuteAsync("UPDATE jobs SET state = 'COMPLETED', updated_at = @Now WHERE id = @JobId;",
+        await connection.ExecuteAsync("UPDATE jobs SET state = 'SUCCEEDED', updated_at = @Now WHERE id = @JobId;",
             new { Now = now, JobId = jobId }, transaction: tx);
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
             new { JobId = jobId }, transaction: tx);
@@ -296,7 +296,7 @@ public class JobManager
         }
 
         var now = DateTimeOffset.UtcNow.ToString("O");
-        await connection.ExecuteAsync("UPDATE jobs SET state = 'COMPLETED', updated_at = @Now WHERE id = @JobId;",
+        await connection.ExecuteAsync("UPDATE jobs SET state = 'SUCCEEDED', updated_at = @Now WHERE id = @JobId;",
             new { Now = now, JobId = jobId }, transaction: tx);
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
             new { JobId = jobId }, transaction: tx);

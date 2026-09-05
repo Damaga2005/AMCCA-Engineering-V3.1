@@ -100,6 +100,6 @@ public class JobLeaseFenceAndHeartbeatRegressionTests : IDisposable
 
         var finalJob = await _jobManager.GetJobAsync(job.Id);
         finalJob.Should().NotBeNull();
-        finalJob!.State.Should().Be("COMPLETED");
+        finalJob!.State.Should().Be("SUCCEEDED"); // job.schema.json's terminal success state (migration 006)
     }
 }
