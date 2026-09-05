@@ -543,7 +543,7 @@ def check_spec60_obligations():
     """SPEC/60's seven interface obligations are normative, but nothing here checked any of them --
     the fourth audit named this gate blind spot 3. A screen is not source a regex can meaningfully
     parse for "is the kill switch reachable" in general, so this does not attempt a general obligation
-    checker. It instead pins the four obligations that already have one concrete, textually verifiable
+    checker. It instead pins the obligations that already have one concrete, textually verifiable
     signature in the current six-screen build, so a future edit that silently removes what this session
     already built for them is a release-gate failure instead of a silent regression:
 
@@ -551,17 +551,30 @@ def check_spec60_obligations():
       mode and publishing state visible on every screen) are satisfied once, in MainWindow.xaml's shared
       sidebar chrome, for every screen reachable through it (see MainViewModel/MainWindow.xaml commit
       history). This checks that chrome still binds what it must.
+    - Obligation 3 (every number's provenance is shown; measured and estimated are visually distinct)
+      is satisfied for the one provenance-bearing number in the UI today -- cost_events.amount and its
+      reconciliation_state -- by ProductionInspectorView.xaml's ReconciliationStateStyle, which colours
+      the amount differently per state. This checks that style is still defined, applied to a column,
+      and still distinguishes an estimated state (DISPUTED) from a measured one (RECONCILED).
+    - Obligation 4 (a blocked item names the rule, its policy version and what would unblock it) is
+      satisfied by ProductionInspectorView.xaml's block panel plus InspectorBlockInfo in its VM,
+      including the honest "(no policy decision recorded for this block)" disclosure for the field no
+      writer populates yet. This checks the three bindings and that disclosure string.
     - Obligation 5 (every approval request shows the exact action, subject, cost ceiling and expiry)
       is satisfied by ApprovalQueueView.xaml's grid columns.
     - Obligation 6's "never a bare 'something went wrong'" half is checked by scanning App/ for the
       generic phrasing obligation 6 forbids; it cannot check the other half (every real failure carries
       a SPEC/05 code) without executing the UI, so it only guards the phrasing regression.
+    - Obligation 7 (long operations show progress and are cancellable) is satisfied on the two screens
+      with a slow load -- Job Queue and the Production Inspector -- by an indeterminate ProgressBar
+      bound to IsLoading and a per-load CancellationTokenSource that is cancelled when a new load
+      starts. This checks both views bind the progress indicator and both VMs create and cancel that
+      token source.
 
-    Obligations 3, 4 and 7, and the rest of obligation 6, are not checked here: they describe a
-    property of runtime behaviour (a shown number's provenance, a blocked item's live policy version, a
-    cancellable progress indicator) that no static scan of this repository can verify -- claiming
-    otherwise would be exactly the kind of gate that passes green without meaning anything, which is
-    what this whole check exists to avoid doing."""
+    The other half of obligation 6 -- that every real failure surfaces a SPEC/05 code -- is still not
+    checked: it is a property of runtime behaviour that no static scan of this repository can verify,
+    and claiming otherwise would be exactly the kind of gate that passes green without meaning
+    anything, which is what this whole check exists to avoid doing."""
     main_window = read("src", "AMCCA.App", "MainWindow.xaml")
     check("spec60.obligation_1_kill_switch_in_shared_chrome",
           "ToggleKillSwitchCommand" in main_window and "IsKillSwitchActive" in main_window,
@@ -593,6 +606,56 @@ def check_spec60_obligations():
                         offenders.append(os.path.relpath(path, ROOT).replace(os.sep, "/"))
     check("spec60.obligation_6_no_bare_generic_failure_text", not offenders,
           f"generic failure phrasing found in: {sorted(offenders)}")
+
+    def _view(*parts):
+        p = os.path.join(ROOT, *parts)
+        return open(p, encoding="utf-8").read() if os.path.exists(p) else None
+
+    inspector_view = _view("src", "AMCCA.App", "Views", "ProductionInspectorView.xaml")
+    inspector_vm = _view("src", "AMCCA.App", "ViewModels", "ProductionInspectorViewModel.cs")
+    jobqueue_view = _view("src", "AMCCA.App", "Views", "JobQueueView.xaml")
+    jobqueue_vm = _view("src", "AMCCA.App", "ViewModels", "JobQueueViewModel.cs")
+
+    # Obligation 3: provenance of a number shown, measured vs estimated visually distinct.
+    ob3_needles = ['x:Key="ReconciliationStateStyle"', "StaticResource ReconciliationStateStyle",
+                   'Value="DISPUTED"', 'Value="RECONCILED"']
+    ob3_missing = None if inspector_view is None else [n for n in ob3_needles if n not in inspector_view]
+    check("spec60.obligation_3_number_provenance_visually_distinct",
+          ob3_missing == [],
+          "ProductionInspectorView.xaml not found" if inspector_view is None
+          else f"reconciliation-state styling no longer distinguishes provenance; missing: {ob3_missing}")
+
+    # Obligation 4: a blocked item names the rule, the policy version, and the unblock path.
+    ob4_view_needles = ["BlockInfo.ReasonDisplay", "BlockInfo.PolicyVersionDisplay", "BlockInfo.UnblockHint"]
+    ob4_missing = []
+    if inspector_view is None or inspector_vm is None:
+        ob4_missing = ["ProductionInspectorView.xaml/ViewModel not found"]
+    else:
+        ob4_missing = [n for n in ob4_view_needles if n not in inspector_view]
+        if "record InspectorBlockInfo" not in inspector_vm:
+            ob4_missing.append("InspectorBlockInfo record")
+        if "(no policy decision recorded for this block)" not in inspector_vm:
+            ob4_missing.append("honest no-policy-decision disclosure")
+    check("spec60.obligation_4_blocked_item_shows_rule_and_unblock_path",
+          ob4_missing == [],
+          f"blocked-item detail regressed; missing: {ob4_missing}")
+
+    # Obligation 7: long loads show progress and are cancellable, on both slow screens.
+    ob7_missing = []
+    for label, view_src, vm_src in (
+        ("Job Queue", jobqueue_view, jobqueue_vm),
+        ("Production Inspector", inspector_view, inspector_vm),
+    ):
+        if view_src is None or vm_src is None:
+            ob7_missing.append(f"{label}: view or ViewModel not found")
+            continue
+        if 'IsIndeterminate="True"' not in view_src or "IsLoading" not in view_src:
+            ob7_missing.append(f"{label}: no progress indicator bound to IsLoading")
+        if "CancellationTokenSource" not in vm_src or ".Cancel()" not in vm_src:
+            ob7_missing.append(f"{label}: load is not cancellable")
+    check("spec60.obligation_7_long_operations_show_progress_and_cancel",
+          ob7_missing == [],
+          f"progress/cancellation regressed; missing: {ob7_missing}")
 
 
 def check_spec():

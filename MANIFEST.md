@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 369
-**Total bytes:** 2277921
+**Total bytes:** 2284883
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -187,7 +187,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_generated_artifacts_semantics.py` | `686a54b07ed5986b92a44f04594abcb66681597b2949ee077403ed0b491bf3f8` | 7780 |
 | `TOOLS/test_generation.py` | `8a9074633c8f3fc284e35c4f3ebcc9a50188802d1ffecdc21fce656bb3246193` | 1371 |
 | `TOOLS/test_money_precision.py` | `902fa1490e7bea2881774a9c0be863686e5f1595e39acab2575c2a9541669d91` | 1289 |
-| `TOOLS/test_mutations.py` | `cac4a660da3ed8dc0cf8c37b84a0c5b990a58f5b283ee37e2a3b75a6beb9b2f7` | 48426 |
+| `TOOLS/test_mutations.py` | `4fe3aab8c218c20f6f0c00e94cfb74cf367240da50f0a7f3ee0f60234404b1f3` | 51254 |
 | `TOOLS/test_no_contract_duplication.py` | `1b0c10d42b296ea84d19d4f4089b1bd13e40f33f784cc50e6cd685dfee7883d4` | 3090 |
 | `TOOLS/test_no_duplicated_version_constants.py` | `82af520ef60a0a0f41c2d80a164f83879febd93356d513de8f54fb10a4e13632` | 3933 |
 | `TOOLS/test_platform_evidence.py` | `6f4964998994dbd9015c40a74db509ed3b2684e9867414bac4fcff7bd1284280` | 2135 |
@@ -197,7 +197,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `TOOLS/test_schema_formats.py` | `e6a227cd98004948545610f5481e48eaaac5a54a9e5ee096c98dabdee7c6b6f5` | 1928 |
 | `TOOLS/test_synthetic_disclosure.py` | `fefd529edcea79c3447cb58c74e36aceafa3f93707c445dc4364d4347ee05dbf` | 3161 |
 | `TOOLS/test_version_consistency.py` | `795650e3e4ecac98f03760882be64d91e919560b2da5f86325b3d6e74b7f7f95` | 7032 |
-| `TOOLS/validate_package.py` | `78366c7a16f93b733c7dd0756f3909b70109782b707c768c588e6c90af69ff72` | 43549 |
+| `TOOLS/validate_package.py` | `d89d48e2f2f3c1c89347efc9589255a08b336692eab7cadc47963df4974d63f8` | 47683 |
 | `installer/Bundle.wxs` | `93c5b974118aef31460251392d2214ab530b387c14c68375cc15e8be6733ab5f` | 602 |
 | `installer/Package.wxs` | `2b9248ac231ec105cf4930327a3d1b7221ef2ee5a8500e88875656182f64a5dd` | 654 |
 | `installer/build_installer.ps1` | `278172cf412c60b94179cd1e6535c7bf5e5af67e6b25ed0b7bd839ffcb728f62` | 5197 |

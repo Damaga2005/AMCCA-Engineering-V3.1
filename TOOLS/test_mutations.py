@@ -894,6 +894,33 @@ def mutation_18_spec60_obligation_signatures_regress():
         with open(settings_view_path, "a", encoding="utf-8") as f:
             f.write("<!-- Something went wrong -->\n")
 
+        # Obligation 3: drop the reconciliation-state style definition from the Inspector view.
+        inspector_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "ProductionInspectorView.xaml")
+        with open(inspector_view_path, encoding="utf-8") as f:
+            iv_source = f.read()
+        needle3 = 'x:Key="ReconciliationStateStyle"'
+        assert needle3 in iv_source, "fixture assumption violated: ProductionInspectorView.xaml's reconciliation style key changed"
+        with open(inspector_view_path, "w", encoding="utf-8") as f:
+            f.write(iv_source.replace(needle3, "x:Key=\"_removed_\"", 1))
+
+        # Obligation 4: drop the honest no-policy-decision disclosure from the Inspector VM.
+        inspector_vm_path = os.path.join(scratch, "src", "AMCCA.App", "ViewModels", "ProductionInspectorViewModel.cs")
+        with open(inspector_vm_path, encoding="utf-8") as f:
+            ivm_source = f.read()
+        needle4 = "(no policy decision recorded for this block)"
+        assert needle4 in ivm_source, "fixture assumption violated: InspectorBlockInfo's disclosure string changed"
+        with open(inspector_vm_path, "w", encoding="utf-8") as f:
+            f.write(ivm_source.replace(needle4, "n/a", 1))
+
+        # Obligation 7: remove the progress indicator from the Job Queue view.
+        jobqueue_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "JobQueueView.xaml")
+        with open(jobqueue_view_path, encoding="utf-8") as f:
+            jv_source = f.read()
+        needle7 = 'IsIndeterminate="True"'
+        assert needle7 in jv_source, "fixture assumption violated: JobQueueView.xaml's ProgressBar changed"
+        with open(jobqueue_view_path, "w", encoding="utf-8") as f:
+            f.write(jv_source.replace(needle7, "", 1))
+
         vp.RESULTS = []
         vp.check_spec60_obligations()
         mutated = results_by_name()
@@ -911,11 +938,21 @@ def mutation_18_spec60_obligation_signatures_regress():
                     not mutated["spec60.obligation_6_no_bare_generic_failure_text"]["ok"]
                     and "SettingsView.xaml" in mutated["spec60.obligation_6_no_bare_generic_failure_text"]["detail"],
                     mutated["spec60.obligation_6_no_bare_generic_failure_text"]["detail"]) and ok
+        ok = record("mutation18.obligation_3_goes_red_when_reconciliation_style_removed",
+                    not mutated["spec60.obligation_3_number_provenance_visually_distinct"]["ok"],
+                    mutated["spec60.obligation_3_number_provenance_visually_distinct"]["detail"]) and ok
+        ok = record("mutation18.obligation_4_goes_red_when_no_policy_disclosure_removed",
+                    not mutated["spec60.obligation_4_blocked_item_shows_rule_and_unblock_path"]["ok"],
+                    mutated["spec60.obligation_4_blocked_item_shows_rule_and_unblock_path"]["detail"]) and ok
+        ok = record("mutation18.obligation_7_goes_red_when_job_queue_progress_removed",
+                    not mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["ok"]
+                    and "Job Queue" in mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["detail"],
+                    mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["detail"]) and ok
     finally:
         vp.ROOT, vp.RESULTS = real_root, real_results
         shutil.rmtree(scratch, ignore_errors=True)
 
-    # Prove reversion: the real package tree, checked directly, still satisfies all four.
+    # Prove reversion: the real package tree, checked directly, still satisfies every obligation check.
     saved = vp.RESULTS
     vp.RESULTS = []
     vp.check_spec60_obligations()
