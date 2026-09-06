@@ -29,6 +29,12 @@ public sealed record AgentRunResult(
     public long ModelInputTokens { get; init; }
     public long ModelOutputTokens { get; init; }
 
+    /// <summary>The priced model cost accrued during the run, and whether every turn could be priced.
+    /// When <see cref="ModelPricingComplete"/> is false the run still succeeded, but at least one turn
+    /// had no pricing_snapshot and its cost is recorded ESTIMATED_UNRECONCILED (SPEC/21).</summary>
+    public decimal ModelCost { get; init; }
+    public bool ModelPricingComplete { get; init; } = true;
+
     public static AgentRunResult Completed(string finalOutput, int iterations, decimal cost, IReadOnlyList<AgentTurn> transcript)
         => new(AgentRunStatus.Completed, finalOutput, null, null, iterations, cost, transcript);
 

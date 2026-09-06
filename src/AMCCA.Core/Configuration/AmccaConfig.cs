@@ -118,6 +118,40 @@ public class GatewayConfig
 
     [JsonPropertyName("capabilities_verified")]
     public bool CapabilitiesVerified { get; set; }
+
+    /// <summary>
+    /// D-034: operator-supplied model token prices. The only source AgentRuntime prices a model call
+    /// against; empty by default, in which case an agent run still completes but records an
+    /// ESTIMATED_UNRECONCILED cost event. Materialised into pricing_snapshots (SPEC/21).
+    /// </summary>
+    [JsonPropertyName("model_pricing")]
+    public List<ModelPricingConfig> ModelPricing { get; set; } = new();
+}
+
+public class ModelPricingConfig
+{
+    [JsonPropertyName("model_id")]
+    public string ModelId { get; set; } = string.Empty;
+
+    /// <summary>Price per 1,000,000 input tokens, six-dp decimal string, currency below.</summary>
+    [JsonPropertyName("input_per_1m_tokens")]
+    public string InputPer1MTokens { get; set; } = "0.000000";
+
+    [JsonPropertyName("output_per_1m_tokens")]
+    public string OutputPer1MTokens { get; set; } = "0.000000";
+
+    [JsonPropertyName("currency")]
+    public string Currency { get; set; } = "EUR";
+
+    [JsonPropertyName("effective_at")]
+    public string? EffectiveAt { get; set; }
+
+    /// <summary>SPEC/21: a cost cannot be computed against a price lacking retrieved_at and source_ref.</summary>
+    [JsonPropertyName("retrieved_at")]
+    public string RetrievedAt { get; set; } = string.Empty;
+
+    [JsonPropertyName("source_ref")]
+    public string SourceRef { get; set; } = string.Empty;
 }
 
 public class PlatformConfig

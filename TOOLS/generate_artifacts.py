@@ -827,6 +827,30 @@ def build_schemas(prod_states):
                         "api_key_secret_ref": {"type": "string", "pattern": "^secret://"},
                         "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 900},
                         "capabilities_verified": {"type": "boolean"},
+                        # D-034: model token prices are operator-supplied here, materialised into
+                        # pricing_snapshots, and are the only source AgentRuntime will price a model
+                        # call against. Prices are external and volatile (SPEC/21), so each entry
+                        # carries its own retrieved_at + source_ref; a cost cannot be computed
+                        # against a price lacking either. Optional: with no entry for a model, an
+                        # agent run still completes but its cost_events row is ESTIMATED_UNRECONCILED.
+                        "model_pricing": {
+                            "type": "array",
+                            "items": {
+                                "type": "object", "additionalProperties": False,
+                                "required": ["model_id", "input_per_1m_tokens",
+                                             "output_per_1m_tokens", "currency",
+                                             "retrieved_at", "source_ref"],
+                                "properties": {
+                                    "model_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                                    "input_per_1m_tokens": NONNEG_MONEY,
+                                    "output_per_1m_tokens": NONNEG_MONEY,
+                                    "currency": CUR,
+                                    "effective_at": {"type": "string", "format": "date-time"},
+                                    "retrieved_at": {"type": "string", "format": "date-time"},
+                                    "source_ref": {"type": "string", "minLength": 1},
+                                },
+                            },
+                        },
                     }
                 }}
             },
