@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 419
-**Total bytes:** 2557742
+**Files:** 421
+**Total bytes:** 2571492
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -215,7 +215,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/MainWindow.xaml.cs` | `d4a6f13a7e43f9c71ac06a9ba23bf0a17df3a8661211cbe25bd2e0358c502f50` | 245 |
 | `src/AMCCA.App/Orchestration/OrchestratorHostedService.cs` | `fcde3efcad13469db755434f0473b32293bf5f85ff2f1f1e4c356391f76f955c` | 3275 |
 | `src/AMCCA.App/Orchestration/SystemHealthReporter.cs` | `5aa229d679de432db2f8f5f861e0d003e4ba0fda069ce9ed0008678068f8c799` | 2888 |
-| `src/AMCCA.App/Program.cs` | `fdb0132a4b359a923e23753cfc8066e2478d050618208d76466a335d67cda26d` | 8382 |
+| `src/AMCCA.App/Program.cs` | `7a147e29b74f3c339880f3a8c8ccd1f40cd53ff5d4babc98b7bc3d90af715843` | 9143 |
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
 | `src/AMCCA.App/Services/INavigationService.cs` | `028e17b6b1ca85d54d0cae360607ae05b1a7b8514a07bd1e7406359c07cd537f` | 847 |
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
@@ -288,13 +288,14 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Orchestration/Handlers/AgentScriptAgent.cs` | `0024369f385ed629ba0f5e5d3da9d75c20d12f6f34d894c881083e4ad438c549` | 6579 |
 | `src/AMCCA.Core/Orchestration/Handlers/MediaStageHandlers.cs` | `144afd29790a3699e04e951e0bf94e78ae3884160472b9bacfac98ff77827501` | 6564 |
 | `src/AMCCA.Core/Orchestration/Handlers/NoWorkAdvanceHandler.cs` | `89ceda455988fae58fe1cea66487967547c5f2a7d248a56b3c144079fb0968e6` | 877 |
+| `src/AMCCA.Core/Orchestration/Handlers/PublishStageHandlers.cs` | `b52ef94d82d7f4609f994db2e632a8b07c9b8c0d0591ccc5ac8f2238e8de30d8` | 5090 |
 | `src/AMCCA.Core/Orchestration/Handlers/QaStageHandler.cs` | `2adae81ef60ea86e105e0d98414133379c0af44b9ac2be66975dc9556067e75e` | 4903 |
 | `src/AMCCA.Core/Orchestration/Handlers/ResearchStageHandler.cs` | `e04a9fa5bce10d0fb49eec93a7782a293ac711fa5cef3bc863dee90fa28bd996` | 2725 |
 | `src/AMCCA.Core/Orchestration/Handlers/ScriptStageHandler.cs` | `0637b3f99e4e2dc05255fff568c942866ef5e22d6710e4a47bbcefc58ee64019` | 3028 |
 | `src/AMCCA.Core/Orchestration/Handlers/StageAgents.cs` | `6e9ae67eb8fea318e130e7ba34be21b993ae004841aae0ade3efc0f852b2fc1d` | 1148 |
 | `src/AMCCA.Core/Orchestration/IStageHandler.cs` | `e24edded3ebe61d70488c122f1df59252b272ef61e3b762c04227206a097a73a` | 527 |
 | `src/AMCCA.Core/Orchestration/InitStageHandler.cs` | `bc4ed724c702a355c05c49d9ad5a3a157c06e81aaf1ecb91f8c41e6a7e773679` | 713 |
-| `src/AMCCA.Core/Orchestration/OrchestratorEngine.cs` | `f17a7b75cb5718ccf5b61bbafe1baa31fb73568879df74af796aa5618eef4510` | 10422 |
+| `src/AMCCA.Core/Orchestration/OrchestratorEngine.cs` | `92eddbea041ebabb7f7aff1d4a7bdde759a6e527f0aa1942ed22e76b35c6cd43` | 10814 |
 | `src/AMCCA.Core/Orchestration/OrchestratorTickReport.cs` | `c8722a129203d2d7654298458d78ed620ea48d43572f1bef1048a5c043dac503` | 1367 |
 | `src/AMCCA.Core/Orchestration/StageHandlerRegistry.cs` | `e5e2c009851a7d5ab87ff286203e96e58e4335f21d1480d49c14fbcc9fb21743` | 1673 |
 | `src/AMCCA.Core/Orchestration/StageModels.cs` | `0cc3c4a46b4c8c906e088f58c6d3b97a28d1a835c005a10780dd19cad9005892` | 2127 |
@@ -412,6 +413,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ProviderGatewayComposerTests.cs` | `d148afa089eadc63b40f9419a6b92fcd4bb435e0e9fee54d9d806f7326ede02d` | 1899 |
 | `tests/AMCCA.Core.Tests/ProviderLoopbackIntegrationTests.cs` | `35194604db24908501d4ffe78a089c087d047396086a1d8a755086e405e206dd` | 10499 |
 | `tests/AMCCA.Core.Tests/ProviderResilienceContractTests.cs` | `6dc789c387a75a3f97ae8df21b92835702215261b68cdaeeeca980bf72039b62` | 6659 |
+| `tests/AMCCA.Core.Tests/PublishStageHandlerContractTests.cs` | `fee1b264dcfa8745404a776d498cf38d47f797e25cadb10a8075f74ba3d4caff` | 7507 |
 | `tests/AMCCA.Core.Tests/PublishingAndPlatformHubContractTests.cs` | `c637e9101bd87e4e3eb55629cbdecdc38e31771636ae616f4c345e90d250a112` | 5598 |
 | `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e72698af24a6b162648169405fbecf5f068827dcc00823ce1f33134f6e53e5cc` | 7014 |
 | `tests/AMCCA.Core.Tests/QaStageHandlerContractTests.cs` | `ae060254840536395a50d93032bbd556653c34127bdabbe50918a81a6471e6f9` | 10176 |

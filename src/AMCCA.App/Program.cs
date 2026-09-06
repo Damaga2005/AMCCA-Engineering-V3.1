@@ -113,6 +113,8 @@ public static class Program
             registry.Register("ASSETS_READY", advance);
             registry.Register("AUDIO_READY", advance);
             registry.Register("CANDIDATE_RENDERED", advance);
+            registry.Register("FINAL_VERIFIED", advance);
+            registry.Register("PUBLICATION_VERIFIED", advance);
 
             // Media producing stages (A5). No image/audio provider exists, so these block for an
             // operator until an IMediaStageAgent / IEditAgent is wired. EDITING enqueues the RENDER
@@ -135,6 +137,14 @@ public static class Program
             registry.Register("RETENTION_QA", Qa("RETENTION_QA", new AMCCA.Core.QA.RenderPresenceQaCheck(cf)));
             registry.Register("COMPLIANCE_QA", Qa("COMPLIANCE_QA", new AMCCA.Core.QA.ComplianceQaCheck(cf)));
             registry.Register("SCORING", Qa("SCORING", new AMCCA.Core.QA.ScoringCheck(cf)));
+
+            // Publish stages (A8). PolicyGate already gates entry (publication.dispatch, SPEC/08);
+            // these consume the approval and dispatch / track via IPublisher — no platform integration
+            // is connected, so they block for an operator.
+            registry.Register("READY_TO_PUBLISH", new PublishStageHandler(
+                sp.GetRequiredService<AMCCA.Core.Policy.ApprovalManager>(), publisher: null));
+            registry.Register("PUBLISHING", new PublishTrackingStageHandler(publisher: null));
+            registry.Register("PUBLICATION_PROCESSING", new PublishTrackingStageHandler(publisher: null));
 
             // STORYBOARDING onward (media stages) are added in A5; the engine blocks a production at the
             // first unhandled state (AMCCA-ORC-001).

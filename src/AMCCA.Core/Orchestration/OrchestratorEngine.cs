@@ -217,8 +217,12 @@ public sealed class OrchestratorEngine
 
     private bool IsPublishBoundary(TransitionDefinition forward)
     {
+        // Only the *entry* into the publish phase is a protected action (SPEC/08 publication.dispatch);
+        // transitions between publish-kind states are the dispatch being tracked, not new actions.
         var toKind = _registry.States.FirstOrDefault(s => s.Name == forward.To)?.Kind ?? "";
-        return string.Equals(toKind, "publish", StringComparison.OrdinalIgnoreCase);
+        var fromKind = _registry.States.FirstOrDefault(s => s.Name == forward.From)?.Kind ?? "";
+        return string.Equals(toKind, "publish", StringComparison.OrdinalIgnoreCase)
+               && !string.Equals(fromKind, "publish", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
