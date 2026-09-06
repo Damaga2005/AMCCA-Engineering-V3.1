@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -27,69 +28,86 @@ public class OAuthLoopbackReceiver : IDisposable
         _listener.Start();
     }
 
-    public async Task<OAuthCallbackResult> WaitForCallbackAsync(string expectedState, TimeSpan timeout, CancellationToken ct = default)
+    public Task<OAuthCallbackResult> WaitForCallbackAsync(string expectedState, TimeSpan timeout, CancellationToken ct = default)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(timeout);
-
-        try
+        // A browser callback must not be lost because the thread pool is saturated (the CI chaos
+        // and concurrency suites do exactly that). Everything here runs on one dedicated thread
+        // using the blocking HttpListener API, so there are no thread-pool-scheduled continuations
+        // to starve. The timeout unblocks the blocking GetContext() by stopping the listener.
+        var tcs = new TaskCompletionSource<OAuthCallbackResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
         {
-            var getContextTask = _listener.GetContextAsync();
-            var completedTask = await Task.WhenAny(getContextTask, Task.Delay(timeout, cts.Token));
+            try { tcs.SetResult(WaitForCallback(expectedState, timeout, ct)); }
+            catch (Exception ex) { tcs.SetResult(new OAuthCallbackResult(false, null, null, ex.Message)); }
+        })
+        {
+            IsBackground = true,
+            Name = "oauth-loopback-callback",
+        };
+        thread.Start();
+        return tcs.Task;
+    }
 
-            if (completedTask != getContextTask)
+    private OAuthCallbackResult WaitForCallback(string expectedState, TimeSpan timeout, CancellationToken ct)
+    {
+        HttpListenerContext context;
+        using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+        {
+            timeoutCts.CancelAfter(timeout);
+            using var reg = timeoutCts.Token.Register(() => { try { _listener.Stop(); } catch { } });
+            try
+            {
+                context = _listener.GetContext();
+            }
+            catch (Exception ex) when (ex is HttpListenerException or InvalidOperationException or ObjectDisposedException)
             {
                 return new OAuthCallbackResult(false, null, null, "Timeout waiting for OAuth callback");
             }
+        }
 
-            var context = await getContextTask;
-            var request = context.Request;
-            var query = request.QueryString;
+        var query = context.Request.QueryString;
+        var receivedState = query["state"];
+        var code = query["code"];
+        var error = query["error"];
 
-            var receivedState = query["state"];
-            var code = query["code"];
-            var error = query["error"];
+        bool stateMatches = !string.IsNullOrEmpty(expectedState) && string.Equals(expectedState, receivedState, StringComparison.Ordinal);
+        bool success = stateMatches && !string.IsNullOrEmpty(code);
 
-            bool stateMatches = !string.IsNullOrEmpty(expectedState) && string.Equals(expectedState, receivedState, StringComparison.Ordinal);
-
-            // Respond to browser
+        // Best-effort browser response: a client that already navigated away (or a CI runner that
+        // hung up on its own timeout) must not turn a callback we did parse into a failure.
+        try
+        {
             var response = context.Response;
-            string responseHtml = stateMatches && !string.IsNullOrEmpty(code)
+            var buffer = Encoding.UTF8.GetBytes(success
                 ? "<html><body><h1>AMCCA Authorization Succeeded</h1><p>You can close this tab and return to AMCCA.</p></body></html>"
-                : "<html><body><h1>AMCCA Authorization Failed</h1><p>Mismatched state or authorization denied.</p></body></html>";
-
-            var buffer = Encoding.UTF8.GetBytes(responseHtml);
-            response.ContentLength64 = buffer.Length;
+                : "<html><body><h1>AMCCA Authorization Failed</h1><p>Mismatched state or authorization denied.</p></body></html>");
+            response.StatusCode = success ? 200 : 400;
             response.ContentType = "text/html; charset=utf-8";
-            response.StatusCode = stateMatches && !string.IsNullOrEmpty(code) ? 200 : 400;
-            await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+            response.ContentLength64 = buffer.Length;
+            response.OutputStream.Write(buffer, 0, buffer.Length);
             response.OutputStream.Close();
-
-            if (!stateMatches)
-            {
-                return new OAuthCallbackResult(false, null, receivedState, "Mismatched OAuth state token (possible CSRF attempt)");
-            }
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                return new OAuthCallbackResult(false, null, receivedState, $"OAuth error: {error}");
-            }
-
-            if (string.IsNullOrEmpty(code))
-            {
-                return new OAuthCallbackResult(false, null, receivedState, "Missing authorization code in callback");
-            }
-
-            return new OAuthCallbackResult(true, code, receivedState, null);
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is HttpListenerException or IOException or ObjectDisposedException)
         {
-            return new OAuthCallbackResult(false, null, null, "Timeout waiting for OAuth callback");
+            // fall through with whatever we parsed off the request
         }
-        catch (Exception ex)
+
+        if (!stateMatches)
         {
-            return new OAuthCallbackResult(false, null, null, ex.Message);
+            return new OAuthCallbackResult(false, null, receivedState, "Mismatched OAuth state token (possible CSRF attempt)");
         }
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            return new OAuthCallbackResult(false, null, receivedState, $"OAuth error: {error}");
+        }
+
+        if (string.IsNullOrEmpty(code))
+        {
+            return new OAuthCallbackResult(false, null, receivedState, "Missing authorization code in callback");
+        }
+
+        return new OAuthCallbackResult(true, code, receivedState, null);
     }
 
     private static int GetRandomUnusedPort()

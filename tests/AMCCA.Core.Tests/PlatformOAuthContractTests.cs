@@ -67,7 +67,9 @@ public class PlatformOAuthContractTests : IDisposable
         var listenTask = receiver.WaitForCallbackAsync(state, TimeSpan.FromSeconds(15));
 
         // Simulate browser redirect from platform
-        using var client = new HttpClient();
+        // Fail in 10s with a clear client-side error instead of letting a stalled loopback
+        // request ride the default 100s HttpClient.Timeout and drag the CI job with it.
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var callbackUrl = $"{receiver.RedirectUri}?code={expectedCode}&state={state}";
         var response = await client.GetAsync(callbackUrl);
 
@@ -92,7 +94,9 @@ public class PlatformOAuthContractTests : IDisposable
 
         var listenTask = receiver.WaitForCallbackAsync(state, TimeSpan.FromSeconds(15));
 
-        using var client = new HttpClient();
+        // Fail in 10s with a clear client-side error instead of letting a stalled loopback
+        // request ride the default 100s HttpClient.Timeout and drag the CI job with it.
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var callbackUrl = $"{receiver.RedirectUri}?code=code123&state={forgedState}";
         var response = await client.GetAsync(callbackUrl);
 
