@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 431
-**Total bytes:** 2671750
+**Files:** 432
+**Total bytes:** 2684280
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -21,6 +21,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `ANTIGRAVITY_LOOP.md` | `62f749d07cf49d728d828530df82c7c1f18ba4560e3c6007b330b105172c0f45` | 10091 |
 | `ANTIGRAVITY_START_PROMPT.md` | `04c5c1375b558489f4ecd1db5a18989a486af4414de8fb330ba9ff5b349f9057` | 2546 |
 | `ARCHITECTURE.md` | `ee5289a863a9cbccec43c7ffbba2d18810d13460e5c5becfc21ff845a9716203` | 3557 |
+| `AUDIT/FIFTH_AUDIT_CODE.md` | `90e65af6d8a60e766e6992efd1794e09b80a80e1555151c89d3851dde3dec290` | 12530 |
 | `AUDIT/FINAL_RELEASE_CERTIFICATION.md` | `7a0f678bb736c102ec406654f6d6fa43e128aa04c892d43d433e800579381d54` | 10066 |
 | `AUDIT/FINAL_RELEASE_TRACEABILITY.md` | `af5b16165f9eb1546e0c4bd5e050efd806b12632ffcd225dbcb742305f534da3` | 4430 |
 | `AUDIT/FOURTH_AUDIT_PROJECT_AND_SPEC.md` | `1a6f9a9965f04b9fbf9c163c7f3e90bd79c5a0cee9695d5e6f6d907718387e40` | 73685 |
