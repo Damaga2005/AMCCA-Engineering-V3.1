@@ -316,17 +316,26 @@ def _extract_migrations_from_csharp(cs_source):
     return [(int(v), up) for v, _name, up, _down in migrations]
 
 
+class LiveSchemaBuildError(Exception):
+    """A migration's UpSql failed to apply against SQLite -- the migration set is internally
+    inconsistent. The caller turns this into a red check result rather than letting it crash the
+    whole gate run (which is also what the mutation tests that deliberately break a migration expect)."""
+
+
 def _build_live_schema_via_sqlite(up_sql_statements):
     """Applies every migration's UpSql against a real in-memory SQLite database and
     returns {table_name: create_table_sql}. This is the actual final schema (renames,
     rebuilds and drops all resolved by the engine itself), not a text approximation of
-    migration ordering."""
+    migration ordering. Raises LiveSchemaBuildError if any migration fails to apply."""
     import sqlite3
     con = sqlite3.connect(":memory:")
     try:
         con.execute("PRAGMA foreign_keys=ON;")
-        for up in up_sql_statements:
-            con.executescript(up)
+        for i, up in enumerate(up_sql_statements):
+            try:
+                con.executescript(up)
+            except sqlite3.Error as e:
+                raise LiveSchemaBuildError(f"migration #{i + 1} failed to apply: {e}") from e
         rows = con.execute(
             "SELECT name, sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL;"
         ).fetchall()
@@ -374,7 +383,10 @@ def check_contract_enum_matches_ddl_check():
         return check("contracts.enum_matches_ddl_check", False, str(e))
 
     migrations.sort(key=lambda m: m[0])
-    live_schema = _build_live_schema_via_sqlite([up for _v, up in migrations])
+    try:
+        live_schema = _build_live_schema_via_sqlite([up for _v, up in migrations])
+    except LiveSchemaBuildError as e:
+        return check("contracts.enum_matches_ddl_check", False, str(e))
 
     mismatches = []
 
@@ -475,7 +487,10 @@ def check_contract_fields_have_columns():
         return check("contracts.fields_have_columns", False, str(e))
 
     migrations.sort(key=lambda m: m[0])
-    live_schema = _build_live_schema_via_sqlite([up for _v, up in migrations])
+    try:
+        live_schema = _build_live_schema_via_sqlite([up for _v, up in migrations])
+    except LiveSchemaBuildError as e:
+        return check("contracts.fields_have_columns", False, str(e))
 
     missing = []
     for schema_file, table in sorted(_ENUM_CHECK_TABLE_MAP.items()):

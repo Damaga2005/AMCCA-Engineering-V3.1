@@ -704,8 +704,11 @@ def mutation_16_ddl_check_regresses_from_contract_enum():
         with open(mig_path, encoding="utf-8") as f:
             source = f.read()
         needle = "side_effect_class TEXT NOT NULL CHECK(side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')),"
-        assert needle in source, "test fixture assumption violated: migration 4's tool_runs CHECK text has changed"
-        mutated_source = source.replace(needle, "side_effect_class TEXT NOT NULL,", 1)
+        assert needle in source, "test fixture assumption violated: tool_runs' side_effect_class CHECK text has changed"
+        # tool_runs is created by migration 4 and rebuilt again by later table-rebuild migrations;
+        # the live schema is whatever the LAST rebuild produced, so the CHECK has to be removed from
+        # every definition for the regression to actually reach check_contract_enum_matches_ddl_check.
+        mutated_source = source.replace(needle, "side_effect_class TEXT NOT NULL,")
 
         with open(mig_path, "w", encoding="utf-8") as f:
             f.write(mutated_source)
@@ -752,26 +755,38 @@ def mutation_19_field_presence_check_regresses_when_a_real_column_is_dropped():
         vp.ROOT = scratch
         vp.RESULTS = []
         vp.check_contract_fields_have_columns()
+        baseline_ok = vp.RESULTS[0]["ok"]
         baseline_detail = vp.RESULTS[0]["detail"]
+        # reconciliation_state / pricing_snapshot_id / schema_version were the audit's named gaps;
+        # a later migration added their columns, so the baseline is now genuinely clean.
         ok = record("mutation19.baseline_scratch_copy_does_not_flag_provider_or_pk_aliases",
-                    "'cost_events.provider'" not in baseline_detail
+                    baseline_ok
+                    and "'cost_events.provider'" not in baseline_detail
                     and "cost_events.cost_event_id" not in baseline_detail
                     and "jobs.lease_owner" not in baseline_detail
                     and "referral_links.disclosure_required" not in baseline_detail
                     and "analytics_snapshots.source_account_id" not in baseline_detail
-                    and "cost_events.units" not in baseline_detail
-                    and "cost_events.reconciliation_state" in baseline_detail,
+                    and "cost_events.units" not in baseline_detail,
                     baseline_detail)
 
         mig_path = os.path.join(scratch, mig_rel)
         with open(mig_path, encoding="utf-8") as f:
             source = f.read()
-        needle = "                    provider TEXT NOT NULL,\n                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')"
-        assert needle in source, "test fixture assumption violated: cost_events' provider/occurred_at/created_at DDL text has changed"
+        # cost_events is created by migration 1 and recreated by a later enum-CHECK table rebuild.
+        # Dropping provider from only the first leaves the rebuild's `INSERT ... SELECT *` a column
+        # short; it has to go from every CREATE for the column to actually be absent from the live
+        # schema (and for the rebuild's column count to still line up).
+        needle_create = "                    provider TEXT NOT NULL,\n                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')"
+        needle_rebuild = "                    provider TEXT NOT NULL,\n                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    schema_version TEXT NOT NULL DEFAULT '3.1.0',"
+        assert needle_create in source, "test fixture assumption violated: cost_events' migration-1 provider DDL text has changed"
+        assert needle_rebuild in source, "test fixture assumption violated: cost_events' rebuild provider DDL text has changed"
         mutated_source = source.replace(
-            needle,
+            needle_create,
             "                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')",
             1)
+        mutated_source = mutated_source.replace(
+            needle_rebuild,
+            "                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    schema_version TEXT NOT NULL DEFAULT '3.1.0',")
 
         with open(mig_path, "w", encoding="utf-8") as f:
             f.write(mutated_source)
