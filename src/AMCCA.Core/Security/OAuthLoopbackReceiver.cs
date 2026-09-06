@@ -28,22 +28,41 @@ public class OAuthLoopbackReceiver : IDisposable
         _listener.Start();
     }
 
-    public async Task<OAuthCallbackResult> WaitForCallbackAsync(string expectedState, TimeSpan timeout, CancellationToken ct = default)
+    public Task<OAuthCallbackResult> WaitForCallbackAsync(string expectedState, TimeSpan timeout, CancellationToken ct = default)
+    {
+        // A browser callback must not be lost because the thread pool is saturated (the CI chaos
+        // and concurrency suites do exactly that). Everything here runs on one dedicated thread
+        // using the blocking HttpListener API, so there are no thread-pool-scheduled continuations
+        // to starve. The timeout unblocks the blocking GetContext() by stopping the listener.
+        var tcs = new TaskCompletionSource<OAuthCallbackResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try { tcs.SetResult(WaitForCallback(expectedState, timeout, ct)); }
+            catch (Exception ex) { tcs.SetResult(new OAuthCallbackResult(false, null, null, ex.Message)); }
+        })
+        {
+            IsBackground = true,
+            Name = "oauth-loopback-callback",
+        };
+        thread.Start();
+        return tcs.Task;
+    }
+
+    private OAuthCallbackResult WaitForCallback(string expectedState, TimeSpan timeout, CancellationToken ct)
     {
         HttpListenerContext context;
-        try
+        using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
         {
-            // .WaitAsync handles the timeout without a leaked Task.Delay timer or a redundant
-            // linked CTS; an orphaned GetContextAsync after a timeout just faults on Dispose.
-            context = await _listener.GetContextAsync().WaitAsync(timeout, ct);
-        }
-        catch (Exception ex) when (ex is TimeoutException or OperationCanceledException)
-        {
-            return new OAuthCallbackResult(false, null, null, "Timeout waiting for OAuth callback");
-        }
-        catch (Exception ex)
-        {
-            return new OAuthCallbackResult(false, null, null, ex.Message);
+            timeoutCts.CancelAfter(timeout);
+            using var reg = timeoutCts.Token.Register(() => { try { _listener.Stop(); } catch { } });
+            try
+            {
+                context = _listener.GetContext();
+            }
+            catch (Exception ex) when (ex is HttpListenerException or InvalidOperationException or ObjectDisposedException)
+            {
+                return new OAuthCallbackResult(false, null, null, "Timeout waiting for OAuth callback");
+            }
         }
 
         var query = context.Request.QueryString;
@@ -65,10 +84,10 @@ public class OAuthLoopbackReceiver : IDisposable
             response.StatusCode = success ? 200 : 400;
             response.ContentType = "text/html; charset=utf-8";
             response.ContentLength64 = buffer.Length;
-            await response.OutputStream.WriteAsync(buffer, ct);
+            response.OutputStream.Write(buffer, 0, buffer.Length);
             response.OutputStream.Close();
         }
-        catch (Exception ex) when (ex is HttpListenerException or IOException or ObjectDisposedException or OperationCanceledException)
+        catch (Exception ex) when (ex is HttpListenerException or IOException or ObjectDisposedException)
         {
             // fall through with whatever we parsed off the request
         }

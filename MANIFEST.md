@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 424
-**Total bytes:** 2606241
+**Total bytes:** 2607201
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -344,7 +344,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/ISafeHttpClientFactory.cs` | `c2fb3714f1feffa2a85be52c96781b99a3fdf2eed7120fe56dd4f75c1dc203f2` | 268 |
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `686d4a6d01a41551071091e4a3b306d6c8c07be030d4df1c509dc7a6f77e99c2` | 1357 |
-| `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `caad2f0b7e367c5592fbe0cd2cfc617da0347e0915d92c6abce7f8b24b2464d1` | 4071 |
+| `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `955ea30a13006b83af714960e8a5b49801724d535ffe38fec88decf0506f4261` | 5031 |
 | `src/AMCCA.Core/Security/OAuthManager.cs` | `b3bb8145a3f5e3b1ee2ed4fd37ac7dae189b69d651eff124bee48e62ecdbf804` | 11835 |
 | `src/AMCCA.Core/Security/OAuthModels.cs` | `f6bf3984f62d28ca1788aa0c7b30fb1031f87f256ef76260f7db7e64427bc0d1` | 539 |
 | `src/AMCCA.Core/Security/PathConfinement.cs` | `9d3dc4442a3315268f999c4b260850e5b252270d91af45b5d154e53d8211f764` | 3563 |
