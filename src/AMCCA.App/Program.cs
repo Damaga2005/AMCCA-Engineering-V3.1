@@ -168,6 +168,16 @@ public static class Program
         builder.Services.AddHostedService<JobWorkerHostedService>();
         builder.Services.AddHostedService<SystemHealthReporter>();
 
+        // Reconciliation (A9): recovers leases and reconciles unknown intents. No IReconciler is
+        // registered — with none, unknown intents/productions are left for one rather than guessed.
+        builder.Services.AddSingleton<AMCCA.Core.Jobs.IntentManager>();
+        builder.Services.AddSingleton(sp => new AMCCA.Core.Jobs.RecoveryService(
+            sp.GetRequiredService<DatabaseConnectionFactory>(),
+            sp.GetRequiredService<JobManager>(),
+            sp.GetRequiredService<AMCCA.Core.Jobs.IntentManager>(),
+            sp.GetService<AMCCA.Core.Jobs.IReconciler>()));
+        builder.Services.AddHostedService<ReconciliationHostedService>();
+
         var host = builder.Build();
 
         host.Services.GetRequiredService<MigrationService>().UpgradeAsync().GetAwaiter().GetResult();

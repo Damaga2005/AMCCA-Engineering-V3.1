@@ -177,12 +177,19 @@ public class JobsAndLeasesContractTests : IDisposable
         unknown!.State.Should().Be("UNKNOWN");
     }
 
+    private sealed class StubReconciler : IReconciler
+    {
+        public Task<IntentReconciliation> ReconcileIntentAsync(string intentId, System.Threading.CancellationToken ct = default)
+            => Task.FromResult(new IntentReconciliation(
+                IntentReconciliationOutcome.Executed, "PROVIDER_STATUS_API", "evidence://provider/txn/123", "confirmed"));
+    }
+
     [Fact]
-    public async Task RecoveryService_ReclaimsExpiredLeases_AndResolvesUnknownIntents()
+    public async Task RecoveryService_ReclaimsExpiredLeases_AndReconcilesUnknownIntents_WithAReconciler()
     {
         var jobManager = new JobManager(_factory);
         var intentManager = new IntentManager(_factory);
-        var recoveryService = new RecoveryService(_factory, jobManager, intentManager);
+        var recoveryService = new RecoveryService(_factory, jobManager, intentManager, new StubReconciler());
 
         // Setup 1: an expired lease
         var key = IntentKeyGenerator.GenerateKey("render", "prod-6", 1);

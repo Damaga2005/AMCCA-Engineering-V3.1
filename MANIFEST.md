@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 421
-**Total bytes:** 2571492
+**Files:** 424
+**Total bytes:** 2585717
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -214,8 +214,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.App/MainWindow.xaml` | `4375696d75f5da51464e7861cfeaf581c738e9fb7a1014fcad8e0e448b50f4fd` | 7857 |
 | `src/AMCCA.App/MainWindow.xaml.cs` | `d4a6f13a7e43f9c71ac06a9ba23bf0a17df3a8661211cbe25bd2e0358c502f50` | 245 |
 | `src/AMCCA.App/Orchestration/OrchestratorHostedService.cs` | `fcde3efcad13469db755434f0473b32293bf5f85ff2f1f1e4c356391f76f955c` | 3275 |
+| `src/AMCCA.App/Orchestration/ReconciliationHostedService.cs` | `58cc0abddbadabb627758d8c187f0fe48deb1992cbeac970e478638544de9bec` | 5183 |
 | `src/AMCCA.App/Orchestration/SystemHealthReporter.cs` | `5aa229d679de432db2f8f5f861e0d003e4ba0fda069ce9ed0008678068f8c799` | 2888 |
-| `src/AMCCA.App/Program.cs` | `7a147e29b74f3c339880f3a8c8ccd1f40cd53ff5d4babc98b7bc3d90af715843` | 9143 |
+| `src/AMCCA.App/Program.cs` | `bf86ad500215a97e0c5755735e91b2eaeb7dede71db923ca879b0aedc718228b` | 9813 |
 | `src/AMCCA.App/Services/IDialogService.cs` | `043be0a4a9eb5ce6d90f3f6ccfaba59d8dff32fbac4c38bc2be57edc4fb837c3` | 1113 |
 | `src/AMCCA.App/Services/INavigationService.cs` | `028e17b6b1ca85d54d0cae360607ae05b1a7b8514a07bd1e7406359c07cd537f` | 847 |
 | `src/AMCCA.App/Services/INotificationService.cs` | `f01de21ed624510fe4482f23a70a8b2389741fa155e10dc7f2ba10b8fb44f0c4` | 857 |
@@ -273,7 +274,8 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Jobs/JobManager.cs` | `218aa33ec354d38179ab884d95594e2fb9dbc5095f5ac826895d3a6912dac343` | 26372 |
 | `src/AMCCA.Core/Jobs/JobModels.cs` | `f2b3378cb596a4ff91136994522b6863f211ee6cace2a5394cf8234f70de7377` | 3582 |
 | `src/AMCCA.Core/Jobs/JobWorkerEngine.cs` | `c53a9e8362764b54ea561ac118ba30f4530c57823223f45e4b1206a1dd1d8731` | 5852 |
-| `src/AMCCA.Core/Jobs/RecoveryService.cs` | `efbf6c9ac240f6f4141b54509edec42d4238d9cfcbc9414c285a719819632c5a` | 3598 |
+| `src/AMCCA.Core/Jobs/Reconciler.cs` | `780812f2b3b23521e3b16cba2a5763b225b76df9b624d8fadd473a7c456af3a2` | 1348 |
+| `src/AMCCA.Core/Jobs/RecoveryService.cs` | `1efac4d493ca1f9f9e5f613f31b64de70ebe2cd3d287c9bde167553000f251b4` | 5162 |
 | `src/AMCCA.Core/Media/FfmpegRunner.cs` | `f9d7c702cc5ac9be5b97ca0cbf2ce89673fac355fed4fc6ee1373aa117edb5ae` | 2853 |
 | `src/AMCCA.Core/Media/MediaModels.cs` | `2575520baf93a372ddce788e068635966d440ec524d87a5fcc391e55a875c07e` | 2149 |
 | `src/AMCCA.Core/Media/MediaRenderer.cs` | `c05df7246f16eb222ae933f264a4bca6da3e03f0ddc392ad6b9a1f69bbb073f4` | 5143 |
@@ -388,7 +390,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `b330ad40f3b83fafee83d8b73ef2055a937cfc09f8a7887b19803c6f0b730bb5` | 10739 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `e25244feb670676f404fd38c530587870ddbf4e14f8e62dcf1d943215542337d` | 5248 |
 | `tests/AMCCA.Core.Tests/JobWorkerEngineContractTests.cs` | `6d60a9fa9c45911b2d738f1a72414e890033b4cf6d38d8e007f5bfd044b3c549` | 7965 |
-| `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `c774944bf34c00fda37d2f4450006d5e5f05b480ee687538e884b2438251ba26` | 9491 |
+| `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `3e270261730d4a2af348d4b14d4ea5e3071bf0abbf8abb8335a8b41c1396b501` | 9907 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
 | `tests/AMCCA.Core.Tests/MediaStageHandlerContractTests.cs` | `4b833d376ceac7848a2754924f719cbce21453aa25db9b093974e25d657fbb06` | 6547 |
 | `tests/AMCCA.Core.Tests/MemoryGenomeExperimentContractTests.cs` | `ebd6cbe432c9dc4d1e9c8aa2877bd214b97e3ad42d48997a3adf74a926d2e33a` | 23899 |
@@ -417,6 +419,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/PublishingAndPlatformHubContractTests.cs` | `c637e9101bd87e4e3eb55629cbdecdc38e31771636ae616f4c345e90d250a112` | 5598 |
 | `tests/AMCCA.Core.Tests/QaEngineAndDagReworkContractTests.cs` | `e72698af24a6b162648169405fbecf5f068827dcc00823ce1f33134f6e53e5cc` | 7014 |
 | `tests/AMCCA.Core.Tests/QaStageHandlerContractTests.cs` | `ae060254840536395a50d93032bbd556653c34127bdabbe50918a81a6471e6f9` | 10176 |
+| `tests/AMCCA.Core.Tests/ReconciliationSeamContractTests.cs` | `ae2615d90f5a5947311aebd2293353b2b72754ef1237904339546557af74c5fd` | 5044 |
 | `tests/AMCCA.Core.Tests/RenderMediaJobHandlerTests.cs` | `e2059939dc7dab54fe562a192b34b4beb932d9c755236cdbcb3e4e1af2e2560f` | 7412 |
 | `tests/AMCCA.Core.Tests/ReparsePointConfinementRegressionTests.cs` | `5c1294595078008fd07574007254ce663ba8678a168c0dd69f3304cb84e42303` | 5485 |
 | `tests/AMCCA.Core.Tests/ResearchAndClaimValidationContractTests.cs` | `6f8f5f74b84d403fafb4e5fdda9539dd2806faac033efcd2038ecfb4b6b0ce49` | 8662 |
