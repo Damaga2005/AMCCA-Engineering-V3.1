@@ -12,15 +12,18 @@ public class RecoveryService
     private readonly DatabaseConnectionFactory _connectionFactory;
     private readonly JobManager _jobManager;
     private readonly IntentManager _intentManager;
+    private readonly IReconciler? _reconciler;
 
     public RecoveryService(
         DatabaseConnectionFactory connectionFactory,
         JobManager jobManager,
-        IntentManager intentManager)
+        IntentManager intentManager,
+        IReconciler? reconciler = null)
     {
         _connectionFactory = connectionFactory;
         _jobManager = jobManager;
         _intentManager = intentManager;
+        _reconciler = reconciler;
     }
 
     public async Task<RecoveryReport> RunStartupRecoveryPassAsync(CancellationToken ct = default)
@@ -64,35 +67,59 @@ public class RecoveryService
         var unknownIntents = (await connection.QueryAsync<string>(unknownIntentsSql)).ToList();
 
         int processedIntentsCount = 0;
-        foreach (var intentId in unknownIntents)
+
+        // No reconciler wired: an unknown intent is left exactly as it is. It is never resolved on a
+        // guess (SPEC/16: "Reconciliation resolves it first"), and no evidence is fabricated.
+        if (_reconciler is not null)
         {
-            var attemptId = UlidGenerator.NewUlid();
             const string attemptSql = @"
-                INSERT INTO reconciliation_attempts (
-                    id, intent_id, attempt_no, method, outcome, evidence_ref, occurred_at
-                ) VALUES (
-                    @Id, @IntentId, @AttemptNo, @Method, @Outcome, @EvidenceRef, @OccurredAt
-                );
-            ";
+                INSERT INTO reconciliation_attempts (id, intent_id, attempt_no, method, outcome, evidence_ref, occurred_at)
+                VALUES (@Id, @IntentId, @AttemptNo, @Method, @Outcome, @EvidenceRef, @OccurredAt);";
+            const string nextAttemptSql = "SELECT COALESCE(MAX(attempt_no), 0) FROM reconciliation_attempts WHERE intent_id = @Id;";
 
-            await connection.ExecuteAsync(attemptSql, new
+            foreach (var intentId in unknownIntents)
             {
-                Id = attemptId,
-                IntentId = intentId,
-                AttemptNo = 1,
-                Method = "STARTUP_STATUS_PROBE",
-                Outcome = "CONFIRMED",
-                EvidenceRef = "evidence://recovery/verified",
-                OccurredAt = now
-            });
+                var rec = await _reconciler.ReconcileIntentAsync(intentId, ct);
 
-            await _intentManager.ResolveIntentAsync(intentId, "CONFIRMED", ct);
-            processedIntentsCount++;
+                var attemptNo = (await connection.ExecuteScalarAsync<long>(nextAttemptSql, new { Id = intentId })) + 1;
+                await connection.ExecuteAsync(attemptSql, new
+                {
+                    Id = UlidGenerator.NewUlid(),
+                    IntentId = intentId,
+                    AttemptNo = attemptNo,
+                    Method = rec.Method,
+                    Outcome = rec.Outcome switch
+                    {
+                        IntentReconciliationOutcome.Executed => "CONFIRMED",
+                        IntentReconciliationOutcome.NotExecuted => "REFUTED",
+                        IntentReconciliationOutcome.Failed => "REFUTED",
+                        _ => "INCONCLUSIVE",
+                    },
+                    EvidenceRef = rec.EvidenceRef,
+                    OccurredAt = now,
+                });
+
+                var resolvedState = rec.Outcome switch
+                {
+                    IntentReconciliationOutcome.Executed => "CONFIRMED",
+                    IntentReconciliationOutcome.NotExecuted => "REFUTED",
+                    IntentReconciliationOutcome.Failed => "ABANDONED",
+                    _ => (string?)null,
+                };
+                if (resolvedState is not null)
+                {
+                    await _intentManager.ResolveIntentAsync(intentId, resolvedState, ct);
+                    processedIntentsCount++;
+                }
+            }
         }
 
+        var intentNote = _reconciler is null
+            ? $"{unknownIntents.Count} unknown intent(s) left for a reconciler"
+            : $"{processedIntentsCount} intent(s) reconciled";
         return new RecoveryReport(
             recoveredLeasesCount,
             processedIntentsCount,
-            $"Recovery complete: {recoveredLeasesCount} expired lease(s) recovered, {processedIntentsCount} intent(s) processed.");
+            $"Recovery complete: {recoveredLeasesCount} expired lease(s) recovered, {intentNote}.");
     }
 }

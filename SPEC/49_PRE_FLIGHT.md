@@ -15,9 +15,15 @@ Two distinct preflights: system startup and publication.
 | 5 | Migrations current and checksums match | `AMCCA-DB-002`, abort |
 | 6 | Secret store reachable | Abort |
 | 7 | `data_root` writable, free space above minimum | `AMCCA-STO-001`, degraded start |
-| 8 | FFmpeg present and version within the supported range | Degraded start; media disabled |
+| 8 | FFmpeg present and runnable (`ffmpeg -version` exits 0 within timeout) | Degraded start; media disabled |
 | 9 | System clock plausible against last recorded event time | Warn; lease logic depends on it |
 | 10 | Kill-switch state loaded | Halted start if `EMERGENCY_STOP` |
+
+Check 8 does not enforce a version floor or ceiling. No supported FFmpeg version range has ever been
+verified against this system, and stating one here without that verification would be inventing a
+capability guarantee this system cannot back up. Presence plus a successful `-version` invocation is the
+only thing check 8 asserts; a genuinely incompatible FFmpeg build is expected to surface as a render
+failure (`AMCCA-MED-001`/`AMCCA-MED-002`) rather than being pre-empted at startup.
 
 Check 9 exists because leases, retention and budget windows are all clock-dependent. A clock that has
 jumped backwards can expire leases early and reopen budget windows, and both are silent failures.

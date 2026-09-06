@@ -97,12 +97,12 @@ public class InstallationCleanInstallTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-life-1', 'RENDER_DONE', 'Lifecycle Video', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-life-1', 'CANDIDATE_RENDERED', 'Lifecycle Video', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
 
             await conn.ExecuteAsync(@"
                 INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
-                VALUES ('aud-life-1', 'PRODUCTION_CREATED', 'OPERATOR', 'operator_admin', 'PRODUCTION', 'prod-life-1', 'SUCCESS', 'INIT', 'corr-l1', '3.1.0', datetime('now'));
+                VALUES ('aud-life-1', 'PRODUCTION_CREATED', 'OPERATOR', 'operator_admin', 'PRODUCTION', 'prod-life-1', 'ALLOWED', 'INIT', 'corr-l1', '3.1.0', datetime('now'));
             ");
         }
 

@@ -5,9 +5,7 @@ using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.Core.Contracts;
-using AMCCA.Core.Database;
-using AMCCA.Core.StateMachine;
-using Dapper;
+using AMCCA.Core.Domain;
 
 namespace AMCCA.App.ViewModels;
 
@@ -24,14 +22,18 @@ public record ProductionItem(
 
 public class ProductionsViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
-    private readonly StateMachineRegistry? _stateMachine;
+    private readonly ProductionService _productionService;
     private readonly IDialogService _dialogService;
     private readonly INotificationService _notificationService;
 
     private ProductionItem? _selectedProduction;
     private string _newTopic = string.Empty;
     private string _newNiche = "tech";
+
+    // The constructor starts a load, and so do Refresh and every create/cancel. Each load takes a token
+    // and only applies its results if no newer load has started since, so a slow earlier query cannot
+    // repaint the list with rows from before the operator's last action.
+    private int _loadRequestToken;
 
     public ObservableCollection<ProductionItem> Productions { get; } = new();
 
@@ -58,13 +60,11 @@ public class ProductionsViewModel : ViewModelBase
     public ICommand CancelProductionCommand { get; }
 
     public ProductionsViewModel(
-        DatabaseConnectionFactory connectionFactory,
+        ProductionService productionService,
         IDialogService dialogService,
-        INotificationService notificationService,
-        StateMachineRegistry? stateMachine = null)
+        INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
-        _stateMachine = stateMachine;
+        _productionService = productionService;
         _dialogService = dialogService;
         _notificationService = notificationService;
 
@@ -77,21 +77,27 @@ public class ProductionsViewModel : ViewModelBase
 
     public async Task LoadProductionsAsync()
     {
-        Productions.Clear();
+        var token = ++_loadRequestToken;
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            var rows = await conn.QueryAsync<ProductionItem>(
-                "SELECT id AS Id, title AS Title, niche_id AS NicheId, state AS State, created_at AS CreatedAt, updated_at AS UpdatedAt FROM productions ORDER BY created_at DESC LIMIT 50;");
+            var rows = await _productionService.ListRecentAsync(50);
 
-            foreach (var r in rows)
+            if (token != _loadRequestToken)
             {
-                Productions.Add(r);
+                return; // a newer load has started; its results are the ones that count
+            }
+
+            Productions.Clear();
+            foreach (var p in rows)
+            {
+                Productions.Add(new ProductionItem(p.Id, p.Title ?? string.Empty, p.NicheId ?? string.Empty, p.State, p.CreatedAt, p.UpdatedAt));
             }
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load productions: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load productions: {ex.Message} Retry the refresh.",
+                "Error");
         }
     }
 
@@ -101,21 +107,29 @@ public class ProductionsViewModel : ViewModelBase
 
         try
         {
-            var id = UlidGenerator.NewUlid();
-            var now = DateTimeOffset.UtcNow.ToString("O");
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES (@Id, 'INIT', @Title, 'en', @NicheId, 'COLLABORATIVE', '3.1.0', @Now, @Now);
-            ", new { Id = id, Title = NewTopic, NicheId = NewNiche, Now = now });
+            var correlationId = Guid.NewGuid().ToString("N");
+            var prod = await _productionService.CreateProductionAsync(
+                title: NewTopic,
+                language: "en",
+                autonomyMode: "ASSISTED",
+                correlationId: correlationId,
+                nicheId: NewNiche);
 
-            _notificationService.AddNotification($"Created production {id} ({NewTopic})", "Success");
+            _notificationService.AddNotification($"Created production {prod.Id} ({NewTopic})", "Success");
             NewTopic = string.Empty;
             await LoadProductionsAsync();
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} No production was created; adjust the topic or niche and retry.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Error creating production: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Error creating production: {ex.Message} Retry, or check the topic and niche.",
+                "Error");
         }
     }
 
@@ -128,19 +142,27 @@ public class ProductionsViewModel : ViewModelBase
 
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                UPDATE productions
-                SET state = 'CANCELLED', updated_at = datetime('now')
-                WHERE id = @Id;
-            ", new { Id = SelectedProduction.Id });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _productionService.TransitionAsync(
+                productionId: SelectedProduction.Id,
+                toState: "CANCELLED",
+                actorType: "OPERATOR",
+                correlationId: correlationId);
 
             _notificationService.AddNotification($"Cancelled production {SelectedProduction.Id}", "Info");
             await LoadProductionsAsync();
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} Refresh the list to see the production's current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Error cancelling production: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Error cancelling production: {ex.Message} Refresh and retry.",
+                "Error");
         }
     }
 }

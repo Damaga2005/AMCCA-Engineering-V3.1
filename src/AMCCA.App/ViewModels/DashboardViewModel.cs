@@ -3,19 +3,18 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
-using AMCCA.Core.Database;
-using Dapper;
+using AMCCA.Core.Operator;
 
 namespace AMCCA.App.ViewModels;
 
 public class DashboardViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly OperatorControlService _operatorControlService;
     private readonly INavigationService _navigationService;
+    private readonly INotificationService _notificationService;
     private int _activeProductionsCount;
     private int _pendingApprovalsCount;
     private int _verifiedPublicationsCount;
-    private bool _globalKillSwitch;
 
     public int ActiveProductionsCount
     {
@@ -35,20 +34,18 @@ public class DashboardViewModel : ViewModelBase
         set => SetProperty(ref _verifiedPublicationsCount, value);
     }
 
-    public bool GlobalKillSwitch
-    {
-        get => _globalKillSwitch;
-        set => SetProperty(ref _globalKillSwitch, value);
-    }
-
     public ICommand RefreshCommand { get; }
     public ICommand NewProductionCommand { get; }
     public ICommand ViewApprovalsCommand { get; }
 
-    public DashboardViewModel(DatabaseConnectionFactory connectionFactory, INavigationService navigationService)
+    public DashboardViewModel(
+        OperatorControlService operatorControlService,
+        INavigationService navigationService,
+        INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
+        _operatorControlService = operatorControlService;
         _navigationService = navigationService;
+        _notificationService = notificationService;
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         NewProductionCommand = new RelayCommand(() => _navigationService.NavigateTo<ProductionsViewModel>());
@@ -61,16 +58,21 @@ public class DashboardViewModel : ViewModelBase
     {
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            ActiveProductionsCount = await conn.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM productions WHERE state NOT IN ('PUBLISHED', 'FAILED', 'CANCELLED');");
-
-            PendingApprovalsCount = await conn.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM approvals WHERE state = 'PENDING';");
-
-            VerifiedPublicationsCount = await conn.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM publications WHERE state = 'VERIFIED';");
+            // Every count comes from the one service that already computes them. These used to be
+            // hand-rolled SQL here, which is exactly how they drifted from the canonical numbers
+            // (DEF-005: this screen once excluded 'PUBLISHED', a non-existent state, and counted
+            // ARCHIVED productions as active).
+            var status = await _operatorControlService.GetSystemStatusAsync();
+            ActiveProductionsCount = status.ActiveProductionsCount;
+            PendingApprovalsCount = status.PendingApprovalsCount;
+            VerifiedPublicationsCount = status.VerifiedPublicationsCount;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // SPEC/60 obligation 6: a failed load needs an operator action, not a silently blank screen.
+            _notificationService.AddNotification(
+                $"Failed to load dashboard counts: {ex.Message} Use Refresh to retry.",
+                "Error");
+        }
     }
 }

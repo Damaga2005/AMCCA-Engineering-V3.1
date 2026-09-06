@@ -12,8 +12,20 @@ public static class QaVerdictEvaluator
         IReadOnlyList<QaFinding> findings,
         double minOverall = 8.5,
         double minCritical = 8.0,
-        bool hasDeterministicChecks = true)
+        bool hasDeterministicChecks = true,
+        QaThresholdProfileRegistry? thresholdProfiles = null,
+        string thresholdProfileId = QaThresholdProfileRegistry.DefaultProfileId)
     {
+        // When a profile registry is supplied, the thresholds come from the named profile instead of
+        // the caller's minOverall/minCritical. Resolving an unknown or threshold-lowering profile
+        // raises AMCCA-QA-003 (SPEC/05, SPEC/35).
+        if (thresholdProfiles is not null)
+        {
+            var resolved = thresholdProfiles.Resolve(thresholdProfileId);
+            minOverall = resolved.OverallMin;
+            minCritical = resolved.CriticalMin;
+        }
+
         // Rule: A PASS is unreachable from AI findings alone (D-024, I-19, SPEC/35)
         if (!hasDeterministicChecks)
         {

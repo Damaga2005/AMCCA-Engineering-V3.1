@@ -13,15 +13,19 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <TextBlock Text="Human Approval Queue (SPEC/04)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
+        <TextBlock Text="Human Approval Queue (SPEC/09)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
 
-        <!-- Approvals Grid -->
+        <!-- Approvals Grid: SPEC/60 obligation 5 requires every approval request to show the exact
+             action, subject, cost ceiling and expiry being approved, not just its id and timestamps. -->
         <DataGrid Grid.Row="1" ItemsSource="{Binding Approvals}" SelectedItem="{Binding SelectedApproval}" AutoGenerateColumns="False" CanUserAddRows="False" Background="#313244" Foreground="#CDD6F4" RowBackground="#1E1E2E" AlternatingRowBackground="#181825" BorderThickness="0" HeadersVisibility="Column" Margin="0,0,0,15">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Approval ID" Binding="{Binding Id}" Width="160"/>
-                <DataGridTextColumn Header="Production ID" Binding="{Binding ProductionId}" Width="180"/>
-                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="140"/>
-                <DataGridTextColumn Header="State" Binding="{Binding State}" Width="100"/>
+                <DataGridTextColumn Header="Approval ID" Binding="{Binding Id}" Width="140"/>
+                <DataGridTextColumn Header="Production ID" Binding="{Binding ProductionId}" Width="160"/>
+                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="130"/>
+                <DataGridTextColumn Header="Subject" Binding="{Binding SubjectDisplay}" Width="150"/>
+                <DataGridTextColumn Header="Cost Ceiling" Binding="{Binding CostCeilingDisplay}" Width="100"/>
+                <DataGridTextColumn Header="Expires At" Binding="{Binding ExpiresAt}" Width="160"/>
+                <DataGridTextColumn Header="State" Binding="{Binding State}" Width="90"/>
                 <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>

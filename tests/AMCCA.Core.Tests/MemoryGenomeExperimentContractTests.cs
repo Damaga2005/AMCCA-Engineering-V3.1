@@ -109,9 +109,9 @@ public class MemoryGenomeExperimentContractTests : IDisposable
         using var conn = await _factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync(@"
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-failed-1', 'FAILED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-failed-1', 'FAILED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-ok-1', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-ok-1', 'PUBLICATION_VERIFIED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
         ");
 
         var recFromFailed = new MemoryRecord("mem-fail", "niche:crypto", "failed_hook", "{\"ctr\":0.01}", "prod-failed-1", 0.70, "3.1.0", DateTime.UtcNow, DateTime.UtcNow);
@@ -330,7 +330,7 @@ public class MemoryGenomeExperimentContractTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-                VALUES ('prod-exp-a', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-exp-a', 'PUBLICATION_VERIFIED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
                 INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
                 VALUES ('pub-a', 'prod-exp-a', 'youtube', 'acc-a', 'ver-a', 'PUBLISHED', 'idem-exp-a', '3.1.0', datetime('now'), datetime('now'));
             ");
@@ -367,7 +367,7 @@ public class MemoryGenomeExperimentContractTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-                VALUES ('prod-attr-a', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-attr-a', 'PUBLICATION_VERIFIED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
                 INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
                 VALUES ('pub-1', 'prod-attr-a', 'youtube', 'acc-1', 'ver-1', 'PUBLISHED', 'idem-attr-1', '3.1.0', datetime('now'), datetime('now'));
             ");
@@ -413,9 +413,9 @@ public class MemoryGenomeExperimentContractTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-                VALUES ('prod-sig-a', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-sig-a', 'PUBLICATION_VERIFIED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
                 INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-                VALUES ('prod-sig-b', 'PUBLISHED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-sig-b', 'PUBLICATION_VERIFIED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
                 INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)
                 VALUES ('pub-a', 'prod-sig-a', 'youtube', 'acc-a', 'ver-a', 'PUBLISHED', 'idem-sig-a', '3.1.0', datetime('now'), datetime('now'));
                 INSERT INTO publications (id, production_id, platform, account_id, content_version_id, state, idempotency_key, schema_version, created_at, updated_at)

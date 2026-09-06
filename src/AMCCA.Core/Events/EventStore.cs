@@ -50,7 +50,7 @@ public class EventStore : IEventStore
                 @OccurredAt, @Seq
             );
         ";
-        await connection.ExecuteAsync(sql, evt);
+        await connection.ExecuteAsync(new CommandDefinition(sql, evt, cancellationToken: ct));
     }
 
     public async Task<IReadOnlyList<EventRecord>> GetEventsAsync(string aggregateType, string aggregateId, CancellationToken ct = default)

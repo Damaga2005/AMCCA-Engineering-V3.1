@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
-using AMCCA.Core.Database;
-using Dapper;
+using AMCCA.Core.Contracts;
+using AMCCA.Core.Operator;
 
 namespace AMCCA.App.ViewModels;
 
@@ -14,16 +14,33 @@ public record ApprovalItem(
     string ProductionId,
     string Action,
     string State,
-    string CreatedAt);
+    string CreatedAt,
+    string ExpiresAt,
+    string? Subject,
+    decimal? CostCeiling)
+{
+    // SPEC/60 obligation 5: "Every approval request shows the exact action, subject, cost ceiling and
+    // expiry being approved." A legacy or scope-less approval has no subject/cost ceiling to show;
+    // this states that plainly instead of leaving a blank cell that reads as a loading glitch.
+    public string SubjectDisplay => Subject ?? "(no scope recorded)";
+    public string CostCeilingDisplay => CostCeiling is { } c
+        ? c.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+        : "(no scope recorded)";
+}
 
 public class ApprovalQueueViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly OperatorControlService _operatorControlService;
     private readonly IDialogService _dialogService;
     private readonly INotificationService _notificationService;
 
     private ApprovalItem? _selectedApproval;
     private string _approvalReason = "Operator approved release compliance";
+
+    // The constructor starts a load, and so do Refresh and every decision. Each load takes a token and
+    // only applies its results if no newer load has started since, so a slow earlier query cannot repaint
+    // the queue with approvals the operator has already decided.
+    private int _loadRequestToken;
 
     public ObservableCollection<ApprovalItem> Approvals { get; } = new();
 
@@ -44,11 +61,11 @@ public class ApprovalQueueViewModel : ViewModelBase
     public ICommand RejectCommand { get; }
 
     public ApprovalQueueViewModel(
-        DatabaseConnectionFactory connectionFactory,
+        OperatorControlService operatorControlService,
         IDialogService dialogService,
         INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
+        _operatorControlService = operatorControlService;
         _dialogService = dialogService;
         _notificationService = notificationService;
 
@@ -61,21 +78,27 @@ public class ApprovalQueueViewModel : ViewModelBase
 
     public async Task LoadApprovalsAsync()
     {
-        Approvals.Clear();
+        var token = ++_loadRequestToken;
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            var rows = await conn.QueryAsync<ApprovalItem>(
-                "SELECT id AS Id, production_id AS ProductionId, action AS Action, state AS State, created_at AS CreatedAt FROM approvals WHERE state = 'PENDING' ORDER BY created_at ASC;");
+            var pending = await _operatorControlService.GetPendingApprovalsAsync();
 
-            foreach (var r in rows)
+            if (token != _loadRequestToken)
             {
-                Approvals.Add(r);
+                return; // a newer load has started; its results are the ones that count
+            }
+
+            Approvals.Clear();
+            foreach (var p in pending)
+            {
+                Approvals.Add(new ApprovalItem(p.Id, p.ProductionId, p.Action, p.State, p.CreatedAt, p.ExpiresAt, p.Subject, p.CostCeiling));
             }
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load approvals: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to load approvals: {ex.Message} Retry the refresh.",
+                "Error");
         }
     }
 
@@ -85,19 +108,29 @@ public class ApprovalQueueViewModel : ViewModelBase
 
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                UPDATE approvals
-                SET state = 'APPROVED', decided_by = 'operator', decided_at = datetime('now')
-                WHERE id = @Id;
-            ", new { Id = SelectedApproval.Id });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _operatorControlService.SubmitApprovalDecisionAsync(
+                operatorId: "operator",
+                approvalId: SelectedApproval.Id,
+                approved: true,
+                reason: ApprovalReason,
+                correlationId: correlationId);
 
             _notificationService.AddNotification($"Approval {SelectedApproval.Id} approved.", "Success");
             await LoadApprovalsAsync();
         }
+        catch (AmccaException ex)
+        {
+            // SPEC/60 obligation 6 / SPEC/62: the decision is re-asked atomically inside
+            // SubmitApprovalDecisionAsync, so a rejection here means the approval's real state has moved
+            // (expired, already decided) since the screen loaded -- refreshing is the correct next action.
+            _notificationService.AddNotification(
+                $"{ex.Message} Refresh the queue to see the approval's current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to approve: {ex.Message}", "Error");
+            _notificationService.AddNotification($"Failed to approve: {ex.Message} Refresh the queue and retry.", "Error");
         }
     }
 
@@ -107,19 +140,26 @@ public class ApprovalQueueViewModel : ViewModelBase
 
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            await conn.ExecuteAsync(@"
-                UPDATE approvals
-                SET state = 'REJECTED', decided_by = 'operator', decided_at = datetime('now')
-                WHERE id = @Id;
-            ", new { Id = SelectedApproval.Id });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _operatorControlService.SubmitApprovalDecisionAsync(
+                operatorId: "operator",
+                approvalId: SelectedApproval.Id,
+                approved: false,
+                reason: ApprovalReason,
+                correlationId: correlationId);
 
             _notificationService.AddNotification($"Approval {SelectedApproval.Id} rejected.", "Warning");
             await LoadApprovalsAsync();
         }
+        catch (AmccaException ex)
+        {
+            _notificationService.AddNotification(
+                $"{ex.Message} Refresh the queue to see the approval's current state before retrying.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to reject: {ex.Message}", "Error");
+            _notificationService.AddNotification($"Failed to reject: {ex.Message} Refresh the queue and retry.", "Error");
         }
     }
 }

@@ -4,4 +4,5 @@ public record SystemStatusSummary(
     bool GlobalKillSwitchActive,
     string AutonomyMode,
     int PendingApprovalsCount,
-    int ActiveProductionsCount);
+    int ActiveProductionsCount,
+    int VerifiedPublicationsCount);

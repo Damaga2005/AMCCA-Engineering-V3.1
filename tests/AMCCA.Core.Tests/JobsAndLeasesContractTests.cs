@@ -53,11 +53,15 @@ public class JobsAndLeasesContractTests : IDisposable
         var job1 = await jobManager.EnqueueJobAsync("render", key, "corr-1", "{}", priority: 2);
         job1.Should().NotBeNull();
         job1.State.Should().Be("QUEUED");
+        job1.SchemaVersion.Should().Be("3.1.0", "D-004: every persisted contract object carries schema_version");
 
-        // Enqueueing identical logical intent key fails with unique constraint
+        // Enqueueing identical logical intent key fails on UNIQUE(idempotency_key). The raw
+        // SqliteException is wrapped as AMCCA-JOB-002 (SPEC/05) so the caller has an actionable code.
         var act = async () => await jobManager.EnqueueJobAsync("render", key, "corr-2", "{}", priority: 2);
 
-        await act.Should().ThrowAsync<Exception>();
+        var thrown = await act.Should().ThrowAsync<AmccaException>();
+        thrown.Which.ErrorCode.Should().Be(AmccaErrors.Job002);
+        thrown.Which.Retryable.Should().BeFalse();
     }
 
     [Fact]
@@ -141,6 +145,7 @@ public class JobsAndLeasesContractTests : IDisposable
         var job = await jobManager.GetJobAsync(enqueued.Id);
         job.Should().NotBeNull();
         job!.State.Should().Be("DEAD_LETTER", "job must be moved to DEAD_LETTER on attempt exhaustion (SPEC/14)");
+        job.SchemaVersion.Should().Be("3.1.0", "GetJobAsync must round-trip schema_version, not just EnqueueJobAsync's in-memory copy");
     }
 
     [Fact]
@@ -172,12 +177,19 @@ public class JobsAndLeasesContractTests : IDisposable
         unknown!.State.Should().Be("UNKNOWN");
     }
 
+    private sealed class StubReconciler : IReconciler
+    {
+        public Task<IntentReconciliation> ReconcileIntentAsync(string intentId, System.Threading.CancellationToken ct = default)
+            => Task.FromResult(new IntentReconciliation(
+                IntentReconciliationOutcome.Executed, "PROVIDER_STATUS_API", "evidence://provider/txn/123", "confirmed"));
+    }
+
     [Fact]
-    public async Task RecoveryService_ReclaimsExpiredLeases_AndResolvesUnknownIntents()
+    public async Task RecoveryService_ReclaimsExpiredLeases_AndReconcilesUnknownIntents_WithAReconciler()
     {
         var jobManager = new JobManager(_factory);
         var intentManager = new IntentManager(_factory);
-        var recoveryService = new RecoveryService(_factory, jobManager, intentManager);
+        var recoveryService = new RecoveryService(_factory, jobManager, intentManager, new StubReconciler());
 
         // Setup 1: an expired lease
         var key = IntentKeyGenerator.GenerateKey("render", "prod-6", 1);

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Events;
+using AMCCA.Core.Providers;
 using AMCCA.Core.Tools;
 using Json.Schema;
 
@@ -127,6 +129,141 @@ public class AgentRuntime
             }
             throw;
         }
+    }
+
+    /// <summary>
+    /// Runs one agent to a final answer: LLM turn → parse envelope → (tool call → <see
+    /// cref="ExecuteToolCallAsync"/> → feed result back) → repeat. Stops on a <c>{"final": …}</c>
+    /// envelope, or fails on a forbidden tool (AMCCA-AI-004), an exhausted budget (AMCCA-BUD-002 /
+    /// Cst002), a repeated protocol or output-schema failure, or the <paramref name="maxIterations"/>
+    /// cap (AMCCA-AI-006). <c>contract.TimeoutSeconds</c> cancels the whole run — it surfaces as a raw
+    /// <see cref="OperationCanceledException"/>, the same tested convention as a tool timeout (SPEC/05).
+    /// </summary>
+    public async Task<AgentRunResult> RunAgentAsync(
+        AgentContract contract,
+        string systemPrompt,
+        ToolExecutionContext toolContext,
+        IProviderGateway gateway,
+        string modelId,
+        AgentRunSession session,
+        IReadOnlyDictionary<string, decimal>? toolCosts = null,
+        int maxIterations = 12,
+        double temperature = 0.2,
+        int maxTokensPerTurn = 2048,
+        CancellationToken ct = default)
+    {
+        using var linkedCts = contract.TimeoutSeconds > 0
+            ? CancellationTokenSource.CreateLinkedTokenSource(ct)
+            : null;
+        linkedCts?.CancelAfter(TimeSpan.FromSeconds(contract.TimeoutSeconds));
+        var effectiveCt = linkedCts?.Token ?? ct;
+
+        bool structuredFinal = !string.IsNullOrWhiteSpace(contract.OutputSchemaJson);
+        var transcript = new List<AgentTurn>();
+        var convo = new StringBuilder();
+        convo.AppendLine(systemPrompt.Trim());
+        convo.AppendLine();
+        convo.AppendLine(AgentProtocol.Instructions(contract.AllowedTools, structuredFinal));
+
+        int unparseableStreak = 0;
+        int schemaFailStreak = 0;
+
+        for (int iteration = 1; iteration <= maxIterations; iteration++)
+        {
+            if (contract.MaxCost > 0 && session.AccumulatedCost >= contract.MaxCost)
+            {
+                return AgentRunResult.Failed(AmccaErrors.Cst002,
+                    $"Agent budget of {contract.MaxCost:F2} is exhausted before iteration {iteration}.",
+                    iteration - 1, session.AccumulatedCost, transcript);
+            }
+
+            var resp = await gateway.GenerateTextAsync(
+                new GatewayTextRequest(modelId, convo.ToString(), temperature, maxTokensPerTurn, toolContext.CorrelationId),
+                effectiveCt);
+
+            var modelText = resp.Text ?? string.Empty;
+            transcript.Add(new AgentTurn("assistant", modelText));
+            convo.AppendLine();
+            convo.AppendLine("ASSISTANT: " + modelText);
+
+            var msg = AgentProtocol.Parse(modelText);
+
+            if (msg.Kind == AgentMessageKind.Unparseable)
+            {
+                if (++unparseableStreak >= 2)
+                {
+                    return AgentRunResult.Failed(AmccaErrors.Ai006,
+                        "Agent did not produce a parseable tool-call or final envelope twice in a row.",
+                        iteration, session.AccumulatedCost, transcript);
+                }
+                const string nudge = "Your message had no valid JSON envelope. Reply with exactly one {\"tool\":...} or {\"final\":...} envelope.";
+                transcript.Add(new AgentTurn("tool", nudge));
+                convo.AppendLine("TOOL_RESULT: " + nudge);
+                continue;
+            }
+            unparseableStreak = 0;
+
+            if (msg.Kind == AgentMessageKind.Final)
+            {
+                var finalOutput = msg.FinalJson ?? string.Empty;
+                if (structuredFinal)
+                {
+                    try
+                    {
+                        ValidateAgentOutput(contract, finalOutput);
+                    }
+                    catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Ai003)
+                    {
+                        if (++schemaFailStreak >= 2)
+                        {
+                            return AgentRunResult.Failed(AmccaErrors.Ai003,
+                                $"Agent final answer failed its output schema twice: {ex.Message}",
+                                iteration, session.AccumulatedCost, transcript);
+                        }
+                        var msgBack = "Your final answer failed the required output schema: " + ex.Message +
+                                      " Fix it and send {\"final\": {...}} again.";
+                        transcript.Add(new AgentTurn("tool", msgBack));
+                        convo.AppendLine("TOOL_RESULT: " + msgBack);
+                        continue;
+                    }
+                }
+                return AgentRunResult.Completed(finalOutput, iteration, session.AccumulatedCost, transcript);
+            }
+
+            // Tool call — enforcement, cost reservation and execution all live in ExecuteToolCallAsync.
+            var toolId = msg.ToolId!;
+            var toolCost = toolCosts is not null && toolCosts.TryGetValue(toolId, out var c) ? c : 0m;
+            string toolResult;
+            try
+            {
+                toolResult = await ExecuteToolCallAsync(
+                    contract, toolId, msg.ToolInputJson ?? "{}", toolContext, toolCost, session, effectiveCt);
+            }
+            catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Ai004)
+            {
+                return AgentRunResult.Failed(AmccaErrors.Ai004, ex.Message, iteration, session.AccumulatedCost, transcript);
+            }
+            catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Cst002)
+            {
+                return AgentRunResult.Failed(AmccaErrors.Cst002, ex.Message, iteration, session.AccumulatedCost, transcript);
+            }
+            catch (AmccaException ex)
+            {
+                // Recoverable tool error: feed it back so the model can adapt rather than abort the run.
+                toolResult = $"{{\"error\": {JsonSerializer.Serialize(ex.Message)}}}";
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                toolResult = $"{{\"error\": {JsonSerializer.Serialize(ex.Message)}}}";
+            }
+
+            transcript.Add(new AgentTurn("tool", toolResult));
+            convo.AppendLine("TOOL_RESULT: " + toolResult);
+        }
+
+        return AgentRunResult.Failed(AmccaErrors.Ai006,
+            $"Agent reached the {maxIterations}-iteration limit without a final answer.",
+            maxIterations, session.AccumulatedCost, transcript);
     }
 
     // SEC-07: defensive bounds so a hostile or malformed agent output cannot exhaust memory

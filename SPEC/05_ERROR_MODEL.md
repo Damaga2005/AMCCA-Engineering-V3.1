@@ -47,20 +47,26 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-DB-003` | TRANSIENT | Yes | SQLite busy beyond `busy_timeout` |
 | `AMCCA-STM-001` | INTERNAL | No | Attempted a transition absent from `SPEC/13` |
 | `AMCCA-STM-002` | INTERNAL | No | Resume attempted to a state other than `blocked_from` |
+| `AMCCA-STM-003` | INTERNAL | No | Outbound transition attempted from a terminal state |
 | `AMCCA-JOB-001` | TRANSIENT | Yes | Lease expired mid-execution; fence token stale, work abandoned |
-| `AMCCA-JOB-002` | INTERNAL | No | Duplicate idempotency key |
+| `AMCCA-JOB-002` | INTERNAL | No | Duplicate idempotency key on enqueue. `EnqueueJobAsync` lets the `UNIQUE(idempotency_key)` constraint reject the second insert (no check-then-act pre-check — unsound under concurrency, SPEC/15) and wraps that `SqliteException` in this code. A collision means the same logical intent was enqueued twice; the caller acts on the existing job. |
 | `AMCCA-JOB-003` | USER_ACTION_REQUIRED | No | Job dead-lettered after max attempts |
+| `AMCCA-ORC-001` | USER_ACTION_REQUIRED | No | The orchestrator reached a production state with no registered stage handler and moved the production to `BLOCKED` for an operator. Carried as the transition `reason_code`, not thrown — an operator supplies the stage result or a handler is added. |
+| `AMCCA-ORC-002` | USER_ACTION_REQUIRED | No | A stage handler threw while the orchestrator was driving a production; the orchestrator moved it to `BLOCKED` carrying the handler's failure. Carried as the transition `reason_code`, not thrown. |
 | `AMCCA-AI-001` | PROVIDER | Conditional | Gateway error; check provider health |
 | `AMCCA-AI-002` | UNKNOWN_EXTERNAL_STATE | No | Reconcile before any retry |
 | `AMCCA-AI-003` | VALIDATION | No | Agent output failed its declared schema |
 | `AMCCA-AI-004` | POLICY | No | Agent attempted a forbidden tool |
-| `AMCCA-AI-005` | BUDGET | No | Agent cost ceiling exceeded |
+| `AMCCA-AI-006` | INTERNAL | No | The agent reasoning loop ran `max_iterations` without emitting a final answer, or repeatedly failed to produce a parseable tool-call / final envelope. Returned as an `AgentRunResult` reason code by `AgentRuntime.RunAgentAsync`, not thrown. |
+| `AMCCA-AI-005` | BUDGET | No | Reserved; not currently thrown. Its cost-ceiling half is a duplicate of `AMCCA-BUD-002` (`AgentRuntime.ExecuteToolCallAsync` throws that instead, DEF-004); its timeout half deliberately surfaces as a raw, unwrapped `OperationCanceledException` — an established, tested contract (`TimeoutSeconds_CancelsExecutionWhenExceeded`) that matches .NET's own cancellation convention and should not be wrapped. |
 | `AMCCA-RES-001` | VALIDATION | No | Material claim lacks sufficient independent sources |
 | `AMCCA-RES-002` | TRANSIENT | Yes | Research source unavailable |
+| `AMCCA-RES-003` | SECURITY | No | Reserved; duplicate of `AMCCA-SEC-003` (`SsrfValidator` throws `AMCCA-SEC-003` for every SSRF/domain-policy rejection). Not currently thrown by any code path — kept catalogued rather than removed so a future caller cannot silently reuse the code for an unrelated condition. |
 | `AMCCA-MED-001` | MEDIA | Yes if bounded | Render failed; re-render |
 | `AMCCA-MED-002` | MEDIA | No | FFmpeg timeout or output ceiling exceeded |
 | `AMCCA-QA-001` | VALIDATION | No | QA failure; rework |
 | `AMCCA-QA-002` | INTERNAL | No | AI-assisted finding attempted to set a verdict |
+| `AMCCA-QA-003` | INTERNAL | No | Named QA threshold-profile lookup failed. `QaThresholdProfileRegistry.Resolve` throws it for an unknown `threshold_profile_id`; the constructor throws it for a stricter profile that lowers a threshold below the base (SPEC/35: a profile may raise thresholds, never lower them). `qa_reports` has no production writer yet, so the profile id is an in-memory `QaVerdictEvaluator` input today; a persisted `threshold_profiles` table keyed by the ULID `qa.schema.json` describes is deferred until QA verdicts are recorded. |
 | `AMCCA-RGT-001` | RIGHTS | No | Asset not GREEN; review rights |
 | `AMCCA-CMP-001` | COMPLIANCE | No | Required synthetic-content label not applied |
 | `AMCCA-CMP-002` | COMPLIANCE | No | Required affiliate disclosure missing |
@@ -70,6 +76,9 @@ forever; human messages are separate and may be reworded or localised freely.
 | `AMCCA-PUB-001` | PLATFORM | Conditional | Publication attempt failed |
 | `AMCCA-PUB-007` | UNKNOWN_EXTERNAL_STATE | No | Publication outcome unknown; reconcile |
 | `AMCCA-PUB-008` | POLICY | No | Duplicate publication prevented by unique constraint |
+| `AMCCA-POL-001` | POLICY | No | Policy evaluation rejected or failed; required decision data is missing |
+| `AMCCA-POL-003` | POLICY | No | Refused: global or per-platform kill switch is active; clear it to proceed |
+| `AMCCA-POL-004` | USER_ACTION_REQUIRED | No | Human approval required before the protected action; request and grant one |
 | `AMCCA-BUD-001` | BUDGET | No | Budget threshold reached |
 | `AMCCA-BUD-002` | BUDGET | No | Reservation refused; insufficient remaining budget |
 | `AMCCA-STO-001` | STORAGE | Yes if bounded | Insufficient free space |

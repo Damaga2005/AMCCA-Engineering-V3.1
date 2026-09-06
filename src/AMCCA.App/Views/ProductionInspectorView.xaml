@@ -1,0 +1,278 @@
+<UserControl x:Class="AMCCA.App.Views.ProductionInspectorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1000">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#89B4FA"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style x:Key="DataGridStyle" TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="Background" Value="#313244"/>
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="RowBackground" Value="#1E1E2E"/>
+            <Setter Property="AlternatingRowBackground" Value="#181825"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+        </Style>
+        <!-- SPEC/60 obligation 3: measured and estimated numbers must be visually distinct, not just
+             textually labeled. ESTIMATED reads as a warning amber; a reconciled/measured value reads in
+             the same neutral foreground as everything else. -->
+        <Style x:Key="ReconciliationStateStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="ESTIMATED">
+                    <Setter Property="Foreground" Value="#F9E2AF"/>
+                    <Setter Property="FontStyle" Value="Italic"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="ESTIMATED_UNRECONCILED">
+                    <Setter Property="Foreground" Value="#F9E2AF"/>
+                    <Setter Property="FontStyle" Value="Italic"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="DISPUTED">
+                    <Setter Property="Foreground" Value="#F38BA8"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ReconciliationState}" Value="RECONCILED">
+                    <Setter Property="Foreground" Value="#A6E3A1"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#1E1E2E" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Text="Production Inspector (SPEC/60)" FontSize="26" FontWeight="Bold" Foreground="#CDD6F4" Margin="0,0,0,20"/>
+
+        <!-- Picker + Summary -->
+        <Border Grid.Row="1" Background="#313244" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableProductions}"
+                          SelectedItem="{Binding SelectedProduction}"
+                          DisplayMemberPath="Title"
+                          Background="#1E1E2E" Foreground="#11111B" Padding="8" Margin="0,0,10,0"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="{Binding ProductionDetail.State, TargetNullValue='(no production selected)'}" Foreground="#F9E2AF" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <TextBlock Text="{Binding ProductionDetail.AutonomyMode}" Foreground="#A6ADC8" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <TextBlock Text="{Binding ProductionDetail.NicheId}" Foreground="#A6ADC8" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <TextBlock Text="{Binding ProductionDetail.AggregateVersion, StringFormat='v{0}'}" Foreground="#A6ADC8" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Content="Refresh" Command="{Binding RefreshCommand}" Background="#45475A" Foreground="#CDD6F4" Padding="15,8"/>
+            </Grid>
+        </Border>
+
+        <!-- SPEC/60 obligation 7 (progress + cancel) and obligation 4 (why a blocked production is
+             blocked, which policy version, and what would unblock it). -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+            <Border Background="#313244" CornerRadius="8" Padding="10,8" Margin="0,0,0,10"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Width="120" Height="6" Margin="0,0,10,0"/>
+                        <TextBlock Text="Loading..." Foreground="#A6ADC8" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelLoadCommand}"
+                            Background="#F38BA8" Foreground="#11111B" FontWeight="Bold" Padding="12,4"/>
+                </Grid>
+            </Border>
+
+            <Border Background="#45301A" CornerRadius="8" Padding="12,10"
+                    Visibility="{Binding HasBlockInfo, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Blocked" Foreground="#F9E2AF" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Foreground="#F9E2AF" TextWrapping="Wrap">
+                        <Run Text="Reason: "/><Run Text="{Binding BlockInfo.ReasonDisplay}"/>
+                        <Run Text="  |  Policy version: "/><Run Text="{Binding BlockInfo.PolicyVersionDisplay}"/>
+                    </TextBlock>
+                    <TextBlock Foreground="#F9E2AF" TextWrapping="Wrap" Margin="0,4,0,0" Text="{Binding BlockInfo.UnblockHint}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Detail Tabs -->
+        <TabControl Grid.Row="3" Background="#1E1E2E" BorderThickness="0">
+            <TabItem Header="State Transitions">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding StateTransitions}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Transition" Binding="{Binding TransitionId}" Width="100"/>
+                        <DataGridTextColumn Header="From" Binding="{Binding FromState}" Width="160"/>
+                        <DataGridTextColumn Header="To" Binding="{Binding ToState}" Width="160"/>
+                        <DataGridTextColumn Header="Actor" Binding="{Binding ActorType}" Width="120"/>
+                        <DataGridTextColumn Header="Occurred At" Binding="{Binding OccurredAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Artifacts">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding Artifacts}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="180"/>
+                        <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="140"/>
+                        <DataGridTextColumn Header="Current Version" Binding="{Binding CurrentVersionId}" Width="180"/>
+                        <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Versions">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding ArtifactVersions}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Artifact" Binding="{Binding ArtifactId}" Width="180"/>
+                        <DataGridTextColumn Header="Version" Binding="{Binding VersionNo}" Width="80"/>
+                        <DataGridTextColumn Header="State" Binding="{Binding State}" Width="120"/>
+                        <DataGridTextColumn Header="SHA-256" Binding="{Binding Sha256}" Width="220"/>
+                        <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="QA">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding QaReports}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Stage" Binding="{Binding Stage}" Width="160"/>
+                        <DataGridTextColumn Header="Score" Binding="{Binding OverallScore}" Width="80"/>
+                        <DataGridTextColumn Header="Verdict" Binding="{Binding Verdict}" Width="100"/>
+                        <DataGridTextColumn Header="Evaluated At" Binding="{Binding EvaluatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Approvals">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding Approvals}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="180"/>
+                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="160"/>
+                        <DataGridTextColumn Header="State" Binding="{Binding State}" Width="100"/>
+                        <DataGridTextColumn Header="Expires At" Binding="{Binding ExpiresAt}" Width="160"/>
+                        <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Jobs">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding Jobs}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="180"/>
+                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="140"/>
+                        <DataGridTextColumn Header="State" Binding="{Binding State}" Width="100"/>
+                        <DataGridTextColumn Header="Attempt" Binding="{Binding Attempt}" Width="80"/>
+                        <DataGridTextColumn Header="Max" Binding="{Binding MaxAttempts}" Width="60"/>
+                        <DataGridTextColumn Header="Updated At" Binding="{Binding UpdatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Costs">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding CostEvents}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="140"/>
+                        <!-- SPEC/60 obligation 3: the number's provenance (estimated vs. reconciled) is
+                             not just a separate column; the amount itself is styled by it, so an
+                             estimated figure cannot be mistaken for a settled one at a glance. -->
+                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="120"
+                                             ElementStyle="{StaticResource ReconciliationStateStyle}"/>
+                        <DataGridTextColumn Header="Currency" Binding="{Binding Currency}" Width="80"/>
+                        <DataGridTextColumn Header="Reconciliation" Binding="{Binding ReconciliationState}" Width="140"
+                                             ElementStyle="{StaticResource ReconciliationStateStyle}"/>
+                        <DataGridTextColumn Header="Occurred At" Binding="{Binding OccurredAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Publications">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding Publications}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Platform" Binding="{Binding Platform}" Width="140"/>
+                        <DataGridTextColumn Header="State" Binding="{Binding State}" Width="140"/>
+                        <DataGridTextColumn Header="External URL" Binding="{Binding ExternalUrl}" Width="200"/>
+                        <DataGridTextColumn Header="Evidence Source" Binding="{Binding EvidenceSource}" Width="160"/>
+                        <DataGridTextColumn Header="Evidence Retrieved At" Binding="{Binding EvidenceRetrievedAt}" Width="180"/>
+                        <DataGridTextColumn Header="Updated At" Binding="{Binding UpdatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Claims">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding Claims}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Claim" Binding="{Binding Text}" Width="240"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                        <DataGridTextColumn Header="Materiality" Binding="{Binding Materiality}" Width="100"/>
+                        <DataGridTextColumn Header="Subject Class" Binding="{Binding SubjectClass}" Width="120"/>
+                        <DataGridTextColumn Header="Source URL" Binding="{Binding SourceUrl}" Width="220"/>
+                        <DataGridTextColumn Header="Publisher" Binding="{Binding Publisher}" Width="140"/>
+                        <DataGridTextColumn Header="Relation" Binding="{Binding Relation}" Width="100"/>
+                        <DataGridTextColumn Header="Retrieved At" Binding="{Binding RetrievedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Policy Decisions">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding PolicyDecisions}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="140"/>
+                        <DataGridTextColumn Header="Decision" Binding="{Binding Decision}" Width="140"/>
+                        <DataGridTextColumn Header="Rule Key" Binding="{Binding RuleKey}" Width="160"/>
+                        <DataGridTextColumn Header="Policy Version" Binding="{Binding PolicyVersionId}" Width="160"/>
+                        <DataGridTextColumn Header="Correlation Id" Binding="{Binding CorrelationId}" Width="160"/>
+                        <DataGridTextColumn Header="Decided At" Binding="{Binding DecidedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="QA Findings">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding QaFindings}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Stage" Binding="{Binding Stage}" Width="140"/>
+                        <DataGridTextColumn Header="Check" Binding="{Binding CheckId}" Width="140"/>
+                        <DataGridTextColumn Header="Kind" Binding="{Binding CheckKind}" Width="110"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                        <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="100"/>
+                        <DataGridTextColumn Header="Responsible Node" Binding="{Binding ResponsibleArtifactVersionId}" Width="180"/>
+                        <DataGridTextColumn Header="Remediation" Binding="{Binding RemediationCode}" Width="140"/>
+                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Artifact DAG">
+                <DataGrid Style="{StaticResource DataGridStyle}" ItemsSource="{Binding ArtifactEdges}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Parent Version" Binding="{Binding ParentVersionId}" Width="220"/>
+                        <DataGridTextColumn Header="Child Version" Binding="{Binding ChildVersionId}" Width="220"/>
+                        <DataGridTextColumn Header="Edge Kind" Binding="{Binding EdgeKind}" Width="140"/>
+                        <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

@@ -669,6 +669,329 @@ def mutation_15_walk_files_oversensitive_filter():
     return ok
 
 
+# ===================================================================
+# Mutation 16: a table's CHECK constraint regresses to no longer enforce its
+# contract's enum (the exact defect this check exists to catch on
+# tool_runs.side_effect_class and audit_log.actor_type -- fixed by migration 4,
+# 004_audit_actor_types_and_tool_run_side_effect_check) -> the comparison must
+# flag that specific column, on both an unconstrained regression and a narrowed
+# one, while leaving every other column's verdict alone.
+# ===================================================================
+
+def mutation_16_ddl_check_regresses_from_contract_enum():
+    import shutil, tempfile
+    import validate_package as vp
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut16_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        mig_rel = os.path.join("src", "AMCCA.Core", "Database", "MigrationService.cs")
+        os.makedirs(os.path.dirname(os.path.join(scratch, mig_rel)), exist_ok=True)
+        shutil.copy2(os.path.join(ROOT, mig_rel), os.path.join(scratch, mig_rel))
+        schemas_dir = os.path.join(scratch, "SCHEMAS")
+        shutil.copytree(os.path.join(ROOT, "SCHEMAS"), schemas_dir)
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_contract_enum_matches_ddl_check()
+        baseline_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation16.baseline_scratch_copy_does_not_flag_the_fixed_columns",
+                    "tool_runs.side_effect_class" not in baseline_detail
+                    and "audit_log.actor_type" not in baseline_detail,
+                    baseline_detail)
+
+        mig_path = os.path.join(scratch, mig_rel)
+        with open(mig_path, encoding="utf-8") as f:
+            source = f.read()
+        needle = "side_effect_class TEXT NOT NULL CHECK(side_effect_class IN ('PURE','READ','LOCAL_WRITE','EXTERNAL_IDEMPOTENT','EXTERNAL_UNSAFE')),"
+        assert needle in source, "test fixture assumption violated: tool_runs' side_effect_class CHECK text has changed"
+        # tool_runs is created by migration 4 and rebuilt again by later table-rebuild migrations;
+        # the live schema is whatever the LAST rebuild produced, so the CHECK has to be removed from
+        # every definition for the regression to actually reach check_contract_enum_matches_ddl_check.
+        mutated_source = source.replace(needle, "side_effect_class TEXT NOT NULL,")
+
+        with open(mig_path, "w", encoding="utf-8") as f:
+            f.write(mutated_source)
+
+        vp.RESULTS = []
+        vp.check_contract_enum_matches_ddl_check()
+        mutated_ok = vp.RESULTS[0]["ok"]
+        mutated_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation16.check_goes_red_when_regressed_to_unconstrained",
+                    not mutated_ok and "tool_runs.side_effect_class" in mutated_detail
+                    and "DDL column has no CHECK" in mutated_detail,
+                    mutated_detail) and ok
+        ok = record("mutation16.unrelated_fixed_column_still_clean_after_mutation",
+                    "audit_log.actor_type" not in mutated_detail) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, still does not flag
+    # either column this migration fixed.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_contract_enum_matches_ddl_check()
+    real_detail = vp.RESULTS[0]["detail"]
+    real_clean = ("tool_runs.side_effect_class" not in real_detail
+                  and "audit_log.actor_type" not in real_detail)
+    vp.RESULTS = saved
+    ok = record("mutation16.real_package_unaffected_by_mutation", real_clean, real_detail) and ok
+    return ok
+
+
+def mutation_19_field_presence_check_regresses_when_a_real_column_is_dropped():
+    import shutil, tempfile
+    import validate_package as vp
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut19_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        mig_rel = os.path.join("src", "AMCCA.Core", "Database", "MigrationService.cs")
+        os.makedirs(os.path.dirname(os.path.join(scratch, mig_rel)), exist_ok=True)
+        shutil.copy2(os.path.join(ROOT, mig_rel), os.path.join(scratch, mig_rel))
+        shutil.copytree(os.path.join(ROOT, "SCHEMAS"), os.path.join(scratch, "SCHEMAS"))
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_contract_fields_have_columns()
+        baseline_ok = vp.RESULTS[0]["ok"]
+        baseline_detail = vp.RESULTS[0]["detail"]
+        # reconciliation_state / pricing_snapshot_id / schema_version were the audit's named gaps;
+        # a later migration added their columns, so the baseline is now genuinely clean.
+        ok = record("mutation19.baseline_scratch_copy_does_not_flag_provider_or_pk_aliases",
+                    baseline_ok
+                    and "'cost_events.provider'" not in baseline_detail
+                    and "cost_events.cost_event_id" not in baseline_detail
+                    and "jobs.lease_owner" not in baseline_detail
+                    and "referral_links.disclosure_required" not in baseline_detail
+                    and "analytics_snapshots.source_account_id" not in baseline_detail
+                    and "cost_events.units" not in baseline_detail,
+                    baseline_detail)
+
+        mig_path = os.path.join(scratch, mig_rel)
+        with open(mig_path, encoding="utf-8") as f:
+            source = f.read()
+        # cost_events is created by migration 1 and recreated by a later enum-CHECK table rebuild.
+        # Dropping provider from only the first leaves the rebuild's `INSERT ... SELECT *` a column
+        # short; it has to go from every CREATE for the column to actually be absent from the live
+        # schema (and for the rebuild's column count to still line up).
+        needle_create = "                    provider TEXT NOT NULL,\n                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')"
+        needle_rebuild = "                    provider TEXT NOT NULL,\n                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    schema_version TEXT NOT NULL DEFAULT '3.1.0',"
+        assert needle_create in source, "test fixture assumption violated: cost_events' migration-1 provider DDL text has changed"
+        assert needle_rebuild in source, "test fixture assumption violated: cost_events' rebuild provider DDL text has changed"
+        mutated_source = source.replace(
+            needle_create,
+            "                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    CHECK(kind = 'ADJUSTMENT' OR amount NOT LIKE '-%')",
+            1)
+        mutated_source = mutated_source.replace(
+            needle_rebuild,
+            "                    occurred_at TEXT NOT NULL,\n                    created_at TEXT NOT NULL,\n                    schema_version TEXT NOT NULL DEFAULT '3.1.0',")
+
+        with open(mig_path, "w", encoding="utf-8") as f:
+            f.write(mutated_source)
+
+        vp.RESULTS = []
+        vp.check_contract_fields_have_columns()
+        mutated_ok = vp.RESULTS[0]["ok"]
+        mutated_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation19.check_goes_red_when_a_real_column_is_dropped",
+                    not mutated_ok and "'cost_events.provider'" in mutated_detail,
+                    mutated_detail) and ok
+        ok = record("mutation19.pk_alias_and_normalized_fields_still_not_flagged_after_mutation",
+                    "cost_events.cost_event_id" not in mutated_detail
+                    and "jobs.lease_owner" not in mutated_detail,
+                    mutated_detail) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, does not flag provider either.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_contract_fields_have_columns()
+    real_detail = vp.RESULTS[0]["detail"]
+    real_clean = "'cost_events.provider'" not in real_detail
+    vp.RESULTS = saved
+    ok = record("mutation19.real_package_unaffected_by_mutation", real_clean, real_detail) and ok
+    return ok
+
+
+def mutation_17_thrown_error_code_regresses_from_spec_catalogue():
+    import shutil, tempfile
+    import validate_package as vp
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut17_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        shutil.copytree(os.path.join(ROOT, "src"), os.path.join(scratch, "src"))
+        os.makedirs(os.path.join(scratch, "SPEC"), exist_ok=True)
+        spec_path = os.path.join(scratch, "SPEC", "05_ERROR_MODEL.md")
+        shutil.copy2(os.path.join(ROOT, "SPEC", "05_ERROR_MODEL.md"), spec_path)
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_thrown_error_codes_catalogued()
+        baseline_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation17.baseline_scratch_copy_is_clean",
+                    vp.RESULTS[0]["ok"] and "AMCCA-STM-003" not in baseline_detail,
+                    baseline_detail)
+
+        with open(spec_path, encoding="utf-8") as f:
+            spec_source = f.read()
+        needle = "| `AMCCA-STM-003` | INTERNAL | No | Outbound transition attempted from a terminal state |\n"
+        assert needle in spec_source, "test fixture assumption violated: SPEC/05's AMCCA-STM-003 row text has changed"
+        with open(spec_path, "w", encoding="utf-8") as f:
+            f.write(spec_source.replace(needle, "", 1))
+
+        vp.RESULTS = []
+        vp.check_thrown_error_codes_catalogued()
+        mutated_ok = vp.RESULTS[0]["ok"]
+        mutated_detail = vp.RESULTS[0]["detail"]
+        ok = record("mutation17.check_goes_red_when_a_thrown_code_is_removed_from_the_catalogue",
+                    not mutated_ok and "AMCCA-STM-003" in mutated_detail,
+                    mutated_detail) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, still catalogues every
+    # code the real code throws.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_thrown_error_codes_catalogued()
+    real_ok = vp.RESULTS[0]["ok"]
+    real_detail = vp.RESULTS[0]["detail"]
+    vp.RESULTS = saved
+    ok = record("mutation17.real_package_unaffected_by_mutation", real_ok, real_detail) and ok
+    return ok
+
+
+def mutation_18_spec60_obligation_signatures_regress():
+    import shutil, tempfile
+    import validate_package as vp
+
+    def results_by_name():
+        return {r["check"]: r for r in vp.RESULTS}
+
+    scratch = tempfile.mkdtemp(prefix="amcca_mut18_root_")
+    real_root, real_results = vp.ROOT, vp.RESULTS
+    try:
+        shutil.copytree(os.path.join(ROOT, "src", "AMCCA.App"), os.path.join(scratch, "src", "AMCCA.App"))
+
+        vp.ROOT = scratch
+        vp.RESULTS = []
+        vp.check_spec60_obligations()
+        baseline = results_by_name()
+        ok = record("mutation18.baseline_scratch_copy_is_clean",
+                    all(r["ok"] for r in baseline.values()),
+                    "; ".join(f"{n}: {r['detail']}" for n, r in baseline.items() if not r["ok"]))
+
+        main_window_path = os.path.join(scratch, "src", "AMCCA.App", "MainWindow.xaml")
+        with open(main_window_path, encoding="utf-8") as f:
+            mw_source = f.read()
+        needle = 'Command="{Binding ToggleKillSwitchCommand}"'
+        assert needle in mw_source, "test fixture assumption violated: MainWindow.xaml's kill-switch binding text has changed"
+        with open(main_window_path, "w", encoding="utf-8") as f:
+            f.write(mw_source.replace(needle, "", 1))
+
+        approval_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "ApprovalQueueView.xaml")
+        with open(approval_view_path, encoding="utf-8") as f:
+            av_source = f.read()
+        needle2 = '<DataGridTextColumn Header="Cost Ceiling" Binding="{Binding CostCeilingDisplay}" Width="100"/>\n'
+        assert needle2 in av_source, "test fixture assumption violated: ApprovalQueueView.xaml's Cost Ceiling column text has changed"
+        with open(approval_view_path, "w", encoding="utf-8") as f:
+            f.write(av_source.replace(needle2, "", 1))
+
+        settings_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "SettingsView.xaml")
+        with open(settings_view_path, encoding="utf-8") as f:
+            sv_source = f.read()
+        with open(settings_view_path, "a", encoding="utf-8") as f:
+            f.write("<!-- Something went wrong -->\n")
+
+        # Obligation 3: drop the reconciliation-state style definition from the Inspector view.
+        inspector_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "ProductionInspectorView.xaml")
+        with open(inspector_view_path, encoding="utf-8") as f:
+            iv_source = f.read()
+        needle3 = 'x:Key="ReconciliationStateStyle"'
+        assert needle3 in iv_source, "fixture assumption violated: ProductionInspectorView.xaml's reconciliation style key changed"
+        with open(inspector_view_path, "w", encoding="utf-8") as f:
+            f.write(iv_source.replace(needle3, "x:Key=\"_removed_\"", 1))
+
+        # Obligation 4: drop the honest no-policy-decision disclosure from the Inspector VM.
+        inspector_vm_path = os.path.join(scratch, "src", "AMCCA.App", "ViewModels", "ProductionInspectorViewModel.cs")
+        with open(inspector_vm_path, encoding="utf-8") as f:
+            ivm_source = f.read()
+        needle4 = "(no policy decision recorded for this block)"
+        assert needle4 in ivm_source, "fixture assumption violated: InspectorBlockInfo's disclosure string changed"
+        with open(inspector_vm_path, "w", encoding="utf-8") as f:
+            f.write(ivm_source.replace(needle4, "n/a", 1))
+
+        # Obligation 7: remove the progress indicator from the Job Queue view.
+        jobqueue_view_path = os.path.join(scratch, "src", "AMCCA.App", "Views", "JobQueueView.xaml")
+        with open(jobqueue_view_path, encoding="utf-8") as f:
+            jv_source = f.read()
+        needle7 = 'IsIndeterminate="True"'
+        assert needle7 in jv_source, "fixture assumption violated: JobQueueView.xaml's ProgressBar changed"
+        with open(jobqueue_view_path, "w", encoding="utf-8") as f:
+            f.write(jv_source.replace(needle7, "", 1))
+
+        # "UI thread does no waiting": reintroduce a blocking wait in App startup.
+        app_startup_path = os.path.join(scratch, "src", "AMCCA.App", "App.xaml.cs")
+        with open(app_startup_path, encoding="utf-8") as f:
+            app_source = f.read()
+        with open(app_startup_path, "w", encoding="utf-8") as f:
+            f.write(app_source.replace(
+                "protected override async void OnStartup(StartupEventArgs e)\n    {",
+                "protected override async void OnStartup(StartupEventArgs e)\n    {\n        var _blocked = System.Threading.Tasks.Task.CompletedTask.GetAwaiter().GetResult();",
+                1))
+
+        vp.RESULTS = []
+        vp.check_spec60_obligations()
+        mutated = results_by_name()
+
+        ok = record("mutation18.obligation_1_goes_red_when_kill_switch_binding_removed",
+                    not mutated["spec60.obligation_1_kill_switch_in_shared_chrome"]["ok"],
+                    mutated["spec60.obligation_1_kill_switch_in_shared_chrome"]["detail"]) and ok
+        ok = record("mutation18.obligation_2_unaffected_by_unrelated_mutation",
+                    mutated["spec60.obligation_2_autonomy_and_publishing_visible"]["ok"]) and ok
+        ok = record("mutation18.obligation_5_goes_red_when_cost_ceiling_column_removed",
+                    not mutated["spec60.obligation_5_approval_detail_columns"]["ok"]
+                    and "CostCeilingDisplay" in mutated["spec60.obligation_5_approval_detail_columns"]["detail"],
+                    mutated["spec60.obligation_5_approval_detail_columns"]["detail"]) and ok
+        ok = record("mutation18.obligation_6_goes_red_when_generic_failure_text_introduced",
+                    not mutated["spec60.obligation_6_no_bare_generic_failure_text"]["ok"]
+                    and "SettingsView.xaml" in mutated["spec60.obligation_6_no_bare_generic_failure_text"]["detail"],
+                    mutated["spec60.obligation_6_no_bare_generic_failure_text"]["detail"]) and ok
+        ok = record("mutation18.obligation_3_goes_red_when_reconciliation_style_removed",
+                    not mutated["spec60.obligation_3_number_provenance_visually_distinct"]["ok"],
+                    mutated["spec60.obligation_3_number_provenance_visually_distinct"]["detail"]) and ok
+        ok = record("mutation18.obligation_4_goes_red_when_no_policy_disclosure_removed",
+                    not mutated["spec60.obligation_4_blocked_item_shows_rule_and_unblock_path"]["ok"],
+                    mutated["spec60.obligation_4_blocked_item_shows_rule_and_unblock_path"]["detail"]) and ok
+        ok = record("mutation18.obligation_7_goes_red_when_job_queue_progress_removed",
+                    not mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["ok"]
+                    and "Job Queue" in mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["detail"],
+                    mutated["spec60.obligation_7_long_operations_show_progress_and_cancel"]["detail"]) and ok
+        ok = record("mutation18.ui_thread_startup_goes_red_when_blocking_wait_reintroduced",
+                    not mutated["spec60.ui_thread_startup_does_not_block"]["ok"],
+                    mutated["spec60.ui_thread_startup_does_not_block"]["detail"]) and ok
+    finally:
+        vp.ROOT, vp.RESULTS = real_root, real_results
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    # Prove reversion: the real package tree, checked directly, still satisfies every obligation check.
+    saved = vp.RESULTS
+    vp.RESULTS = []
+    vp.check_spec60_obligations()
+    real_results_by_name = results_by_name()
+    real_clean = all(r["ok"] for r in real_results_by_name.values())
+    real_detail = "; ".join(f"{n}: {r['detail']}" for n, r in real_results_by_name.items() if not r["ok"])
+    vp.RESULTS = saved
+    ok = record("mutation18.real_package_unaffected_by_mutation", real_clean, real_detail) and ok
+    return ok
+
+
 def read_decisions_declared_and_check():
     import re
     dec_path = os.path.join(ROOT, "DECISIONS.md")
@@ -694,6 +1017,10 @@ def run():
         mutation_13_nonnegative_money_accepts_negative,
         mutation_14_reference_to_nonexistent_decision_id,
         mutation_15_walk_files_oversensitive_filter,
+        mutation_16_ddl_check_regresses_from_contract_enum,
+        mutation_17_thrown_error_code_regresses_from_spec_catalogue,
+        mutation_18_spec60_obligation_signatures_regress,
+        mutation_19_field_presence_check_regresses_when_a_real_column_is_dropped,
     ]
     results = []
     for m in mutations:

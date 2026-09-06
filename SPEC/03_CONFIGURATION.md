@@ -44,3 +44,12 @@ structure that a logger, an exporter or a crash dump can reach.
 Autonomy mode, publishing enablement, budgets and policy activation are changed through audited operator
 commands, not by editing a file. File changes require a restart and a fresh preflight, because a
 half-applied configuration is a state the system has no way to reason about.
+
+## Deployed configuration file location
+
+`config.yaml` lives at `%LocalAppData%\AMCCA\config.yaml`, next to `amcca.db` (same directory as
+`DataRoot`). If the operator has not placed a file there, startup falls back to `AmccaConfig`'s built-in
+safe defaults (`DryRun = true`, publishing disabled) scoped to that same directory, rather than failing —
+absence of an optional file is not a configuration error. This mirrors the existing `amcca.db` convention
+instead of introducing a second, unrelated install-layout rule; there is no reason for the two files that
+constitute one install's state to live in different places.

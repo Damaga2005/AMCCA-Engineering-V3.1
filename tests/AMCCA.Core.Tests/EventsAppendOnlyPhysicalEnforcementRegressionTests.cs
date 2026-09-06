@@ -50,7 +50,7 @@ public class EventsAppendOnlyPhysicalEnforcementRegressionTests : IDisposable
                 event_id, event_type, aggregate_type, aggregate_id, aggregate_version,
                 correlation_id, causation_id, transition_id, payload_json, schema_version, occurred_at, seq
             ) VALUES (
-                'evt-1', 'PROD_CREATED', 'PRODUCTION', 'prod-1', 1,
+                'evt-1', 'PROD_CREATED', 'production', 'prod-1', 1,
                 'corr-1', 'caus-1', 'T-001', '{""title"":""Test""}', '1.0.0', '2026-09-03T12:00:00Z', 1
             );
         ";
@@ -71,7 +71,7 @@ public class EventsAppendOnlyPhysicalEnforcementRegressionTests : IDisposable
                 event_id, event_type, aggregate_type, aggregate_id, aggregate_version,
                 correlation_id, causation_id, transition_id, payload_json, schema_version, occurred_at, seq
             ) VALUES (
-                'evt-update-test', 'PROD_CREATED', 'PRODUCTION', 'prod-1', 1,
+                'evt-update-test', 'PROD_CREATED', 'production', 'prod-1', 1,
                 'corr-1', 'caus-1', 'T-001', '{}', '1.0.0', '2026-09-03T12:00:00Z', 1
             );
         ";
@@ -94,7 +94,7 @@ public class EventsAppendOnlyPhysicalEnforcementRegressionTests : IDisposable
                 event_id, event_type, aggregate_type, aggregate_id, aggregate_version,
                 correlation_id, causation_id, transition_id, payload_json, schema_version, occurred_at, seq
             ) VALUES (
-                'evt-delete-test', 'PROD_CREATED', 'PRODUCTION', 'prod-1', 1,
+                'evt-delete-test', 'PROD_CREATED', 'production', 'prod-1', 1,
                 'corr-1', 'caus-1', 'T-001', '{}', '1.0.0', '2026-09-03T12:00:00Z', 1
             );
         ";
@@ -117,8 +117,8 @@ public class EventsAppendOnlyPhysicalEnforcementRegressionTests : IDisposable
                 audit_id, action, actor_type, actor_id, subject_type, subject_id,
                 production_id, outcome, policy_decision_id, reason_code, correlation_id, schema_version, occurred_at
             ) VALUES (
-                'aud-1', 'PUBLISH', 'OPERATOR', 'op-1', 'PRODUCTION', 'prod-1',
-                'prod-1', 'SUCCESS', 'pol-1', 'ALLOWED', 'corr-1', '1.0.0', '2026-09-03T12:00:00Z'
+                'aud-1', 'PUBLISH', 'OPERATOR', 'op-1', 'production', 'prod-1',
+                'prod-1', 'ALLOWED', 'pol-1', 'ALLOWED', 'corr-1', '1.0.0', '2026-09-03T12:00:00Z'
             );
         ";
         await connection.ExecuteAsync(insertSql);
@@ -145,7 +145,7 @@ public class EventsAppendOnlyPhysicalEnforcementRegressionTests : IDisposable
                     event_id, event_type, aggregate_type, aggregate_id, aggregate_version,
                     correlation_id, causation_id, transition_id, payload_json, schema_version, occurred_at, seq
                 ) VALUES (
-                    'evt-reconnect', 'PROD_CREATED', 'PRODUCTION', 'prod-1', 1,
+                    'evt-reconnect', 'PROD_CREATED', 'production', 'prod-1', 1,
                     'corr-1', 'caus-1', 'T-001', '{}', '1.0.0', '2026-09-03T12:00:00Z', 1
                 );
             ");

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using AMCCA.Core.Contracts;
 
@@ -8,6 +10,21 @@ namespace AMCCA.Core.StateMachine;
 
 public class StateMachineRegistry
 {
+    private const string EmbeddedDefinitionResourceName = "AMCCA.Core.state-machine.json";
+
+    /// <summary>
+    /// Builds a StateMachineRegistry from the state-machine.json bundled into the assembly, so a
+    /// packaged install can validate production transitions (SPEC/13) without a repo checkout.
+    /// </summary>
+    public static StateMachineRegistry CreateFromBundledDefinition()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream(EmbeddedDefinitionResourceName)
+            ?? throw new InvalidOperationException(
+                $"Embedded resource '{EmbeddedDefinitionResourceName}' not found in {assembly.FullName}.");
+        using var reader = new StreamReader(stream);
+        return new StateMachineRegistry(reader.ReadToEnd());
+    }
     private readonly Dictionary<string, StateDefinition> _states = new(StringComparer.Ordinal);
     private readonly Dictionary<string, TransitionDefinition> _transitionsById = new(StringComparer.Ordinal);
     private readonly Dictionary<(string From, string To), List<TransitionDefinition>> _transitionsByEndpoints = new();

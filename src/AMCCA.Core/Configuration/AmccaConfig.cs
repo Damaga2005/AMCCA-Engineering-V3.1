@@ -135,14 +135,50 @@ public class PlatformConfig
 public class PolicyConfig
 {
     [JsonPropertyName("research")]
-    public Dictionary<string, object>? Research { get; set; }
+    public ResearchPolicyConfig? Research { get; set; }
 
     [JsonPropertyName("qa")]
-    public Dictionary<string, object>? Qa { get; set; }
+    public QaPolicyConfig? Qa { get; set; }
 
     [JsonPropertyName("rework")]
-    public Dictionary<string, object>? Rework { get; set; }
+    public ReworkPolicyConfig? Rework { get; set; }
 
     [JsonPropertyName("reconcile")]
-    public Dictionary<string, object>? Reconcile { get; set; }
+    public ReconcilePolicyConfig? Reconcile { get; set; }
+}
+
+public class ResearchPolicyConfig
+{
+    [JsonPropertyName("min_sources")]
+    public int? MinSources { get; set; }
+
+    [JsonPropertyName("max_attempts")]
+    public int? MaxAttempts { get; set; }
+}
+
+public class QaPolicyConfig
+{
+    [JsonPropertyName("overall_min")]
+    public double? OverallMin { get; set; }
+
+    [JsonPropertyName("critical_min")]
+    public double? CriticalMin { get; set; }
+}
+
+public class ReworkPolicyConfig
+{
+    [JsonPropertyName("max_attempts")]
+    public int? MaxAttempts { get; set; }
+
+    [JsonPropertyName("min_severity")]
+    public string? MinSeverity { get; set; }
+}
+
+public class ReconcilePolicyConfig
+{
+    [JsonPropertyName("max_attempts")]
+    public int? MaxAttempts { get; set; }
+
+    [JsonPropertyName("interval_seconds")]
+    public int? IntervalSeconds { get; set; }
 }

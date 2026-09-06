@@ -1,17 +1,17 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
-using AMCCA.Core.Database;
+using AMCCA.Core.Contracts;
+using AMCCA.Core.Operator;
 using AMCCA.Core.Security;
-using Dapper;
 
 namespace AMCCA.App.ViewModels;
 
 public class SettingsViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly OperatorControlService _operatorControlService;
     private readonly ISecretStore _secretStore;
     private readonly INotificationService _notificationService;
 
@@ -48,11 +48,11 @@ public class SettingsViewModel : ViewModelBase
     public ICommand RefreshCommand { get; }
 
     public SettingsViewModel(
-        DatabaseConnectionFactory connectionFactory,
+        OperatorControlService operatorControlService,
         ISecretStore secretStore,
         INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
+        _operatorControlService = operatorControlService;
         _secretStore = secretStore;
         _notificationService = notificationService;
 
@@ -67,31 +67,43 @@ public class SettingsViewModel : ViewModelBase
         try
         {
             SecretStoreAvailable = await _secretStore.IsReachableAsync();
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            var ksVal = await conn.ExecuteScalarAsync<string>(
-                "SELECT value_json FROM settings WHERE key = 'kill_switch.global';");
-            GlobalKillSwitch = ksVal?.Contains("true") ?? false;
+            var status = await _operatorControlService.GetSystemStatusAsync();
+            GlobalKillSwitch = status.GlobalKillSwitchActive;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _notificationService.AddNotification(
+                $"Failed to load settings: {ex.Message} Retry, or restart the application if this persists.",
+                "Error");
+        }
     }
 
     public async Task SaveSettingsAsync()
     {
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            var json = GlobalKillSwitch ? "{\"active\":true}" : "{\"active\":false}";
-            await conn.ExecuteAsync(@"
-                INSERT INTO settings (key, value_json, schema_version, updated_by, updated_at)
-                VALUES ('kill_switch.global', @Json, '3.1.0', 'operator', datetime('now'))
-                ON CONFLICT(key) DO UPDATE SET value_json = @Json, updated_at = datetime('now');
-            ", new { Json = json });
+            var correlationId = Guid.NewGuid().ToString("N");
+            await _operatorControlService.ToggleGlobalKillSwitchAsync(
+                operatorId: "operator",
+                active: GlobalKillSwitch,
+                reason: GlobalKillSwitch ? "Operator engaged kill switch from Settings" : "Operator cleared kill switch from Settings",
+                correlationId: correlationId);
 
             _notificationService.AddNotification("Settings saved successfully.", "Success");
         }
+        catch (AmccaException ex)
+        {
+            // SPEC/60 obligation 6: ex.Message already carries the SPEC/05 code (AmccaException's own
+            // constructor embeds it), so only the operator action needs adding here.
+            _notificationService.AddNotification(
+                $"{ex.Message} The kill switch was not changed; refresh this screen to see its current state.",
+                "Error");
+        }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to save settings: {ex.Message}", "Error");
+            _notificationService.AddNotification(
+                $"Failed to save settings: {ex.Message} Retry, or refresh this screen to see the current state.",
+                "Error");
         }
     }
 }

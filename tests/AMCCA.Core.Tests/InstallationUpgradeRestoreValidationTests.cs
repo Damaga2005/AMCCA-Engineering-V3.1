@@ -192,12 +192,12 @@ public class InstallationUpgradeRestoreValidationTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-u1', 'DRAFT', 'Upgrade Topic', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-u1', 'INIT', 'Upgrade Topic', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
 
             await conn.ExecuteAsync(@"
                 INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
-                VALUES ('aud-u1', 'PRODUCTION_CREATED', 'OPERATOR', 'operator_admin', 'PRODUCTION', 'prod-u1', 'SUCCESS', 'NEW', 'corr-u1', '3.1.0', datetime('now'));
+                VALUES ('aud-u1', 'PRODUCTION_CREATED', 'OPERATOR', 'operator_admin', 'PRODUCTION', 'prod-u1', 'ALLOWED', 'NEW', 'corr-u1', '3.1.0', datetime('now'));
             ");
         }
 
@@ -233,7 +233,7 @@ public class InstallationUpgradeRestoreValidationTests : IDisposable
         {
             await conn.ExecuteAsync(@"
                 INSERT INTO productions (id, state, title, language, niche_id, autonomy_mode, schema_version, created_at, updated_at)
-                VALUES ('prod-b1', 'RENDER_DONE', 'Backup Topic', 'en', 'tech', 'COLLABORATIVE', '3.1.0', datetime('now'), datetime('now'));
+                VALUES ('prod-b1', 'CANDIDATE_RENDERED', 'Backup Topic', 'en', 'tech', 'ASSISTED', '3.1.0', datetime('now'), datetime('now'));
             ");
         }
 

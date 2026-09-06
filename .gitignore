@@ -11,5 +11,7 @@ bin/
 obj/
 *.user
 dist/
-artifacts/
+# Runtime artifact output only (data root). Anchored so it does not shadow the
+# src/AMCCA.Core/Artifacts/ source directory (Windows git matches case-insensitively).
+/artifacts/
 installer/Components.wxs

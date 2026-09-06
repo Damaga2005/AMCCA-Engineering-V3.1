@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
-using AMCCA.Core.Database;
-using Dapper;
+using AMCCA.Core.Events;
 
 namespace AMCCA.App.ViewModels;
 
@@ -21,7 +20,7 @@ public record AuditLogItem(
 
 public class AuditLogViewModel : ViewModelBase
 {
-    private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly IAuditStore _auditStore;
     private readonly INotificationService _notificationService;
 
     private string _filterQuery = string.Empty;
@@ -42,9 +41,9 @@ public class AuditLogViewModel : ViewModelBase
 
     public ICommand RefreshCommand { get; }
 
-    public AuditLogViewModel(DatabaseConnectionFactory connectionFactory, INotificationService notificationService)
+    public AuditLogViewModel(IAuditStore auditStore, INotificationService notificationService)
     {
-        _connectionFactory = connectionFactory;
+        _auditStore = auditStore;
         _notificationService = notificationService;
 
         RefreshCommand = new AsyncRelayCommand(LoadAuditLogAsync);
@@ -56,43 +55,22 @@ public class AuditLogViewModel : ViewModelBase
         Entries.Clear();
         try
         {
-            using var conn = await _connectionFactory.CreateOpenConnectionAsync();
-            string sql;
-            object param;
-
-            if (string.IsNullOrWhiteSpace(FilterQuery))
-            {
-                sql = @"
-                    SELECT audit_id AS AuditId, action AS Action, actor_type AS ActorType, actor_id AS ActorId,
-                           subject_type AS SubjectType, subject_id AS SubjectId, outcome AS Outcome, occurred_at AS OccurredAt
-                    FROM audit_log
-                    ORDER BY occurred_at DESC
-                    LIMIT 100;
-                ";
-                param = new { };
-            }
-            else
-            {
-                sql = @"
-                    SELECT audit_id AS AuditId, action AS Action, actor_type AS ActorType, actor_id AS ActorId,
-                           subject_type AS SubjectType, subject_id AS SubjectId, outcome AS Outcome, occurred_at AS OccurredAt
-                    FROM audit_log
-                    WHERE action LIKE @Pattern OR subject_id LIKE @Pattern OR actor_id LIKE @Pattern
-                    ORDER BY occurred_at DESC
-                    LIMIT 100;
-                ";
-                param = new { Pattern = $"%{FilterQuery}%" };
-            }
-
-            var rows = await conn.QueryAsync<AuditLogItem>(sql, param);
+            var rows = await _auditStore.SearchAuditLogsAsync(FilterQuery, limit: 100);
             foreach (var r in rows)
             {
-                Entries.Add(r);
+                Entries.Add(new AuditLogItem(
+                    r.AuditId, r.Action, r.ActorType, r.ActorId,
+                    r.SubjectType ?? string.Empty, r.SubjectId ?? string.Empty,
+                    r.Outcome, r.OccurredAt));
             }
         }
         catch (Exception ex)
         {
-            _notificationService.AddNotification($"Failed to load audit logs: {ex.Message}", "Error");
+            // SPEC/60 obligation 6: a failure needs an operator action, not just a message. Retrying or
+            // clearing the filter are the only two things this screen can do about a failed query.
+            _notificationService.AddNotification(
+                $"Failed to load audit logs: {ex.Message} Retry, or clear the filter and refresh.",
+                "Error");
         }
     }
 }

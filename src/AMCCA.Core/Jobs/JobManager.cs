@@ -1,19 +1,24 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using Dapper;
+using Microsoft.Data.Sqlite;
 
 namespace AMCCA.Core.Jobs;
 
 public class JobManager
 {
     private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly TimeProvider _time;
 
-    public JobManager(DatabaseConnectionFactory connectionFactory)
+    public JobManager(DatabaseConnectionFactory connectionFactory, TimeProvider? timeProvider = null)
     {
         _connectionFactory = connectionFactory;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<JobRecord> EnqueueJobAsync(
@@ -23,14 +28,16 @@ public class JobManager
         string payloadJson,
         int priority = 3,
         int maxAttempts = 3,
+        string? productionId = null,
         CancellationToken ct = default)
     {
         var id = UlidGenerator.NewUlid();
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
 
         var job = new JobRecord
         {
             Id = id,
+            ProductionId = productionId,
             Type = type,
             State = "QUEUED",
             Priority = priority,
@@ -40,47 +47,99 @@ public class JobManager
             CorrelationId = correlationId,
             PayloadJson = payloadJson,
             CreatedAt = now,
-            UpdatedAt = now
+            UpdatedAt = now,
+            SchemaVersion = "3.1.0"
         };
 
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             INSERT INTO jobs (
-                id, type, state, priority, idempotency_key, attempt,
-                max_attempts, correlation_id, payload_json, created_at, updated_at
+                id, production_id, type, state, priority, idempotency_key, attempt,
+                max_attempts, correlation_id, payload_json, created_at, updated_at, schema_version
             ) VALUES (
-                @Id, @Type, @State, @Priority, @IdempotencyKey, @Attempt,
-                @MaxAttempts, @CorrelationId, @PayloadJson, @CreatedAt, @UpdatedAt
+                @Id, @ProductionId, @Type, @State, @Priority, @IdempotencyKey, @Attempt,
+                @MaxAttempts, @CorrelationId, @PayloadJson, @CreatedAt, @UpdatedAt, @SchemaVersion
             );
         ";
-        await connection.ExecuteAsync(sql, job);
+        try
+        {
+            await connection.ExecuteAsync(sql, job);
+        }
+        catch (SqliteException ex) when (
+            ex.SqliteErrorCode == SqliteConstraintErrorCode &&
+            ex.Message.Contains("jobs.idempotency_key", StringComparison.Ordinal))
+        {
+            // SPEC/15: duplicate enqueue is caught by the DB's UNIQUE(idempotency_key), never a
+            // check-then-act pre-check (unsound under concurrency). Wrap the raw engine error so the
+            // caller gets an actionable code instead of a bare SqliteException (AMCCA-JOB-002, SPEC/05).
+            throw new AmccaException(
+                AmccaErrors.Job002,
+                ErrorCategory.Internal,
+                $"A job with idempotency key '{idempotencyKey}' is already enqueued. The key is a pure " +
+                "function of operation + entity + intent version (SPEC/15), so a collision means the same " +
+                "logical intent was submitted twice; act on the existing job rather than enqueuing again.",
+                retryable: false,
+                innerException: ex);
+        }
         return job;
     }
+
+    // SQLITE_CONSTRAINT. Matches the literal the concurrency suite already asserts on.
+    private const int SqliteConstraintErrorCode = 19;
 
     public async Task<JobClaim?> TryClaimNextJobAsync(
         string workerId,
         TimeSpan leaseDuration,
         CancellationToken ct = default)
+        => await TryClaimNextJobAsync(workerId, leaseDuration, agingWindow: null, ct);
+
+    /// <summary>
+    /// Claims the next QUEUED job. With <paramref name="agingWindow"/> set, effective priority is raised
+    /// by one level per whole window a job has waited (SPEC/17: "Aging raises effective priority over
+    /// time so that P5 work is not starved indefinitely by a busy pipeline"), capped so it never
+    /// overtakes P0. With it null, ordering is the plain priority/created_at it has always been.
+    /// </summary>
+    public async Task<JobClaim?> TryClaimNextJobAsync(
+        string workerId,
+        TimeSpan leaseDuration,
+        TimeSpan? agingWindow,
+        CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 
-        // 1. Find candidate queued job with highest priority (lowest integer)
-        const string candidateSql = @"
-            SELECT id FROM jobs
-            WHERE state = 'QUEUED'
-            ORDER BY priority ASC, created_at ASC
-            LIMIT 1;
-        ";
-        var candidateId = await connection.QuerySingleOrDefaultAsync<string>(candidateSql, transaction: tx);
+        // 1. Find candidate queued job with highest effective priority (lowest integer)
+        string candidateSql;
+        object? candidateParams = null;
+        if (agingWindow is { TotalSeconds: > 0 } w)
+        {
+            candidateSql = @"
+                SELECT id FROM jobs
+                WHERE state = 'QUEUED'
+                ORDER BY (priority - MIN(priority, CAST((julianday('now') - julianday(created_at)) * 86400.0 / @AgingWindowSeconds AS INTEGER))) ASC,
+                         created_at ASC
+                LIMIT 1;
+            ";
+            candidateParams = new { AgingWindowSeconds = w.TotalSeconds };
+        }
+        else
+        {
+            candidateSql = @"
+                SELECT id FROM jobs
+                WHERE state = 'QUEUED'
+                ORDER BY priority ASC, created_at ASC
+                LIMIT 1;
+            ";
+        }
+        var candidateId = await connection.QuerySingleOrDefaultAsync<string>(candidateSql, candidateParams, transaction: tx);
         if (string.IsNullOrEmpty(candidateId))
         {
             tx.Rollback();
             return null;
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var leaseUntil = _time.GetUtcNow().Add(leaseDuration).ToString("O");
 
         // 2. Single-statement atomic conditional claim (SPEC/14, D-010)
         const string claimSql = @"
@@ -143,8 +202,8 @@ public class JobManager
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var leaseUntil = _time.GetUtcNow().Add(leaseDuration).ToString("O");
 
         const string claimSql = @"
             UPDATE jobs
@@ -202,8 +261,8 @@ public class JobManager
         CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var newLeaseUntil = DateTimeOffset.UtcNow.Add(extension).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var newLeaseUntil = _time.GetUtcNow().Add(extension).ToString("O");
 
         // DEF-017: Must verify lease is still active (lease_until > now), owned by workerId, and fence token matches!
         const string sql = @"
@@ -236,10 +295,15 @@ public class JobManager
         var success = await HeartbeatLeaseAsync(jobId, workerId, expectedFenceToken, extension, ct);
         if (!success)
         {
+            // Same condition SPEC/14 describes for AMCCA-JOB-001: the fence token no longer matches the
+            // current lease, so this worker has already lost the job -- a heartbeat is just another kind
+            // of write that a stale owner must abandon. Previously miscoded as AMCCA-JOB-002, whose
+            // catalogued meaning (SPEC/05) is an unrelated condition -- a duplicate idempotency key --
+            // that this method has nothing to do with.
             throw new AmccaException(
-                AmccaErrors.Job002,
+                AmccaErrors.Job001,
                 ErrorCategory.Transient,
-                $"Heartbeat refused for job '{jobId}': lease is expired, fence token {expectedFenceToken} is stale, or lease owned by another worker (DEF-017).");
+                $"Heartbeat refused for job '{jobId}': lease is expired, fence token {expectedFenceToken} is stale, or lease owned by another worker (DEF-017, SPEC/14).");
         }
     }
 
@@ -260,8 +324,8 @@ public class JobManager
             return false; // Stale worker must abandon completion (SPEC/14)
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        await connection.ExecuteAsync("UPDATE jobs SET state = 'COMPLETED', updated_at = @Now WHERE id = @JobId;",
+        var now = _time.GetUtcNow().ToString("O");
+        await connection.ExecuteAsync("UPDATE jobs SET state = 'SUCCEEDED', updated_at = @Now WHERE id = @JobId;",
             new { Now = now, JobId = jobId }, transaction: tx);
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
             new { JobId = jobId }, transaction: tx);
@@ -285,14 +349,18 @@ public class JobManager
         if (lease == null || lease.OwnerId != workerId || lease.FenceToken != expectedFenceToken)
         {
             tx.Rollback();
+            // SPEC/14, AMCCA-JOB-001: the lease already moved on (expired and was re-claimed, or was
+            // never this worker's), so this worker's write is stale, not forbidden -- whoever holds the
+            // lease now is entitled to complete it. TRANSIENT/retryable, not USER_ACTION_REQUIRED: no
+            // operator needs to act, the caller simply abandons and stops (SPEC/14 "work abandoned").
             throw new AmccaException(
-                AmccaErrors.Job003,
-                ErrorCategory.Security,
-                $"CompleteJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold lease (DEF-016).");
+                AmccaErrors.Job001,
+                ErrorCategory.Transient,
+                $"CompleteJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold lease (DEF-016, SPEC/14).");
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        await connection.ExecuteAsync("UPDATE jobs SET state = 'COMPLETED', updated_at = @Now WHERE id = @JobId;",
+        var now = _time.GetUtcNow().ToString("O");
+        await connection.ExecuteAsync("UPDATE jobs SET state = 'SUCCEEDED', updated_at = @Now WHERE id = @JobId;",
             new { Now = now, JobId = jobId }, transaction: tx);
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
             new { JobId = jobId }, transaction: tx);
@@ -317,10 +385,12 @@ public class JobManager
         if (lease == null || lease.OwnerId != workerId || lease.FenceToken != expectedFenceToken)
         {
             tx.Rollback();
+            // Same stale-lease condition as CompleteJobOrThrowAsync above: AMCCA-JOB-001, not JOB-003 --
+            // this worker no longer holds the job, it did not fail an operator-facing precondition.
             throw new AmccaException(
-                AmccaErrors.Job003,
-                ErrorCategory.Security,
-                $"FailJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold active lease (DEF-016).");
+                AmccaErrors.Job001,
+                ErrorCategory.Transient,
+                $"FailJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold active lease (DEF-016, SPEC/14).");
         }
 
         var job = await connection.QuerySingleOrDefaultAsync<JobRecord>(
@@ -333,7 +403,7 @@ public class JobManager
             return;
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         string newState = job.Attempt >= job.MaxAttempts ? "DEAD_LETTER" : "QUEUED";
 
         await connection.ExecuteAsync(
@@ -360,7 +430,7 @@ public class JobManager
             return;
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         string newState = job.Attempt >= job.MaxAttempts ? "DEAD_LETTER" : "QUEUED";
 
         await connection.ExecuteAsync(
@@ -378,10 +448,159 @@ public class JobManager
     public async Task ExpireAndRequeueLeaseForTestingAsync(string jobId, CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
-        var past = DateTimeOffset.UtcNow.AddMinutes(-5).ToString("O");
+        var past = _time.GetUtcNow().AddMinutes(-5).ToString("O");
         await connection.ExecuteAsync(
             "UPDATE jobs SET state = 'QUEUED' WHERE id = @Id; UPDATE leases SET lease_until = @Past WHERE job_id = @Id;",
             new { Id = jobId, Past = past });
+    }
+
+    /// <summary>
+    /// Operator-facing queue listing (SPEC/62 requires lists to be paged; this system accumulates
+    /// hundreds of thousands of rows, so the UI never asks for the whole table).
+    /// </summary>
+    public async Task<IReadOnlyList<JobQueueEntry>> ListJobsAsync(
+        string? stateFilter = null,
+        int limit = 50,
+        int offset = 0,
+        CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var sql = @"
+            SELECT
+                j.id AS Id,
+                j.production_id AS ProductionId,
+                j.type AS Type,
+                j.state AS State,
+                j.priority AS Priority,
+                j.attempt AS Attempt,
+                j.max_attempts AS MaxAttempts,
+                j.correlation_id AS CorrelationId,
+                j.created_at AS CreatedAt,
+                j.updated_at AS UpdatedAt,
+                l.owner_id AS LeaseOwnerId,
+                l.lease_until AS LeaseUntil,
+                l.heartbeat_at AS HeartbeatAt,
+                l.fence_token AS FenceToken
+            FROM jobs j
+            LEFT JOIN leases l ON l.job_id = j.id
+        ";
+
+        if (!string.IsNullOrWhiteSpace(stateFilter))
+        {
+            sql += " WHERE j.state = @StateFilter";
+        }
+
+        // Priority ascending mirrors the dispatch order in TryClaimNextJobAsync (SPEC/14: 0 is highest).
+        sql += " ORDER BY j.priority ASC, j.created_at DESC LIMIT @Limit OFFSET @Offset;";
+
+        var rows = await connection.QueryAsync<JobQueueEntry>(
+            sql, new { StateFilter = stateFilter, Limit = limit, Offset = offset });
+        return rows.ToList();
+    }
+
+    /// <summary>
+    /// The job states actually present in this database. The queue filter is built from this rather than
+    /// a hardcoded list so it stays honest even if the set of states in use ever drifts from
+    /// `job.schema.json`'s enum again, the way COMPLETED vs SUCCEEDED once did.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ListDistinctJobStatesAsync(CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var rows = await connection.QueryAsync<string>(
+            "SELECT DISTINCT state FROM jobs ORDER BY state ASC;");
+        return rows.ToList();
+    }
+
+    public async Task<int> CountJobsAsync(string? stateFilter = null, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var sql = "SELECT COUNT(*) FROM jobs";
+        if (!string.IsNullOrWhiteSpace(stateFilter))
+        {
+            sql += " WHERE state = @StateFilter";
+        }
+        sql += ";";
+        return await connection.ExecuteScalarAsync<int>(sql, new { StateFilter = stateFilter });
+    }
+
+    /// <summary>
+    /// SPEC/14: "A dead-lettered job is never silently dropped and never automatically retried; it waits
+    /// for an operator." This is that operator action, and the only legal way out of DEAD_LETTER.
+    ///
+    /// The attempt counter is deliberately NOT reset (SPEC/14, "Retries and dead-lettering"): zeroing it
+    /// would erase both the max_attempts bound and the attempt history, letting an operator loop a
+    /// poisoned job indefinitely with no record. Preserving it grants exactly one further attempt, after
+    /// which the job returns to DEAD_LETTER for the operator to look at again.
+    /// </summary>
+    public async Task RequeueDeadLetterJobAsync(string jobId, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        using var tx = connection.BeginTransaction();
+
+        var now = _time.GetUtcNow().ToString("O");
+
+        // Single conditional statement, as with every other job state change (SPEC/14, D-010).
+        const string requeueSql = @"
+            UPDATE jobs
+            SET state = 'QUEUED',
+                updated_at = @Now
+            WHERE id = @Id AND state = 'DEAD_LETTER';
+        ";
+        var rows = await connection.ExecuteAsync(requeueSql, new { Id = jobId, Now = now }, transaction: tx);
+
+        if (rows == 0)
+        {
+            tx.Rollback();
+            throw new AmccaException(
+                AmccaErrors.Job003,
+                ErrorCategory.UserActionRequired,
+                $"Job '{jobId}' cannot be requeued: only a DEAD_LETTER job waits for an operator (SPEC/14).");
+        }
+
+        // A requeued job must not carry a stale lease into its next claim; FailJobAsync already removes it
+        // on the dead-letter path, so this only defends against a lease row that outlived its job.
+        await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @Id;", new { Id = jobId }, transaction: tx);
+
+        tx.Commit();
+    }
+
+    /// <summary>
+    /// Moves every job whose lease has expired back to QUEUED (or DEAD_LETTER once attempts are
+    /// exhausted) and drops the dead lease row. A crashed worker leaves a LEASED job with a stale lease
+    /// that <see cref="TryClaimNextJobAsync"/> would never pick up; the worker pool sweeps this
+    /// periodically. Returns the number of jobs recovered.
+    ///
+    /// This is the lease half of <c>RecoveryService.RunStartupRecoveryPassAsync</c> with none of its
+    /// intent handling — safe to run every cycle, no fabricated reconciliation evidence.
+    /// </summary>
+    public async Task<int> ReclaimExpiredLeasesAsync(CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        var now = _time.GetUtcNow().ToString("O");
+
+        const string expiredSql = @"
+            SELECT l.job_id AS JobId, j.attempt AS Attempt, j.max_attempts AS MaxAttempts
+            FROM leases l
+            JOIN jobs j ON j.id = l.job_id
+            WHERE l.lease_until <= @Now AND j.state = 'LEASED';
+        ";
+        var expired = (await connection.QueryAsync<(string JobId, long Attempt, long MaxAttempts)>(
+            new CommandDefinition(expiredSql, new { Now = now }, cancellationToken: ct))).ToList();
+
+        int recovered = 0;
+        foreach (var (jobId, attempt, maxAttempts) in expired)
+        {
+            using var tx = connection.BeginTransaction();
+            var targetState = attempt >= maxAttempts ? "DEAD_LETTER" : "QUEUED";
+            await connection.ExecuteAsync(
+                "UPDATE jobs SET state = @State, updated_at = @Now WHERE id = @JobId AND state = 'LEASED';",
+                new { State = targetState, Now = now, JobId = jobId }, transaction: tx);
+            await connection.ExecuteAsync(
+                "DELETE FROM leases WHERE job_id = @JobId;", new { JobId = jobId }, transaction: tx);
+            tx.Commit();
+            recovered++;
+        }
+        return recovered;
     }
 
     public async Task<JobRecord?> GetJobAsync(string jobId, CancellationToken ct = default)
@@ -390,6 +609,7 @@ public class JobManager
         const string sql = @"
             SELECT
                 id AS Id,
+                production_id AS ProductionId,
                 type AS Type,
                 state AS State,
                 priority AS Priority,
@@ -399,7 +619,8 @@ public class JobManager
                 correlation_id AS CorrelationId,
                 payload_json AS PayloadJson,
                 created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                updated_at AS UpdatedAt,
+                schema_version AS SchemaVersion
             FROM jobs
             WHERE id = @Id;
         ";

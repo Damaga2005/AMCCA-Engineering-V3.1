@@ -101,9 +101,9 @@ public class RevenueService
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             INSERT INTO cost_events (
-                id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at
+                id, production_id, job_id, kind, amount, currency, provider, occurred_at, created_at, schema_version, reconciliation_state
             ) VALUES (
-                @Id, @ProductionId, @JobId, @Kind, @Amount, @Currency, @Provider, @Now, @Now
+                @Id, @ProductionId, @JobId, @Kind, @Amount, @Currency, @Provider, @Now, @Now, @SchemaVersion, @ReconciliationState
             );
         ";
         await connection.ExecuteAsync(sql, new
@@ -115,7 +115,11 @@ public class RevenueService
             Amount = Money.Format(amount),
             Currency = currency,
             Provider = provider,
-            Now = now
+            Now = now,
+            SchemaVersion = "3.1.0",
+            // A cost event just recorded has not been reconciled against a provider statement yet --
+            // this is not a guess, it's what recording one always means (migration 9).
+            ReconciliationState = "ESTIMATED"
         });
     }
 

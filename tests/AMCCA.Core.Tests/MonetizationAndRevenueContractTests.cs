@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AMCCA.Core.Contracts;
 using AMCCA.Core.Database;
 using AMCCA.Core.Monetization;
+using Dapper;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -106,6 +107,17 @@ public class MonetizationAndRevenueContractTests : IDisposable
             amount: 40.00m,
             currency: "EUR",
             provider: "elevenlabs");
+
+        // D-004: every persisted contract object carries schema_version. reconciliation_state must be
+        // ESTIMATED at record time -- a cost event just recorded has not been reconciled yet (migration 9).
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            var row = await conn.QuerySingleAsync<(string SchemaVersion, string ReconciliationState)>(
+                "SELECT schema_version AS SchemaVersion, reconciliation_state AS ReconciliationState FROM cost_events WHERE production_id = @Id AND kind = 'SETTLEMENT';",
+                new { Id = prodId });
+            row.SchemaVersion.Should().Be("3.1.0");
+            row.ReconciliationState.Should().Be("ESTIMATED");
+        }
 
         // 4. Reserved cost: 20.00 EUR (must NOT be counted in settled spend!)
         await _revenueService.RecordCostAsync(

@@ -28,6 +28,12 @@ public interface IAuditStore
 {
     Task AppendAuditAsync(AuditRecord record, CancellationToken ct = default);
     Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, string? action = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Most-recent-first audit rows for the operator's Audit Log screen. A non-empty
+    /// <paramref name="query"/> is a substring match against action, subject_id and actor_id.
+    /// </summary>
+    Task<IReadOnlyList<AuditRecord>> SearchAuditLogsAsync(string? query, int limit = 100, CancellationToken ct = default);
 }
 
 public class AuditStore : IAuditStore
@@ -62,7 +68,7 @@ public class AuditStore : IAuditStore
                 @SchemaVersion, @OccurredAt
             );
         ";
-        await connection.ExecuteAsync(sql, record);
+        await connection.ExecuteAsync(new CommandDefinition(sql, record, cancellationToken: ct));
     }
 
     public async Task<IReadOnlyList<AuditRecord>> GetAuditLogsAsync(string? correlationId = null, string? action = null, CancellationToken ct = default)
@@ -98,6 +104,26 @@ public class AuditStore : IAuditStore
         sql += " ORDER BY occurred_at ASC;";
 
         var result = await connection.QueryAsync<AuditRecord>(sql, new { CorrelationId = correlationId, Action = action });
+        return result.ToList();
+    }
+
+    public async Task<IReadOnlyList<AuditRecord>> SearchAuditLogsAsync(string? query, int limit = 100, CancellationToken ct = default)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        const string columns = @"
+                audit_id AS AuditId, action AS Action, actor_type AS ActorType, actor_id AS ActorId,
+                subject_type AS SubjectType, subject_id AS SubjectId, production_id AS ProductionId,
+                outcome AS Outcome, policy_decision_id AS PolicyDecisionId, reason_code AS ReasonCode,
+                correlation_id AS CorrelationId, schema_version AS SchemaVersion, occurred_at AS OccurredAt";
+
+        var sql = string.IsNullOrWhiteSpace(query)
+            ? $"SELECT {columns} FROM audit_log ORDER BY occurred_at DESC LIMIT @Limit;"
+            : $@"SELECT {columns} FROM audit_log
+                 WHERE action LIKE @Pattern OR subject_id LIKE @Pattern OR actor_id LIKE @Pattern
+                 ORDER BY occurred_at DESC LIMIT @Limit;";
+
+        var result = await connection.QueryAsync<AuditRecord>(
+            new CommandDefinition(sql, new { Pattern = $"%{query}%", Limit = limit }, cancellationToken: ct));
         return result.ToList();
     }
 }

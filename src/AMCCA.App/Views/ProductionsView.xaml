@@ -39,7 +39,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="180"/>
                 <DataGridTextColumn Header="Topic" Binding="{Binding Topic}" Width="*"/>
-                <DataGridTextColumn Header="Niche" Binding="{Binding Niche}" Width="100"/>
+                <DataGridTextColumn Header="Niche" Binding="{Binding NicheId}" Width="100"/>
                 <DataGridTextColumn Header="State" Binding="{Binding State}" Width="120"/>
                 <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="160"/>
             </DataGrid.Columns>

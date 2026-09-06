@@ -116,7 +116,7 @@ public class PromptService
             ModelParamsHash = modelParamsHash,
             InputHash = inputHash,
             OutputValid = false,
-            State = "RUNNING",
+            State = "STARTED",
             Cost = "0.00",
             StartedAt = now,
             CompletedAt = null

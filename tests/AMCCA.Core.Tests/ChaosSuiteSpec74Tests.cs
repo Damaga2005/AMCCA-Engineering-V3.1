@@ -84,9 +84,9 @@ public class ChaosSuiteSpec74Tests : IDisposable
                 VALUES ('pt-x02', 'script_gen', 'generate script', datetime('now'), datetime('now'));
                 INSERT INTO prompt_versions (id, template_id, version_no, body_sha256, body_ref, created_at)
                 VALUES ('pv-x02', 'pt-x02', 1, 'sha', 'ref', datetime('now'));
-                -- Agent run starts in RUNNING state
+                -- Agent run starts in STARTED state
                 INSERT INTO agent_runs (run_id, agent_id, agent_version, prompt_version_id, model_id, model_params_hash, state, input_hash, correlation_id, schema_version, started_at)
-                VALUES ('run-x02', 'script-agent', '1.0', 'pv-x02', 'claude-3-5', 'paramhash', 'RUNNING', 'inphash', 'corr-x02', '3.1.0', datetime('now'));
+                VALUES ('run-x02', 'script-agent', '1.0', 'pv-x02', 'claude-3-5', 'paramhash', 'STARTED', 'inphash', 'corr-x02', '3.1.0', datetime('now'));
             ");
         }
 
@@ -96,7 +96,7 @@ public class ChaosSuiteSpec74Tests : IDisposable
             await restartConn.ExecuteAsync(@"
                 UPDATE agent_runs
                 SET state = 'FAILED', output_valid = 0, finished_at = datetime('now')
-                WHERE state = 'RUNNING';
+                WHERE state = 'STARTED';
             ");
 
             var finalState = await restartConn.ExecuteScalarAsync<string>("SELECT state FROM agent_runs WHERE run_id = 'run-x02'");
@@ -288,7 +288,7 @@ public class ChaosSuiteSpec74Tests : IDisposable
         using var conn = await _factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync(@"
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-x10', 'RENDERING', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-x10', 'EDITING', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO artifact_manifests (id, production_id, manifest_sha256, sealed, schema_version, created_at)
             VALUES ('man-x10', 'prod-x10', '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff', 0, '3.1.0', datetime('now'));
         ");
@@ -383,7 +383,7 @@ public class ChaosSuiteSpec74Tests : IDisposable
         using var conn = await _factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync(@"
             INSERT INTO productions (id, state, rework_attempts, aggregate_version, autonomy_mode, language, schema_version, created_at, updated_at)
-            VALUES ('prod-x16', 'RENDERED', 0, 1, 'FULL_AUTONOMY', 'en', '3.1.0', datetime('now'), datetime('now'));
+            VALUES ('prod-x16', 'CANDIDATE_RENDERED', 0, 1, 'AUTONOMOUS', 'en', '3.1.0', datetime('now'), datetime('now'));
             INSERT INTO artifacts (id, production_id, kind, created_at, updated_at)
             VALUES ('art-x16', 'prod-x16', 'VIDEO', datetime('now'), datetime('now'));
             INSERT INTO artifact_versions (id, artifact_id, version_no, sha256, bytes, rel_path, state, created_at)

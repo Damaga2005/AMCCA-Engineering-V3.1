@@ -5,16 +5,26 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:AMCCA.App.ViewModels"
         xmlns:views="clr-namespace:AMCCA.App.Views"
+        xmlns:common="clr-namespace:AMCCA.App.Common"
         mc:Ignorable="d"
         Title="AMCCA Engineering V3.1 — Production Operations" Height="720" Width="1100"
         Background="#181825" WindowStartupLocation="CenterScreen">
-    
+
     <Window.Resources>
+        <common:KillSwitchLabelConverter x:Key="KillSwitchLabelConverter"/>
+        <common:EnabledDisabledConverter x:Key="EnabledDisabledConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ProductionsViewModel}">
             <views:ProductionsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ProductionInspectorViewModel}">
+            <views:ProductionInspectorView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:JobQueueViewModel}">
+            <views:JobQueueView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ApprovalQueueViewModel}">
             <views:ApprovalQueueView/>
@@ -33,8 +43,9 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Sidebar Navigation -->
-        <Border Grid.Column="0" Background="#11111B" Padding="15">
+        <!-- Sidebar Navigation. Disabled until App's SPEC/49 preflight has finished (IsReady): the
+             screens it navigates to all read the database, which does not exist until then. -->
+        <Border Grid.Column="0" Background="#11111B" Padding="15" IsEnabled="{Binding IsReady}">
             <DockPanel>
                 <!-- Header -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,25">
@@ -42,9 +53,37 @@
                     <TextBlock Text="Engineering V3.1" FontSize="12" Foreground="#A6ADC8"/>
                 </StackPanel>
 
-                <!-- Footer / Status -->
+                <!-- Footer / Status: SPEC/60 obligations 1 and 2 require the kill switch to be reachable
+                     in one action from every screen, and autonomy mode / publishing state to be visible
+                     on every screen rather than buried in Settings. This panel is chrome shared by all six
+                     screens (it sits outside the ContentControl below), so it never needs repeating. -->
                 <StackPanel DockPanel.Dock="Bottom">
                     <Separator Background="#313244" Margin="0,15"/>
+
+                    <Button Command="{Binding ToggleKillSwitchCommand}" Padding="10,8" Margin="0,0,0,10" BorderThickness="0" HorizontalContentAlignment="Center">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="#A6E3A1"/>
+                                <Setter Property="Foreground" Value="#11111B"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsKillSwitchActive}" Value="True">
+                                        <Setter Property="Background" Value="#F38BA8"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="{Binding IsKillSwitchActive, Converter={StaticResource KillSwitchLabelConverter}}" FontWeight="Bold" FontSize="12"/>
+                    </Button>
+
+                    <TextBlock Foreground="#A6ADC8" FontSize="11" Margin="0,0,0,2">
+                        <Run Text="Autonomy: "/>
+                        <Run Text="{Binding AutonomyMode, Mode=OneWay}" FontWeight="Bold"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Margin="0,0,0,10">
+                        <Run Text="Publishing: " Foreground="#A6ADC8"/>
+                        <Run Text="{Binding PublishingEnabled, Mode=OneWay, Converter={StaticResource EnabledDisabledConverter}}" FontWeight="Bold"/>
+                    </TextBlock>
+
                     <TextBlock Text="{Binding StatusText}" Foreground="#6C7086" FontSize="11" TextWrapping="Wrap"/>
                 </StackPanel>
 
@@ -52,6 +91,8 @@
                 <StackPanel>
                     <Button Content="Dashboard" Command="{Binding NavigateDashboardCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Productions" Command="{Binding NavigateProductionsCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Production Inspector" Command="{Binding NavigateProductionInspectorCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
+                    <Button Content="Job Queue" Command="{Binding NavigateJobQueueCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Approval Queue" Command="{Binding NavigateApprovalQueueCommand}" Background="Transparent" Foreground="#F9E2AF" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Audit Log" Command="{Binding NavigateAuditLogCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
                     <Button Content="Settings" Command="{Binding NavigateSettingsCommand}" Background="Transparent" Foreground="#CDD6F4" FontSize="14" HorizontalContentAlignment="Left" Padding="12,8" BorderThickness="0" Margin="0,2"/>
@@ -62,6 +103,19 @@
         <!-- Content Area -->
         <Grid Grid.Column="1">
             <ContentControl Content="{Binding CurrentView}"/>
+
+            <!-- SPEC/49 startup overlay: shown while the preflight runs so the operator sees progress
+                 instead of a frozen or empty window (SPEC/60: the UI thread does no waiting). -->
+            <Border Background="#181825"
+                    Visibility="{Binding IsStartingUp, Converter={StaticResource BoolToVis}}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="Running system checks…" Foreground="#CDD6F4" FontSize="16"
+                               HorizontalAlignment="Center" Margin="0,0,0,14"/>
+                    <ProgressBar IsIndeterminate="True" Width="220" Height="6"/>
+                    <TextBlock Text="SPEC/49 preflight — database, storage, secrets, media"
+                               Foreground="#6C7086" FontSize="11" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

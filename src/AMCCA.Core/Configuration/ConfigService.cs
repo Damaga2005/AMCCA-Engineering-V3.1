@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -13,11 +14,27 @@ namespace AMCCA.Core.Configuration;
 
 public class ConfigService
 {
+    private const string EmbeddedSchemaResourceName = "AMCCA.Core.config.schema.json";
+
     private readonly JsonSchema _schema;
 
     public ConfigService(string schemaJson)
     {
         _schema = JsonSchema.FromText(schemaJson);
+    }
+
+    /// <summary>
+    /// Builds a ConfigService from the config.schema.json bundled into the assembly, so a packaged
+    /// install can validate config.yaml at startup (SPEC/49 gates 1-2) without a repo checkout.
+    /// </summary>
+    public static ConfigService CreateWithBundledSchema()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream(EmbeddedSchemaResourceName)
+            ?? throw new InvalidOperationException(
+                $"Embedded resource '{EmbeddedSchemaResourceName}' not found in {assembly.FullName}.");
+        using var reader = new StreamReader(stream);
+        return new ConfigService(reader.ReadToEnd());
     }
 
     public AmccaConfig LoadFromYaml(string yamlContent)
