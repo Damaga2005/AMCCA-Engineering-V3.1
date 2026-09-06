@@ -168,18 +168,27 @@ public class AgentRuntime
         int unparseableStreak = 0;
         int schemaFailStreak = 0;
 
+        // Stamp the run's model-token totals onto whatever result we return, so a cost-accounting
+        // caller (H1) gets the usage figures the gateway reported instead of them being discarded.
+        AgentRunResult Tagged(AgentRunResult r) => r with
+        {
+            ModelInputTokens = session.ModelInputTokens,
+            ModelOutputTokens = session.ModelOutputTokens,
+        };
+
         for (int iteration = 1; iteration <= maxIterations; iteration++)
         {
             if (contract.MaxCost > 0 && session.AccumulatedCost >= contract.MaxCost)
             {
-                return AgentRunResult.Failed(AmccaErrors.Cst002,
+                return Tagged(AgentRunResult.Failed(AmccaErrors.Cst002,
                     $"Agent budget of {contract.MaxCost:F2} is exhausted before iteration {iteration}.",
-                    iteration - 1, session.AccumulatedCost, transcript);
+                    iteration - 1, session.AccumulatedCost, transcript));
             }
 
             var resp = await gateway.GenerateTextAsync(
                 new GatewayTextRequest(modelId, convo.ToString(), temperature, maxTokensPerTurn, toolContext.CorrelationId),
                 effectiveCt);
+            session.AddModelTokens(resp.InputTokens, resp.OutputTokens);
 
             var modelText = resp.Text ?? string.Empty;
             transcript.Add(new AgentTurn("assistant", modelText));
@@ -192,9 +201,9 @@ public class AgentRuntime
             {
                 if (++unparseableStreak >= 2)
                 {
-                    return AgentRunResult.Failed(AmccaErrors.Ai006,
+                    return Tagged(AgentRunResult.Failed(AmccaErrors.Ai006,
                         "Agent did not produce a parseable tool-call or final envelope twice in a row.",
-                        iteration, session.AccumulatedCost, transcript);
+                        iteration, session.AccumulatedCost, transcript));
                 }
                 const string nudge = "Your message had no valid JSON envelope. Reply with exactly one {\"tool\":...} or {\"final\":...} envelope.";
                 transcript.Add(new AgentTurn("tool", nudge));
@@ -216,9 +225,9 @@ public class AgentRuntime
                     {
                         if (++schemaFailStreak >= 2)
                         {
-                            return AgentRunResult.Failed(AmccaErrors.Ai003,
+                            return Tagged(AgentRunResult.Failed(AmccaErrors.Ai003,
                                 $"Agent final answer failed its output schema twice: {ex.Message}",
-                                iteration, session.AccumulatedCost, transcript);
+                                iteration, session.AccumulatedCost, transcript));
                         }
                         var msgBack = "Your final answer failed the required output schema: " + ex.Message +
                                       " Fix it and send {\"final\": {...}} again.";
@@ -227,7 +236,7 @@ public class AgentRuntime
                         continue;
                     }
                 }
-                return AgentRunResult.Completed(finalOutput, iteration, session.AccumulatedCost, transcript);
+                return Tagged(AgentRunResult.Completed(finalOutput, iteration, session.AccumulatedCost, transcript));
             }
 
             // Tool call — enforcement, cost reservation and execution all live in ExecuteToolCallAsync.
@@ -241,11 +250,11 @@ public class AgentRuntime
             }
             catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Ai004)
             {
-                return AgentRunResult.Failed(AmccaErrors.Ai004, ex.Message, iteration, session.AccumulatedCost, transcript);
+                return Tagged(AgentRunResult.Failed(AmccaErrors.Ai004, ex.Message, iteration, session.AccumulatedCost, transcript));
             }
             catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Cst002)
             {
-                return AgentRunResult.Failed(AmccaErrors.Cst002, ex.Message, iteration, session.AccumulatedCost, transcript);
+                return Tagged(AgentRunResult.Failed(AmccaErrors.Cst002, ex.Message, iteration, session.AccumulatedCost, transcript));
             }
             catch (AmccaException ex)
             {
@@ -261,9 +270,9 @@ public class AgentRuntime
             convo.AppendLine("TOOL_RESULT: " + toolResult);
         }
 
-        return AgentRunResult.Failed(AmccaErrors.Ai006,
+        return Tagged(AgentRunResult.Failed(AmccaErrors.Ai006,
             $"Agent reached the {maxIterations}-iteration limit without a final answer.",
-            maxIterations, session.AccumulatedCost, transcript);
+            maxIterations, session.AccumulatedCost, transcript));
     }
 
     // SEC-07: defensive bounds so a hostile or malformed agent output cannot exhaust memory

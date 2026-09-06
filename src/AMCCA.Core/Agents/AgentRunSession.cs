@@ -9,9 +9,28 @@ public class AgentRunSession
     public AgentContract Contract { get; }
     public decimal AccumulatedCost { get; private set; }
 
+    /// <summary>
+    /// Model token usage the gateway reported, summed across every turn of the run. Captured so cost
+    /// accounting has a real input to work from (H1); the gateway returns these on every response and
+    /// they were previously discarded. This is a raw fact, not a priced amount.
+    /// </summary>
+    public long ModelInputTokens { get; private set; }
+    public long ModelOutputTokens { get; private set; }
+
     public AgentRunSession(AgentContract contract)
     {
         Contract = contract;
+    }
+
+    /// <summary>Adds one turn's reported token counts. Negative counts (a gateway that does not report
+    /// usage returns 0, but guard anyway) are clamped to 0.</summary>
+    public void AddModelTokens(long inputTokens, long outputTokens)
+    {
+        lock (_lock)
+        {
+            ModelInputTokens += inputTokens > 0 ? inputTokens : 0;
+            ModelOutputTokens += outputTokens > 0 ? outputTokens : 0;
+        }
     }
 
     public bool TryReserveCost(decimal cost)

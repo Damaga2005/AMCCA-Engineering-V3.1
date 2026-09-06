@@ -23,6 +23,12 @@ public sealed record AgentRunResult(
     decimal CostAccrued,
     IReadOnlyList<AgentTurn> Transcript)
 {
+    /// <summary>Total model tokens the gateway reported across the run. Additive, defaulted so the
+    /// factories below and existing callers are unaffected; populated by RunAgentAsync from the run
+    /// session so a cost-accounting caller (H1) has the usage figures instead of them being lost.</summary>
+    public long ModelInputTokens { get; init; }
+    public long ModelOutputTokens { get; init; }
+
     public static AgentRunResult Completed(string finalOutput, int iterations, decimal cost, IReadOnlyList<AgentTurn> transcript)
         => new(AgentRunStatus.Completed, finalOutput, null, null, iterations, cost, transcript);
 
