@@ -132,21 +132,38 @@ public class JobWorkerEngineContractTests : IDisposable
     [Fact]
     public async Task Heartbeat_KeepsALongRunningJobsLeaseAlive_SoAReaperDoesNotStealIt()
     {
-        var job = await EnqueueAsync("RENDER", "k-long");
-        int reclaimedMidFlight = -1;
+        // Deterministic (B2): a FakeTimeProvider drives the lease clock and the heartbeat interval, so
+        // there is no wall-clock race between the handler and the heartbeat.
+        var ft = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
+        var jobs = new JobManager(_factory, ft);
+        var options = FastOptions with { LeaseDuration = TimeSpan.FromSeconds(10), HeartbeatInterval = TimeSpan.FromSeconds(1) };
 
+        var job = await jobs.EnqueueJobAsync("RENDER", "k-long", "corr", "{}");
+        var gate = new TaskCompletionSource();
         var handlers = new JobHandlerRegistry().Register("RENDER", new FnJobHandler(async (_, ct) =>
         {
-            await Task.Delay(2800, ct);          // well past the 2000ms lease — only the heartbeat keeps it alive
-            reclaimedMidFlight = await _jobs.ReclaimExpiredLeasesAsync();
+            await gate.Task.WaitAsync(ct);
             return JobResult.Success();
         }));
 
-        var outcome = await Engine(handlers).ProcessNextAsync("w1");
+        var proc = Task.Run(() => new JobWorkerEngine(jobs, handlers, options, ft).ProcessNextAsync("w1"));
+        await Task.Delay(50); // let the claim + first heartbeat delay register
+
+        // Advance fake time to +15s in 1s steps: past the original 10s lease, but each heartbeat
+        // re-extends it to (fake-now + 10s).
+        for (int i = 0; i < 15; i++)
+        {
+            ft.Advance(TimeSpan.FromSeconds(1));
+            await Task.Delay(15); // let the heartbeat's DB write settle
+        }
+
+        var reclaimedMidFlight = await jobs.ReclaimExpiredLeasesAsync();
+        gate.SetResult();
+        var outcome = await proc;
 
         outcome.Should().Be(JobProcessingOutcome.Completed);
-        reclaimedMidFlight.Should().Be(0, "the heartbeat extended the lease past the handler's runtime");
-        (await _jobs.GetJobAsync(job.Id))!.State.Should().Be("SUCCEEDED");
+        reclaimedMidFlight.Should().Be(0, "the heartbeat kept the lease fresh past the handler's runtime");
+        (await jobs.GetJobAsync(job.Id))!.State.Should().Be("SUCCEEDED");
     }
 
     [Fact]

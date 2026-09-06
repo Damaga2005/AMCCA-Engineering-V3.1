@@ -426,7 +426,18 @@ public class ConcurrencySuiteSpec73Tests : IDisposable
     [Fact]
     public async Task C11_EveryTransactionMeasuredAgainstWallClockCeiling_NoNetworkCallInside()
     {
-        // SPEC/73 C-11: Wall-clock ceiling for local SQLite transactions (< 500ms), no network calls inside
+        // SPEC/73 C-11: Wall-clock ceiling for local SQLite transactions (< 500ms), no network calls inside.
+        // Warm up first so this measures a steady-state transaction (the I-22 invariant), not a cold
+        // first connection open competing for the CPU with the rest of the parallel test run.
+        using (var warm = await _factory.CreateOpenConnectionAsync())
+        using (var wtx = warm.BeginTransaction())
+        {
+            await warm.ExecuteAsync(
+                "INSERT INTO settings (key, value_json, schema_version, updated_at, updated_by) VALUES ('c11_warm', '\"w\"', '3.1.0', datetime('now'), 'system');",
+                transaction: wtx);
+            wtx.Commit();
+        }
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
         using (var conn = await _factory.CreateOpenConnectionAsync())
         using (var tx = conn.BeginTransaction())

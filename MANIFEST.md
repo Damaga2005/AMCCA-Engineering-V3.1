@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 424
-**Total bytes:** 2585717
+**Total bytes:** 2588362
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -255,7 +255,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Contracts/AmccaException.cs` | `84e415d464b6185be49cffff401f47560e0e931e36e1ed0095ff087d674d93ec` | 903 |
 | `src/AMCCA.Core/Contracts/Money.cs` | `384cd60d60db09af09b5fd1d572f4431d5ee869aa6caff75281a347580c101aa` | 1951 |
 | `src/AMCCA.Core/Database/BackupService.cs` | `3a4355df1c86cf97d9953023dc82a6dd670ea5342fed060a4fd53373719126c7` | 2514 |
-| `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `3db6f580c28236fc877f550950a88c6e2a904ca273df1a0033881a8e969d2d6c` | 3796 |
+| `src/AMCCA.Core/Database/DatabaseConnectionFactory.cs` | `e251a43e295354ccaba413584bd6fc8f19634461e10c599bcd0a712bc69146ec` | 3998 |
 | `src/AMCCA.Core/Database/MigrationModels.cs` | `482fea6ca65036e4c2d5e7cd3270f943978131acadc5353910b0a1eba58881f2` | 529 |
 | `src/AMCCA.Core/Database/MigrationService.cs` | `b134910b76b6f807bc0198ecf5d16d3ae414f5c6c5f62860d8f2d184c83f579b` | 124076 |
 | `src/AMCCA.Core/Database/UlidGenerator.cs` | `06460478b9e0487431c93ecc22fc2286b439c8b9ec1390fc7208b762e83fbe06` | 1294 |
@@ -271,9 +271,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Jobs/IntentKeyGenerator.cs` | `1e2e0d0cc64e9ce7af544df84ca87257ecea9f973ca34722f5502d24de8563ca` | 1043 |
 | `src/AMCCA.Core/Jobs/IntentManager.cs` | `645e4a3feb627d35dbc046424f95615ec870fde47b5a29281e3fe280b5aabd16` | 4736 |
 | `src/AMCCA.Core/Jobs/JobHandler.cs` | `3a2ad28bbefc2ccd2075a14604b2ff4d9144af7980057be1c6800991ab6362d0` | 2315 |
-| `src/AMCCA.Core/Jobs/JobManager.cs` | `218aa33ec354d38179ab884d95594e2fb9dbc5095f5ac826895d3a6912dac343` | 26372 |
+| `src/AMCCA.Core/Jobs/JobManager.cs` | `7a0825402cd9bb1135f2ebfa4e9b89aa49e74b1c4ab4c3a07974cc714dd4788b` | 27076 |
 | `src/AMCCA.Core/Jobs/JobModels.cs` | `f2b3378cb596a4ff91136994522b6863f211ee6cace2a5394cf8234f70de7377` | 3582 |
-| `src/AMCCA.Core/Jobs/JobWorkerEngine.cs` | `c53a9e8362764b54ea561ac118ba30f4530c57823223f45e4b1206a1dd1d8731` | 5852 |
+| `src/AMCCA.Core/Jobs/JobWorkerEngine.cs` | `eff915a4b1ea3bb8280930e7bcb71530a8c06e8e219aed08b486cc16e2ba2b09` | 5997 |
 | `src/AMCCA.Core/Jobs/Reconciler.cs` | `780812f2b3b23521e3b16cba2a5763b225b76df9b624d8fadd473a7c456af3a2` | 1348 |
 | `src/AMCCA.Core/Jobs/RecoveryService.cs` | `1efac4d493ca1f9f9e5f613f31b64de70ebe2cd3d287c9bde167553000f251b4` | 5162 |
 | `src/AMCCA.Core/Media/FfmpegRunner.cs` | `f9d7c702cc5ac9be5b97ca0cbf2ce89673fac355fed4fc6ee1373aa117edb5ae` | 2853 |
@@ -360,7 +360,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Tools/ResearchTools.cs` | `1bdb1c03d078b48d27123203b4992c14c36e14944ae6eadbaf86371e88c5d9b5` | 5980 |
 | `src/AMCCA.Core/Tools/ToolModels.cs` | `e8457379adc579425afa93ae53bfd6be08aea2351172d406200aa8ce4f4ce0c9` | 480 |
 | `src/AMCCA.Core/Tools/ToolRegistry.cs` | `30ae345cac66de00b81d4207171474363e61e6b4fa3715e28fc4499cdcc45ff7` | 1070 |
-| `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `1b33c8dc38dea5a890a7aadfe6fc27a063cf60ceea363d6be4f2afcc5e341d3f` | 960 |
+| `tests/AMCCA.Core.Tests/AMCCA.Core.Tests.csproj` | `e5094b5abd718767020afb8a57e7b98db6d26289c0c0f66d84f7507bcc1506b9` | 1055 |
 | `tests/AMCCA.Core.Tests/AgentContractEnforcementRegressionTests.cs` | `eb8d0928b96537fc2a66be35b3c8e62e99417c561c763feafd4050b8db0425c4` | 8244 |
 | `tests/AMCCA.Core.Tests/AgentCostReservationOrderRegressionTests.cs` | `47ac5a937cc5a3c781bbb98f5948c46f7ea44a0d80de2fedfdb84576eb61a42e` | 6805 |
 | `tests/AMCCA.Core.Tests/AgentLoopContractTests.cs` | `73697ec2d07577f32cc1943740807d68a429763ac2e5234fddb7fded0afc9fb0` | 8991 |
@@ -376,7 +376,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/ArtifactStoreContractTests.cs` | `9882849f3943e62bf53e567cc501ac90646f9e2e807c9272eebc52451c6f711c` | 3564 |
 | `tests/AMCCA.Core.Tests/CanonicalMigrationSchemaTests.cs` | `1579fa2ba13eb051b4a83c0a7a8a5d28573fc70c0b9596cdb10f5cf5f57dacfc` | 6639 |
 | `tests/AMCCA.Core.Tests/ChaosSuiteSpec74Tests.cs` | `6adb5e799ebb4b6bb8a386e132f1d9b0a73c901b4de6cb622748980cd8f9f49c` | 20156 |
-| `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `029522cb5b1e4a0e02856bb53163795308824ec26b58003e093410e5e40d4dbb` | 22147 |
+| `tests/AMCCA.Core.Tests/ConcurrencySuiteSpec73Tests.cs` | `a5842bbd1eff16b1587aa2891ce23fcff07ced76bb8e0405e11c08225bc41759` | 22748 |
 | `tests/AMCCA.Core.Tests/ConfigurationContractTests.cs` | `c11056b5af8e32f641dd61177212a2a2763126a9f42c716c7240f5b7dd62f88b` | 5982 |
 | `tests/AMCCA.Core.Tests/ContentPipelineAndPromptContractTests.cs` | `7455d2a15365f8e36337bc8970f846342fb24f7819f4bad2405e8a8510b8e4e5` | 6538 |
 | `tests/AMCCA.Core.Tests/DagReworkAndInvalidationContractTests.cs` | `0402ffa482753f07cdacbe3e1c4fa38e865322166161ad8828f52d2bd6ab4c45` | 6562 |
@@ -389,7 +389,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/InstallationUpgradeRestoreValidationTests.cs` | `e4fc7fdc62f2b271431b646594d3a22207e6725ae94d74a43c74b496b0f45d7d` | 12154 |
 | `tests/AMCCA.Core.Tests/InstallerArtifactIdentityTests.cs` | `b330ad40f3b83fafee83d8b73ef2055a937cfc09f8a7887b19803c6f0b730bb5` | 10739 |
 | `tests/AMCCA.Core.Tests/JobLeaseFenceAndHeartbeatRegressionTests.cs` | `e25244feb670676f404fd38c530587870ddbf4e14f8e62dcf1d943215542337d` | 5248 |
-| `tests/AMCCA.Core.Tests/JobWorkerEngineContractTests.cs` | `6d60a9fa9c45911b2d738f1a72414e890033b4cf6d38d8e007f5bfd044b3c549` | 7965 |
+| `tests/AMCCA.Core.Tests/JobWorkerEngineContractTests.cs` | `9ff099303a0c663c03746e3a4c8f55834d12c7ea202616640acd0784ab496355` | 8863 |
 | `tests/AMCCA.Core.Tests/JobsAndLeasesContractTests.cs` | `3e270261730d4a2af348d4b14d4ea5e3071bf0abbf8abb8335a8b41c1396b501` | 9907 |
 | `tests/AMCCA.Core.Tests/MediaPipelineAndDisclosureContractTests.cs` | `ab05e4a7fa8e6c8328e06845ef1452c2c39874e8c4fb267d31d5ad242f043180` | 5279 |
 | `tests/AMCCA.Core.Tests/MediaStageHandlerContractTests.cs` | `4b833d376ceac7848a2754924f719cbce21453aa25db9b093974e25d657fbb06` | 6547 |

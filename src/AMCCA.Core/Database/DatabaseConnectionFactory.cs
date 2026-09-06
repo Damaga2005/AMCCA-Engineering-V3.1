@@ -44,9 +44,11 @@ public class DatabaseConnectionFactory
         using (var cmd = connection.CreateCommand())
         {
             // WAL only needs setting until it sticks; the other three are connection-scoped (SPEC/10).
+            // busy_timeout is generous (15s): SQLite is single-writer, and the worker pool plus the
+            // orchestrator can all want a write at once. A writer waits rather than failing fast.
             cmd.CommandText = _walVerified
-                ? "PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA temp_store = MEMORY;"
-                : "PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA temp_store = MEMORY;";
+                ? "PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 15000; PRAGMA temp_store = MEMORY;"
+                : "PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 15000; PRAGMA temp_store = MEMORY;";
             await cmd.ExecuteNonQueryAsync(ct);
         }
 

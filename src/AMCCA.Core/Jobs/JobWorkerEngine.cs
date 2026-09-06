@@ -48,14 +48,17 @@ public sealed class JobWorkerEngine
 {
     private readonly JobManager _jobs;
     private readonly JobHandlerRegistry _handlers;
+    private readonly TimeProvider _time;
 
     public JobWorkerOptions Options { get; }
 
-    public JobWorkerEngine(JobManager jobs, JobHandlerRegistry handlers, JobWorkerOptions? options = null)
+    public JobWorkerEngine(
+        JobManager jobs, JobHandlerRegistry handlers, JobWorkerOptions? options = null, TimeProvider? timeProvider = null)
     {
         _jobs = jobs;
         _handlers = handlers;
         Options = options ?? JobWorkerOptions.Default;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     public Task<int> ReclaimExpiredLeasesAsync(CancellationToken ct = default)
@@ -136,7 +139,7 @@ public sealed class JobWorkerEngine
         {
             while (!stop.IsCancellationRequested)
             {
-                await Task.Delay(Options.HeartbeatInterval, stop);
+                await Task.Delay(Options.HeartbeatInterval, _time, stop);
                 var ok = await _jobs.HeartbeatLeaseAsync(
                     jobId, workerId, fenceToken, Options.LeaseDuration, CancellationToken.None);
                 if (!ok)

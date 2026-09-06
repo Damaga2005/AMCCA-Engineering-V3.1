@@ -13,10 +13,12 @@ namespace AMCCA.Core.Jobs;
 public class JobManager
 {
     private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly TimeProvider _time;
 
-    public JobManager(DatabaseConnectionFactory connectionFactory)
+    public JobManager(DatabaseConnectionFactory connectionFactory, TimeProvider? timeProvider = null)
     {
         _connectionFactory = connectionFactory;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<JobRecord> EnqueueJobAsync(
@@ -30,7 +32,7 @@ public class JobManager
         CancellationToken ct = default)
     {
         var id = UlidGenerator.NewUlid();
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
 
         var job = new JobRecord
         {
@@ -136,8 +138,8 @@ public class JobManager
             return null;
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var leaseUntil = _time.GetUtcNow().Add(leaseDuration).ToString("O");
 
         // 2. Single-statement atomic conditional claim (SPEC/14, D-010)
         const string claimSql = @"
@@ -200,8 +202,8 @@ public class JobManager
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var leaseUntil = _time.GetUtcNow().Add(leaseDuration).ToString("O");
 
         const string claimSql = @"
             UPDATE jobs
@@ -259,8 +261,8 @@ public class JobManager
         CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var newLeaseUntil = DateTimeOffset.UtcNow.Add(extension).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var newLeaseUntil = _time.GetUtcNow().Add(extension).ToString("O");
 
         // DEF-017: Must verify lease is still active (lease_until > now), owned by workerId, and fence token matches!
         const string sql = @"
@@ -322,7 +324,7 @@ public class JobManager
             return false; // Stale worker must abandon completion (SPEC/14)
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         await connection.ExecuteAsync("UPDATE jobs SET state = 'SUCCEEDED', updated_at = @Now WHERE id = @JobId;",
             new { Now = now, JobId = jobId }, transaction: tx);
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
@@ -357,7 +359,7 @@ public class JobManager
                 $"CompleteJob refused for job '{jobId}': worker '{workerId}' has stale fence token {expectedFenceToken} or does not hold lease (DEF-016, SPEC/14).");
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         await connection.ExecuteAsync("UPDATE jobs SET state = 'SUCCEEDED', updated_at = @Now WHERE id = @JobId;",
             new { Now = now, JobId = jobId }, transaction: tx);
         await connection.ExecuteAsync("DELETE FROM leases WHERE job_id = @JobId;",
@@ -401,7 +403,7 @@ public class JobManager
             return;
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         string newState = job.Attempt >= job.MaxAttempts ? "DEAD_LETTER" : "QUEUED";
 
         await connection.ExecuteAsync(
@@ -428,7 +430,7 @@ public class JobManager
             return;
         }
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         string newState = job.Attempt >= job.MaxAttempts ? "DEAD_LETTER" : "QUEUED";
 
         await connection.ExecuteAsync(
@@ -446,7 +448,7 @@ public class JobManager
     public async Task ExpireAndRequeueLeaseForTestingAsync(string jobId, CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
-        var past = DateTimeOffset.UtcNow.AddMinutes(-5).ToString("O");
+        var past = _time.GetUtcNow().AddMinutes(-5).ToString("O");
         await connection.ExecuteAsync(
             "UPDATE jobs SET state = 'QUEUED' WHERE id = @Id; UPDATE leases SET lease_until = @Past WHERE job_id = @Id;",
             new { Id = jobId, Past = past });
@@ -535,7 +537,7 @@ public class JobManager
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
 
         // Single conditional statement, as with every other job state change (SPEC/14, D-010).
         const string requeueSql = @"
@@ -574,7 +576,7 @@ public class JobManager
     public async Task<int> ReclaimExpiredLeasesAsync(CancellationToken ct = default)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
 
         const string expiredSql = @"
             SELECT l.job_id AS JobId, j.attempt AS Attempt, j.max_attempts AS MaxAttempts
