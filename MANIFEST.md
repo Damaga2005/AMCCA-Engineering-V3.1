@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 424
-**Total bytes:** 2610998
+**Total bytes:** 2613835
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -205,7 +205,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `installer/generate_components.py` | `7c1b62c0f285c37e826f0e216de7dca08c3250798ed7d98c5351117c0bd399c2` | 2957 |
 | `src/AMCCA.App/AMCCA.App.csproj` | `cfffef5f603e1654c0a265bf41b3cb13a7b7785de58d00f0ab395351b69d17ec` | 989 |
 | `src/AMCCA.App/App.xaml` | `79e88e77dabf3b477e12c50c8fd284f8d9b1b967decd764e19eab4b1f300788c` | 261 |
-| `src/AMCCA.App/App.xaml.cs` | `3ef6bf071954ba99828a128a5dfc4fdd9f28864bdcc770fe47e22f1dcd19673d` | 5655 |
+| `src/AMCCA.App/App.xaml.cs` | `262e7846bb164975b0fe041fb138f612df5f17f0eb378554919d2f4731de8548` | 8492 |
 | `src/AMCCA.App/Common/RelayCommand.cs` | `7cbfae6aaac6658c5cd498d8d322c1b11164440001a42e9492640b7508472071` | 2354 |
 | `src/AMCCA.App/Common/StatusConverters.cs` | `d0d25931faf195950b92cda8285c7ef5a77718873b0cb4fcf0052e417f85eac9` | 1241 |
 | `src/AMCCA.App/Common/ViewModelBase.cs` | `2446920133a472d99e9ab606a65aa38451d07b9385894823343179d01df16e84` | 689 |
