@@ -7,13 +7,13 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 424
-**Total bytes:** 2603239
+**Total bytes:** 2603406
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
 | `.gitattributes` | `8bad5caf15994b1f760e8f8c6e21387a70a1ffa1d0382c9490b7825f553dfa04` | 99 |
 | `.github/workflows/validation.yml` | `d60573b990cded908f1f6bba922309518efba75263c94b2d6fa72306c4434923` | 4063 |
-| `.gitignore` | `2da4418f1e39c4240bbca85311ef63c4050cf9ca03d92f421db20e6ce247d504` | 140 |
+| `.gitignore` | `bea29536c49afeabdec88ad1a64bc6aa7433bdc2f7bbb89de57e5942df08c281` | 307 |
 | `AGENTS.md` | `c6ba1fd4597f9ff8b58d89126d3d9098455e1f93f76dce0a72abf955c24aae27` | 1895 |
 | `AMCCA.sln` | `4e7af6a12cd95dcd51a16155022dea3a90362d1fae6e2fc6bf8f6d4b8b20f92c` | 2561 |
 | `AMCCA_SPEC_01_83_AUDIT.md` | `d9c9893c075aeddb5895adc6759ecf939ea2f11aa487b6a7516462ec4893f625` | 37049 |
