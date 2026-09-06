@@ -41,6 +41,109 @@ cierre; el cuerpo del informe se conserva como se produjo el 2026-09-04.
 
 ---
 
+## 0-ter. Auditoría del código y construcción de la tubería (2026-09-05, sesión larga)
+
+Tras §0-bis se hizo una **auditoría nueva, solo del código** (`src/` completo, ~17k líneas, ignorando
+el corpus `.md`), y a continuación se implementó lo que faltaba. Estado final de esta sesión:
+`AMCCA.sln` compila con **0 avisos** (ahora `TreatWarningsAsErrors`), **753 tests en verde**
+(`AMCCA.Core.Tests`), `python TOOLS/validate_package.py` **68/68**.
+
+### El hallazgo de la auditoría de código
+
+> **El Core era una librería sólida y bien testeada, pero no había producto ejecutándose.**
+
+1. **La tubería autónoma no tenía runtime.** `grep` de `IHostedService` / `BackgroundService` /
+   `while(true)` en todo `src/` → cero. `App.ConfigureServices` solo cableaba servicios de consola de
+   operador. `AgentRuntime`, `MediaRenderer`, `PlatformHub`, `ResearchService`, `PromptService`,
+   `IntentManager`, `RecoveryService`, `IProviderGateway`, `ModelRegistry`, `RevenueService`,
+   `ExperimentEngine`, `GenomeMutationService`, `MemoryRetrievalService` **nunca se instanciaban fuera
+   de tests**. `ProductionService.TransitionAsync` existía y estaba bien hecho pero **nadie lo llamaba**
+   para mover una producción por la máquina de 32 estados. `JobManager.TryClaimNextJobAsync` existía
+   pero **ningún worker lo llamaba en bucle**. No había bucle agéntico: `AgentRuntime` ejecutaba *una*
+   llamada a herramienta, no un ciclo LLM ↔ tools ↔ realimentación.
+2. **`RecoveryService` fabricaba evidencia.** `RunStartupRecoveryPassAsync` resolvía **todos** los
+   intents `DISPATCHED`/`UNKNOWN` como `CONFIRMED` con un *probe* falso
+   (`STARTUP_STATUS_PROBE` → `evidence://recovery/verified`) — viola "no marcar éxito externo sin
+   evidencia autoritativa" y "no sustituir una integración que falla por un adaptador de éxito falso".
+   Lo único que evitaba que fuera peligroso es que no estaba cableado.
+3. **Sin observabilidad.** Serilog referenciado y **sin usar en ningún sitio**; cero `ILogger`; sin
+   métricas, sin OpenTelemetry, sin superficie de *health*.
+4. **`PolicyEngine.EvaluateAction` muerto.** Función pura, **sin llamador en `src/`**, nunca escribía
+   `policy_decisions` → el panel de "elemento bloqueado → regla" del Inspector (obligación 4) siempre
+   tendría `policy_decision_id` nulo. Además emitía los códigos `SAF-001` / `RIG-001` / `CMP-002` /
+   `PRV-001` (familia `AMCCA-`) como *strings* literales, no como constantes de `AmccaErrors`.
+5. **Proveedores: failover sí, resiliencia no.** Polly referenciado y **sin usar**.
+   `FailoverProviderGateway` probaba cada proveedor una vez; un HTTP 429 caía al siguiente proveedor
+   ignorando `Retry-After`; sin *circuit breaker*.
+6. **`DatabaseConnectionFactory`**: 4 PRAGMAs + 2 queries de aserción en **cada** `open`, con una
+   conexión nueva por operación.
+7. **Sin `TimeProvider`.** `DateTimeOffset.UtcNow` *string-typed* por todas partes → lógica temporal
+   (leases, TTLs, retención) difícil de testear determinísticamente; obligaba a `sleep` reales en la
+   suite de concurrencia.
+8. **`PolicyConfig.Research/Qa/Rework/Reconcile`** eran `Dictionary<string,object>` que **nadie lee** →
+   todo el bloque `policy.*` de `config.yaml` inerte. Sin `Directory.Build.props`,
+   `TreatWarningsAsErrors`, ni umbral de cobertura en CI.
+9. **`Program.cs --headless`** imprimía `"System initialized successfully."` sin inicializar nada.
+
+### Lo construido
+
+**P0 — hacerlo un producto**
+
+| Commit | Qué |
+|---|---|
+| `61b2cef` | **Orquestador** — `IHost` + `OrchestratorHostedService : BackgroundService` que conduce SPEC/13 de punta a punta. `OrchestratorEngine.RunTickAsync` (motor puro, testeable sin host): lee el kill switch persistido, carga producciones *drivables*, respeta `autonomy_mode` (MANUAL intacto, ASSISTED para en `gate`, AUTONOMOUS avanza), ejecuta el `IStageHandler` del estado y comitea la transición como actor `Orchestrator` (DEF-008). `IStageHandler`/`StageHandlerRegistry` + `UnhandledStageHandler` → `BLOCKED` con `AMCCA-ORC-001` para estados sin handler (nunca *pass-through* silencioso). `AMCCA-ORC-001/002` catalogados. |
+| `ba2d5a2` | **Pool de workers de jobs** — `JobWorkerEngine.ProcessNextAsync` (reclama, corre `IJobHandler` con *heartbeat* de lease en segundo plano, `CompleteJobOrThrowAsync`/`FailJobAsync`). `JobManager.ReclaimExpiredLeasesAsync` (barrido de leases expirados, **sin** la evidencia falsa de `RecoveryService`). `TryClaimNextJobAsync` gana `agingWindow` opcional (SPEC/17: los P5 no se mueren de hambre). `JobWorkerHostedService : BackgroundService` — N loops + reaper. |
+| `b0f83f8` | **Bucle agéntico real** — `AgentRuntime.RunAgentAsync`: itera LLM → parsea *envelope* JSON (`AgentProtocol`, sobre la API de texto que ya existe — `ponytail:` hasta que haya *tool_calls* nativos) → `ExecuteToolCallAsync` (mantiene todo el *enforcement* de contrato/coste) → realimenta → repite hasta `{"final": …}`. Devuelve `AgentRunResult`. Paradas: herramienta prohibida (`AMCCA-AI-004`), presupuesto (`AMCCA-BUD-002`), 2 turnos ilegibles o tope de iteraciones (`AMCCA-AI-006`, nuevo), final que falla su schema 2× (`AMCCA-AI-003`), timeout → `OperationCanceledException`. |
+| `2a1c5bc` | **Handlers RESEARCHING + SCRIPTING** — verificación determinista (SPEC/26: todo *claim* MATERIAL `VERIFIED`; SPEC/32: `ScriptValidator`) + *seam* generativo (`IResearchAgent`/`IScriptAgent`). Sin agente → `BLOCKED`. `NoWorkAdvanceHandler` para estados puente. |
+| `71388a5` (A1) | `ProviderGatewayComposer` — construye el `IProviderGateway` desde `config.providers.gateway` (cada proveedor en `ResilientProviderGateway`, N tras `FailoverProviderGateway`). `null` si no hay ninguno → el agente bloquea en vez de fingir. |
+| `bb8fe6b` (A2) | Herramientas `ITool` reales — `fetch_source` (HTTP real + SSRF + hash → `sources`), `record_claim` (LOCAL_WRITE, *status* siempre `UNKNOWN`), `evaluate_claims` (re-corre `ClaimValidator`, escribe el *status*). |
+| `62a99ea` (A3) | `AgentResearchAgent` — corre `RunAgentAsync` con esas tools + *system prompt* de investigación; cableado en el handler cuando hay gateway. |
+| `2951983` (A4) | `AgentScriptAgent` (final JSON-schema desde los *claims* verificados) + **`ArtifactStore`** — artefactos como ficheros reales bajo el *data root* + fila `artifact_versions` por escritura (versión ↑, CURRENT anterior → SUPERSEDED). El SCRIPT se persiste. |
+| `3119e91` (A7) | **`MediaRenderer` terminado** — `BuildFfmpegArguments` (scale+pad, `loudnorm` EBU R128, *burn-in* de disclosure con `drawtext`, `-t`, `-nostdin`). `IFfmpegRunner`/`ProcessFfmpegRunner` (lista de args, nunca *shell*; stderr *tail*; timeout mata el árbol). `RenderMediaJobHandler` (tipo `RENDER`): corre ffmpeg y guarda el output como artefacto `RENDER` CURRENT; exit≠0 / timeout / sin output → *fail* del job. `ArtifactStore.PutExistingFileVersionAsync`. |
+| `1d89971` (A6) | **Handlers de QA** — `QaStageHandler` genérico (busca el artefacto, corre `IQaStageCheck`, `QaVerdictEvaluator` contra `QaThresholdProfileRegistry.FromConfig(policy.qa)`, escribe `qa_reports`+`qa_findings`, PASS→avanza / FAIL→REWORK). `ContentQaCheck` (re-corre `ScriptValidator` + criba de términos prohibidos), `ComplianceQaCheck` (todo `rights_record` GREEN), `RenderPresenceQaCheck` (render existe y no vacío — *seam* para un analizador de medios), `ScoringCheck` (agrega los `qa_reports`). |
+| `96b1167` (A5) | **Seams de media** — `IMediaStageAgent` + `MediaProducingStageHandler` (STORYBOARDING/ASSET_GENERATION/AUDIO_GENERATION); `IEditAgent` + `EditingStageHandler` (avanza si hay RENDER CURRENT; *noop* si hay job RENDER en vuelo; si no, ensambla y **encola un job RENDER** — el de A7, que es real). Sin proveedor → `BLOCKED` con `AMCCA-MED-001` (nuevo *const*). |
+| `9964d7f` (A8) | **Seam de publicación** — `OrchestratorEngine.IsPublishBoundary` acotado a la *entrada* de la fase de publicación (PUBLISHING→PROCESSING ya no se re-gatea tras consumir la aprobación single-use). `IPublisher` (`DispatchAsync`/`PollStatusAsync`). `PublishStageHandler` (READY_TO_PUBLISH: consume la aprobación single-use SPEC/09, luego despacha; sin publisher → `BLOCKED`; sin aprobación → `AMCCA-POL-004`; `Accepted`→avanza, `Ambiguous`→UNKNOWN_EXTERNAL_STATE, `Rejected`→FAILED). `PublishTrackingStageHandler` para PUBLISHING/PUBLICATION_PROCESSING. |
+| `b23f9e2` (A9) | **Seam de reconciliación** — `IReconciler.ReconcileIntentAsync`. `RecoveryService` toma un `IReconciler?` opcional: **sin él, deja los intents `UNKNOWN` intactos** (nunca los resuelve a ciegas, sin evidencia fabricada); con él, cada intent recibe una fila `reconciliation_attempts` real (`CONFIRMED`/`REFUTED`/`INCONCLUSIVE`). `ReconciliationHostedService : BackgroundService` (intervalo de `policy.reconcile.interval_seconds`): corre el *pass* y — con reconciler — resume una producción fuera de `UNKNOWN_EXTERNAL_STATE` cuando se confirma que el efecto no ocurrió. El probe fabricado de la §2 desaparece. |
+
+**P1 — hacerlo operable**
+
+| Commit | Qué |
+|---|---|
+| `3a9f1b0` | **`PolicyGate`** — `EvaluateAndRecordAsync`: corre `PolicyEngine`, escribe `policy_decisions` (apuntando a una fila `policy_versions` para el *ruleset* compilado, sembrada idempotentemente, *checksum* = firma del orden de reglas) + fila `audit_log` (`ALLOWED`/`DENIED`/`BLOCKED`) con el `reason_code` y el `policy_decision_id` que la query del Inspector **ya buscaba**. El orquestador llama a `PolicyGate` en el límite de publicación en vez del *stop* hardcodeado. `ApprovalManager.HasApprovedGateAsync` (lectura sin consumir). La obligación 4 de SPEC/60 por fin tiene datos reales. |
+| `a8116ad` | **Resiliencia de proveedores** — `ResilientProviderGateway : IProviderGateway`: pipeline Polly (retry exponencial + *jitter* en `Transient`/`RateLimited`; *circuit breaker* por proveedor → `BrokenCircuitException` → `AmccaException` "circuit is open"). `AmccaException.RetryAfter` opcional; las ramas de HTTP 429 de ambos *adapters* parsean `Retry-After` y el `DelayGenerator` lo honra. |
+| `1942582` (B1) | **Observabilidad** — Serilog estructurado (consola + fichero rotado diario bajo `<dataRoot>/logs`) vía `AddSerilog`; `AmccaMetrics` (Meter `AMCCA.Orchestrator` con *counters* `amcca.production.transitions` / `amcca.jobs.processed` / `amcca.orchestrator.errors`, etiquetados) incrementados en los *hosted services*; `SystemHealthReporter : BackgroundService` (snapshot cada 60 s: kill switch, autonomía, producciones activas, aprobaciones pendientes, profundidad de la cola, `DEAD_LETTER` → *warning*). |
+| `4967e80` (B3) | `Directory.Build.props` con `TreatWarningsAsErrors` (los "0 avisos" pasan de aspiración a regla dura, también en CI). |
+| `0dc9f63` (B4) | `DatabaseConnectionFactory`: verifica WAL **una vez por proceso** (−3 round-trips por `open` tras el primero); `foreign_keys`/`busy_timeout`/`temp_store` siguen por-conexión. `ct` en `EventStore.AppendEventAsync` / `AuditStore.AppendAuditAsync`. |
+| `d88294d` (B5) | `PolicyConfig.Research/Qa/Rework/Reconcile` **tipados** (`ResearchPolicyConfig`/`QaPolicyConfig`/…); el `config.example.yaml` canónico *round-trip*ea, `config.schema.json` sin tocar. `QaThresholdProfileRegistry.FromConfig(QaPolicyConfig?)`. |
+| `7dda082` (B2) | **`TimeProvider`** inyectado en `JobManager` y `JobWorkerEngine` (reloj del lease + intervalo del *heartbeat*). El test del *heartbeat* del pool es determinista con `FakeTimeProvider` (era el último flaky que `TimeProvider` puede arreglar). `C-11` calienta una transacción antes de la medida. `busy_timeout` 5 s → 15 s. |
+
+### Estado final del pipeline
+
+El `--orchestrator` tiene ahora **un handler para cada estado** de SPEC/13. Una producción `AUTONOMOUS`
+con `providers.gateway.enabled` corre de verdad
+`INIT → RESEARCHING` (agente + tools reales, escribe `sources`/`claims`) `→ RESEARCH_VERIFIED →
+CONCEPT_SELECTED → SCRIPTING` (agente, valida SPEC/32, persiste el SCRIPT como *artifact*)
+`→ SCRIPT_VERIFIED → STORYBOARDING` — **y ahí bloquea** con `AMCCA-MED-001`. Río abajo, media → QA
+(6 etapas + `SCORING`) → publicación (con consumo de aprobación single-use y `PolicyGate`) → archivado
+**está construido y testeado**; el job `RENDER` funciona en cuanto algo lo encola.
+
+### Lo que queda — solo conectar proveedores externos a los *seams*
+
+- `IMediaStageAgent` / `IEditAgent` → un proveedor de generación de imagen/audio.
+- `IPublisher` → OAuth vivo por plataforma (YouTube/TikTok/…), sobre el `PlatformHub` + *adapters* que
+  ya existen.
+- `IReconciler` → API de estado de la plataforma.
+- `IProviderGateway` → `providers.gateway.enabled: true` + credencial `secret://…` en `config.yaml`.
+
+Sigue **fuera de alcance a propósito**: oportunidad/*scoring* (`opportunities` sin escritor), la tabla
+persistida `threshold_profiles` con ULID, las ~10 columnas nulables de `cost_events`/`jobs` sin
+escritor, y la mitad de la obligación 6 que exige ejecutar la UI. Dos tests de *wall-clock*
+(`C-11`/`C-14` de `ConcurrencySuiteSpec73Tests`) siguen sensibles a saturación de CPU en máquina
+saturada — verdes en aislamiento y en re-run; el arreglo total exige serializar la *collection* de
+tests de concurrencia o una capa de *retry* en BD.
+
+---
+
 ## 0. Qué no se ha podido verificar
 
 **No se ha compilado ni ejecutado la suite .NET.** No hay SDK de .NET en el entorno de auditoría. Todo
@@ -639,6 +742,11 @@ que pasa en verde sin significar nada, que es lo que esta sección entera existe
 
 ## 5. Estado del trabajo P0 de esta rama
 
+> **Superado por §0-ter (2026-09-05):** la tabla de abajo describe el estado en el momento de la
+> auditoría. Desde entonces se construyó el runtime completo — orquestador (`IHost`), pool de workers,
+> bucle agéntico, handlers para todos los estados de SPEC/13, persistencia de decisiones de policy,
+> resiliencia de proveedores, observabilidad. Ver §0-ter para el detalle y el estado actual.
+
 Verificado mecánicamente: **el conjunto de fallos del `release_gate.py` en esta rama es idéntico al de
 `origin/main`** salvo por uno que esta rama corrige (higiene de repositorio). Cero regresiones
 introducidas en la superficie cubierta por la herramienta.
@@ -697,3 +805,15 @@ ejecutada (655 tests, gate 68/68), lo que queda en la rama es exclusivamente lo 
 clasifica como **subsistema inexistente** (oportunidad/scoring, E2E completo, columnas sin escritor,
 `threshold_profiles` persistido) más la mitad de la obligación 6 que exige ejecutar la UI. El aviso de
 método sobre `AMCCA_SPEC_01_83_AUDIT.md` sigue vigente.
+
+**Actualización tras la sesión larga (2026-09-05, §0-ter):** la frase de este veredicto —
+«la brecha ya no es solo *falta producto*» — se ha invertido. Una auditoría nueva **del código**
+encontró que la tubería autónoma **no tenía runtime** (ningún `BackgroundService`, nadie llamaba a
+`ProductionService.TransitionAsync` ni a `JobManager.TryClaimNextJobAsync`, no había bucle agéntico),
+que `RecoveryService` **fabricaba evidencia de reconciliación**, y que Serilog/Polly estaban
+referenciados sin usar. Todo eso está construido: orquestador `IHost`, pool de workers con
+*heartbeat*/*aging*/*reaper*, `AgentRuntime.RunAgentAsync`, `PolicyGate` (decisiones persistidas),
+`ResilientProviderGateway` (Polly), observabilidad (Serilog + Meter + *health reporter*),
+`TimeProvider`, y un `IStageHandler` para **cada estado** de SPEC/13 — los generativos de medios y de
+publicación como *seams* honestos que bloquean hasta que se conecte el proveedor externo, nunca con un
+adaptador de éxito falso. **753 tests, gate 68/68, 0 avisos.** Ver §0-ter.
