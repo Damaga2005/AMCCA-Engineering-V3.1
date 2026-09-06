@@ -109,7 +109,18 @@ public static class Program
             registry.Register("RESEARCH_VERIFIED", advance);
             registry.Register("CONCEPT_SELECTED", advance);
             registry.Register("SCRIPT_VERIFIED", advance);
+            registry.Register("STORYBOARD_VERIFIED", advance);
+            registry.Register("ASSETS_READY", advance);
+            registry.Register("AUDIO_READY", advance);
             registry.Register("CANDIDATE_RENDERED", advance);
+
+            // Media producing stages (A5). No image/audio provider exists, so these block for an
+            // operator until an IMediaStageAgent / IEditAgent is wired. EDITING enqueues the RENDER
+            // job (A7), which is real, once an editor produces its input.
+            registry.Register("STORYBOARDING", new MediaProducingStageHandler(cf, "STORYBOARDING", "STORYBOARD", agent: null));
+            registry.Register("ASSET_GENERATION", new MediaProducingStageHandler(cf, "ASSET_GENERATION", "ASSET_MANIFEST", agent: null));
+            registry.Register("AUDIO_GENERATION", new MediaProducingStageHandler(cf, "AUDIO_GENERATION", "AUDIO", agent: null));
+            registry.Register("EDITING", new EditingStageHandler(cf, sp.GetRequiredService<JobManager>(), agent: null));
 
             // QA stages (SPEC/35). The media QA stages check a CURRENT RENDER artifact — they block
             // until the media stages (A5) produce one; CONTENT_QA / SCORING run on the SCRIPT.

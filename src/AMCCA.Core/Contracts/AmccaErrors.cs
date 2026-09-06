@@ -62,6 +62,10 @@ public static class AmccaErrors
     public const string Plt002 = "AMCCA-PLT-002"; // Credential invalid or expired; re-authenticate
     public const string Plt003 = "AMCCA-PLT-003"; // Platform rate limit
 
+    // Media Domain
+    public const string Med001 = "AMCCA-MED-001"; // Media stage cannot proceed: render/asset input missing, or no generation provider configured
+    public const string Med002 = "AMCCA-MED-002"; // FFmpeg timeout or output ceiling exceeded
+
     // Orchestrator Domain
     public const string Orc001 = "AMCCA-ORC-001"; // Orchestrator has no stage handler for the production's current state; it moved the production to BLOCKED for an operator (reason_code, not thrown)
     public const string Orc002 = "AMCCA-ORC-002"; // A stage handler threw; the orchestrator moved the production to BLOCKED with the handler's failure (reason_code, not thrown)
