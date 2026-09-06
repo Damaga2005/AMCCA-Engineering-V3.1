@@ -58,6 +58,8 @@ public sealed class AgentScriptAgent : IScriptAgent
     private readonly IProviderGateway _gateway;
     private readonly ArtifactStore _artifacts;
     private readonly ScriptAgentOptions _options;
+    private readonly IModelPricing? _modelPricing;
+    private readonly IModelCostStore? _modelCostStore;
 
     public AgentScriptAgent(
         ProductionService productions,
@@ -65,7 +67,9 @@ public sealed class AgentScriptAgent : IScriptAgent
         IAuditStore auditStore,
         IProviderGateway gateway,
         ArtifactStore artifacts,
-        ScriptAgentOptions? options = null)
+        ScriptAgentOptions? options = null,
+        IModelPricing? modelPricing = null,
+        IModelCostStore? modelCostStore = null)
     {
         _productions = productions;
         _connectionFactory = connectionFactory;
@@ -73,6 +77,8 @@ public sealed class AgentScriptAgent : IScriptAgent
         _gateway = gateway;
         _artifacts = artifacts;
         _options = options ?? ScriptAgentOptions.Default;
+        _modelPricing = modelPricing;
+        _modelCostStore = modelCostStore;
     }
 
     public async Task<ScriptDocument> GenerateScriptAsync(string productionId, string correlationId, CancellationToken ct = default)
@@ -93,7 +99,7 @@ public sealed class AgentScriptAgent : IScriptAgent
             MaxCost: _options.MaxCost, TimeoutSeconds: _options.TimeoutSeconds,
             OutputSchemaJson: OutputSchema);
 
-        var runtime = new AgentRuntime(new Tools.ToolRegistry(), _auditStore);
+        var runtime = new AgentRuntime(new Tools.ToolRegistry(), _auditStore, _modelPricing, _modelCostStore);
         var session = new AgentRunSession(contract);
         var toolContext = new Tools.ToolExecutionContext(correlationId, IntentId: null, ProductionId: productionId);
 

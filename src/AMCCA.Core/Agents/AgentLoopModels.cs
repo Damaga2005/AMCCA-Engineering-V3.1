@@ -23,6 +23,18 @@ public sealed record AgentRunResult(
     decimal CostAccrued,
     IReadOnlyList<AgentTurn> Transcript)
 {
+    /// <summary>Total model tokens the gateway reported across the run. Additive, defaulted so the
+    /// factories below and existing callers are unaffected; populated by RunAgentAsync from the run
+    /// session so a cost-accounting caller (H1) has the usage figures instead of them being lost.</summary>
+    public long ModelInputTokens { get; init; }
+    public long ModelOutputTokens { get; init; }
+
+    /// <summary>The priced model cost accrued during the run, and whether every turn could be priced.
+    /// When <see cref="ModelPricingComplete"/> is false the run still succeeded, but at least one turn
+    /// had no pricing_snapshot and its cost is recorded ESTIMATED_UNRECONCILED (SPEC/21).</summary>
+    public decimal ModelCost { get; init; }
+    public bool ModelPricingComplete { get; init; } = true;
+
     public static AgentRunResult Completed(string finalOutput, int iterations, decimal cost, IReadOnlyList<AgentTurn> transcript)
         => new(AgentRunStatus.Completed, finalOutput, null, null, iterations, cost, transcript);
 

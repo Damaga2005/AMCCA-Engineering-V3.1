@@ -268,3 +268,44 @@ only that a URL resolves — can support intermediate states but can never, by i
 > was accepted inside the conditional that gates `VERIFIED`, so proof only that a URL exists — not that
 > the content is genuinely published — could satisfy the invariant the schema was written to enforce. The
 > value was renamed and the authoritative-evidence enum tightened to exclude it from `VERIFIED` entirely.
+
+## Decisions added in the fifth audit remediation
+
+Each closes a finding from `AUDIT/FIFTH_AUDIT_CODE.md`. Added the same way D-031..D-033 were:
+by editing this file. They introduce no new external service or framework.
+
+### D-034 Model token prices come only from configuration, and a missing price is not zero
+`config.providers.gateway.model_pricing` is the sole source AMCCA prices a model call against. Provider
+pricing is external and volatile (SPEC/21), so each entry carries its own `retrieved_at` and
+`source_ref`, and the entries are materialised — once, idempotently — into `pricing_snapshots` rows
+(`PricingSnapshotModelPricing`); this is the ingestion pipeline migration 009 disclosed as missing.
+`AgentRuntime.RunAgentAsync` reads the gateway's reported `InputTokens`/`OutputTokens` on every turn,
+prices them with `ModelCostCalculator` (`decimal` only, per-1M-token rate, rounded up to six fractional
+digits), folds the amount into `AgentRunSession.AccumulatedCost` so the existing `MaxCost` gate enforces
+model spend, and settles one `cost_events` row of kind `SETTLEMENT` per run. When no snapshot resolves
+for a model, the run still completes but its cost event is `reconciliation_state = ESTIMATED_UNRECONCILED`
+with whatever could be priced — a known unknown on the books (SPEC/21), never a silent zero, and never
+an invented price.
+
+> *Fifth-audit defect closed (H1):* `AgentRuntime` discarded `GatewayTextResponse.InputTokens` and
+> `OutputTokens` entirely. `RevenueService.RecordCostAsync` was called from nowhere, `contract.MaxCost`
+> was a dead gate for model usage, and no `cost_events` row was ever written for an agent run. Model
+> spend was invisible to the budget engine and to profit.
+
+### D-035 CONCEPT_SELECTED is a decision gate, not a bookkeeping state
+`CONCEPT_SELECTED` (SPEC/12 kind=gate, SPEC/13 T-003/T-004, SPEC/29) is handled by
+`ConceptSelectionStageHandler`, never by `NoWorkAdvanceHandler`. The gate: takes the production's
+operator-selected opportunity, or in AUTONOMOUS mode the eligible `SCORED` opportunity with the highest
+**pre-computed** score (the score is never re-derived here); commits the scripting budget reservation
+against the `PRODUCTION` budget; links the opportunity to the production and flips it to `SELECTED`,
+which is itself the persisted strategy decision and its immutable expected-value snapshot; and writes a
+`CONCEPT_SELECTED` audit row. If no opportunity is selectable, or the budget reservation is refused, the
+gate returns `BLOCKED` with a SPEC/05 reason code for an operator. It never advances silently. The
+orchestrator still commits the state transition (DEF-008).
+
+> *Fifth-audit defect closed (M4):* `CONCEPT_SELECTED`, a `kind: gate` state, was wired to
+> `NoWorkAdvanceHandler`, which auto-advances with no logic in AUTONOMOUS mode. The gate's T-003/T-004
+> exit criteria — strategy decision persisted with an expected-value snapshot, scripting budget
+> reservation committed — were simply not implemented; the state was transited as a no-op, a silent
+> bypass of a decision gate. This resolves the contradiction between SPEC/13 and the former handler's
+> own doc comment in favour of SPEC/13.

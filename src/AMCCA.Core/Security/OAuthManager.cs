@@ -188,6 +188,7 @@ public class OAuthManager
         ValidateOAuthEndpoint(revocationEndpoint, "revocation");
 
         var currentBundle = await GetStoredTokensAsync(platform, accountId, ct);
+        string? revocationError = null;
         if (currentBundle != null)
         {
             try
@@ -198,9 +199,19 @@ public class OAuthManager
                     ["token"] = currentBundle.AccessToken
                 };
                 using var http = _httpClientFactory.CreateClient();
-                await http.PostAsync(revocationEndpoint, new FormUrlEncodedContent(parameters), ct);
+                var revokeResponse = await http.PostAsync(revocationEndpoint, new FormUrlEncodedContent(parameters), ct);
+                if (!revokeResponse.IsSuccessStatusCode)
+                {
+                    revocationError = $"HTTP {(int)revokeResponse.StatusCode}";
+                }
             }
-            catch { }
+            // Local disconnect must still proceed (the user has to be able to drop a broken
+            // account), but a remote revocation failure is a real security event, not noise:
+            // narrow the catch so genuine bugs surface and audit the failure below.
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                revocationError = ex.GetType().Name;
+            }
         }
 
         // SPEC/43: Disconnecting deletes it from secret store and marks account DISCONNECTED
@@ -208,11 +219,27 @@ public class OAuthManager
         await _secretStore.SetSecretAsync(secretRef, "", ct);
 
         using var conn = await _factory.CreateOpenConnectionAsync(ct);
+        using var tx = conn.BeginTransaction();
         await conn.ExecuteAsync(@"
             UPDATE platform_accounts
             SET state = 'DISCONNECTED', updated_at = datetime('now')
             WHERE id = @AccountId;
-        ", new { AccountId = accountId });
+        ", new { AccountId = accountId }, transaction: tx);
+
+        var revokeAuditId = "aud-" + UlidGenerator.NewUlid();
+        await conn.ExecuteAsync(@"
+            INSERT INTO audit_log (audit_id, action, actor_type, actor_id, subject_type, subject_id, outcome, reason_code, correlation_id, schema_version, occurred_at)
+            VALUES (@AuditId, 'OAUTH_REVOKED', 'SYSTEM', 'oauth_manager', 'PLATFORM_ACCOUNT', @AccountId, @Outcome, @ReasonCode, @CorrId, '3.1.0', datetime('now'));
+        ", new
+        {
+            AuditId = revokeAuditId,
+            AccountId = accountId,
+            Outcome = revocationError == null ? "ALLOWED" : "ERROR",
+            ReasonCode = revocationError == null ? (string?)null : "AMCCA-PLT-002",
+            CorrId = "corr-oauth-" + accountId,
+        }, transaction: tx);
+
+        tx.Commit();
     }
 
     public async Task<OAuthTokenBundle?> GetStoredTokensAsync(string platform, string accountId, CancellationToken ct = default)

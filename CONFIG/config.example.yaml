@@ -43,6 +43,17 @@ providers:
     # Stays false until a live capability probe succeeds (SPEC/23, D-028).
     # AUTONOMOUS mode is refused while this is false.
     capabilities_verified: false
+    # D-034: operator-supplied model token prices, per 1,000,000 tokens. The ONLY source an agent run
+    # is priced against; prices are external and volatile (SPEC/21), so each entry carries its own
+    # retrieved_at + source_ref. With no entry for a model, its agent runs still complete but the
+    # cost_events row is ESTIMATED_UNRECONCILED. Materialised into pricing_snapshots on first use.
+    model_pricing:
+      - model_id: "gpt-4o-mini"
+        input_per_1m_tokens: "0.150000"
+        output_per_1m_tokens: "0.600000"
+        currency: "EUR"
+        retrieved_at: "2026-09-01T00:00:00Z"
+        source_ref: "REPLACE-WITH-PROVIDER-PRICING-PAGE-URL"
 
 platforms:
   youtube:

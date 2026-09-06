@@ -18,11 +18,21 @@ public class AgentRuntime
 {
     private readonly ToolRegistry _toolRegistry;
     private readonly IAuditStore _auditStore;
+    private readonly IModelPricing _modelPricing;
+    private readonly IModelCostStore _modelCostStore;
 
-    public AgentRuntime(ToolRegistry toolRegistry, IAuditStore auditStore)
+    public AgentRuntime(
+        ToolRegistry toolRegistry,
+        IAuditStore auditStore,
+        IModelPricing? modelPricing = null,
+        IModelCostStore? modelCostStore = null)
     {
         _toolRegistry = toolRegistry;
         _auditStore = auditStore;
+        // H1: with neither wired, model calls are simply unpriced — the run still works, its cost
+        // event (if any store is present) is ESTIMATED_UNRECONCILED. Both are wired in Composition.
+        _modelPricing = modelPricing ?? NullModelPricing.Instance;
+        _modelCostStore = modelCostStore ?? NullModelCostStore.Instance;
     }
 
     public async Task<string> ExecuteToolCallAsync(
@@ -168,18 +178,50 @@ public class AgentRuntime
         int unparseableStreak = 0;
         int schemaFailStreak = 0;
 
+        // H1 cost-accounting state, populated per turn from IModelPricing.
+        string costCurrency = "EUR";
+        string? pricingSnapshotId = null;
+        string? lastProviderRequestId = null;
+
+        // Stamp the run's model-token totals onto whatever result we return, so a cost-accounting
+        // caller (H1) gets the usage figures the gateway reported instead of them being discarded.
+        AgentRunResult Tagged(AgentRunResult r) => r with
+        {
+            ModelInputTokens = session.ModelInputTokens,
+            ModelOutputTokens = session.ModelOutputTokens,
+        };
+
+        async Task<AgentRunResult> RunLoopAsync()
+        {
         for (int iteration = 1; iteration <= maxIterations; iteration++)
         {
             if (contract.MaxCost > 0 && session.AccumulatedCost >= contract.MaxCost)
             {
-                return AgentRunResult.Failed(AmccaErrors.Cst002,
+                return Tagged(AgentRunResult.Failed(AmccaErrors.Cst002,
                     $"Agent budget of {contract.MaxCost:F2} is exhausted before iteration {iteration}.",
-                    iteration - 1, session.AccumulatedCost, transcript);
+                    iteration - 1, session.AccumulatedCost, transcript));
             }
 
             var resp = await gateway.GenerateTextAsync(
                 new GatewayTextRequest(modelId, convo.ToString(), temperature, maxTokensPerTurn, toolContext.CorrelationId),
                 effectiveCt);
+            session.AddModelTokens(resp.InputTokens, resp.OutputTokens);
+
+            // H1: price this turn against the configured pricing snapshot and fold it into the run
+            // budget. No snapshot on file => the turn is unpriced (recorded ESTIMATED_UNRECONCILED
+            // later); the run is not blocked for a missing operator price.
+            lastProviderRequestId = resp.ProviderRequestId ?? lastProviderRequestId;
+            var price = await _modelPricing.ResolveAsync(gateway.ProviderId, modelId, effectiveCt);
+            if (price is not null)
+            {
+                costCurrency = price.Currency;
+                pricingSnapshotId = price.PricingSnapshotId;
+                session.AddModelCost(ModelCostCalculator.Compute(resp.InputTokens, resp.OutputTokens, price));
+            }
+            else if (resp.InputTokens > 0 || resp.OutputTokens > 0)
+            {
+                session.MarkUnpricedModelUsage();
+            }
 
             var modelText = resp.Text ?? string.Empty;
             transcript.Add(new AgentTurn("assistant", modelText));
@@ -192,9 +234,9 @@ public class AgentRuntime
             {
                 if (++unparseableStreak >= 2)
                 {
-                    return AgentRunResult.Failed(AmccaErrors.Ai006,
+                    return Tagged(AgentRunResult.Failed(AmccaErrors.Ai006,
                         "Agent did not produce a parseable tool-call or final envelope twice in a row.",
-                        iteration, session.AccumulatedCost, transcript);
+                        iteration, session.AccumulatedCost, transcript));
                 }
                 const string nudge = "Your message had no valid JSON envelope. Reply with exactly one {\"tool\":...} or {\"final\":...} envelope.";
                 transcript.Add(new AgentTurn("tool", nudge));
@@ -216,9 +258,9 @@ public class AgentRuntime
                     {
                         if (++schemaFailStreak >= 2)
                         {
-                            return AgentRunResult.Failed(AmccaErrors.Ai003,
+                            return Tagged(AgentRunResult.Failed(AmccaErrors.Ai003,
                                 $"Agent final answer failed its output schema twice: {ex.Message}",
-                                iteration, session.AccumulatedCost, transcript);
+                                iteration, session.AccumulatedCost, transcript));
                         }
                         var msgBack = "Your final answer failed the required output schema: " + ex.Message +
                                       " Fix it and send {\"final\": {...}} again.";
@@ -227,7 +269,7 @@ public class AgentRuntime
                         continue;
                     }
                 }
-                return AgentRunResult.Completed(finalOutput, iteration, session.AccumulatedCost, transcript);
+                return Tagged(AgentRunResult.Completed(finalOutput, iteration, session.AccumulatedCost, transcript));
             }
 
             // Tool call — enforcement, cost reservation and execution all live in ExecuteToolCallAsync.
@@ -241,11 +283,11 @@ public class AgentRuntime
             }
             catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Ai004)
             {
-                return AgentRunResult.Failed(AmccaErrors.Ai004, ex.Message, iteration, session.AccumulatedCost, transcript);
+                return Tagged(AgentRunResult.Failed(AmccaErrors.Ai004, ex.Message, iteration, session.AccumulatedCost, transcript));
             }
             catch (AmccaException ex) when (ex.ErrorCode == AmccaErrors.Cst002)
             {
-                return AgentRunResult.Failed(AmccaErrors.Cst002, ex.Message, iteration, session.AccumulatedCost, transcript);
+                return Tagged(AgentRunResult.Failed(AmccaErrors.Cst002, ex.Message, iteration, session.AccumulatedCost, transcript));
             }
             catch (AmccaException ex)
             {
@@ -261,9 +303,48 @@ public class AgentRuntime
             convo.AppendLine("TOOL_RESULT: " + toolResult);
         }
 
-        return AgentRunResult.Failed(AmccaErrors.Ai006,
+        return Tagged(AgentRunResult.Failed(AmccaErrors.Ai006,
             $"Agent reached the {maxIterations}-iteration limit without a final answer.",
-            maxIterations, session.AccumulatedCost, transcript);
+            maxIterations, session.AccumulatedCost, transcript));
+        }
+
+        var loopResult = await RunLoopAsync();
+
+        // H1: one settled cost_events row for the whole run's model spend (SPEC/20 profit is a sum of
+        // SETTLEMENT rows; SPEC/21 settles actual usage after execution). Written on the original token
+        // (not the timeout-linked one) so spend that already happened is still recorded on a timeout.
+        if (!string.IsNullOrEmpty(toolContext.ProductionId)
+            && (session.ModelInputTokens > 0 || session.ModelOutputTokens > 0))
+        {
+            try
+            {
+                await _modelCostStore.RecordModelRunCostAsync(
+                    toolContext.ProductionId, gateway.ProviderId, modelId,
+                    session.ModelCost, costCurrency,
+                    reconciled: !session.HasUnpricedModelUsage,
+                    pricingSnapshotId, lastProviderRequestId, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // A failed cost write must not turn a completed agent run into a failure; it is
+                // surfaced through the audit trail, not by losing the run's output.
+                await _auditStore.AppendAuditAsync(new AuditRecord(
+                    AuditId: UlidGenerator.NewUlid(),
+                    Action: "agent.model_cost_record_failed",
+                    ActorType: "SYSTEM", ActorId: "AMCCA.AgentRuntime",
+                    SubjectType: "agent", SubjectId: contract.AgentId,
+                    ProductionId: toolContext.ProductionId,
+                    Outcome: "ERROR", PolicyDecisionId: null,
+                    ReasonCode: AmccaErrors.Ai001, CorrelationId: toolContext.CorrelationId,
+                    SchemaVersion: "3.1.0", OccurredAt: DateTimeOffset.UtcNow.ToString("O")), ct);
+            }
+        }
+
+        return loopResult with
+        {
+            ModelCost = session.ModelCost,
+            ModelPricingComplete = !session.HasUnpricedModelUsage,
+        };
     }
 
     // SEC-07: defensive bounds so a hostile or malformed agent output cannot exhaust memory

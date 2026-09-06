@@ -102,6 +102,30 @@ public class AgentLoopContractTests : IDisposable
     }
 
     [Fact]
+    public async Task RunResult_CarriesTheGatewaysReportedTokenTotals()
+    {
+        // ScriptedGateway reports 10 in / 5 out per turn. Two model turns (tool call, then final)
+        // must sum to 20 / 10 -- previously these were read off the response and thrown away (H1).
+        var echo = new EchoTool();
+        _tools.RegisterTool(echo);
+        var contract = Contract(allowed: new[] { "echo" });
+        var gw = new ScriptedGateway(new[]
+        {
+            "{\"tool\": \"echo\", \"input\": {\"x\": 1}}",
+            "{\"final\": \"done\"}",
+        });
+        var session = new AgentRunSession(contract);
+
+        var result = await _runtime.RunAgentAsync(contract, "sys", Ctx(), gw, "m1", session);
+
+        result.Status.Should().Be(AgentRunStatus.Completed);
+        result.ModelInputTokens.Should().Be(20);
+        result.ModelOutputTokens.Should().Be(10);
+        session.ModelInputTokens.Should().Be(20);
+        session.ModelOutputTokens.Should().Be(10);
+    }
+
+    [Fact]
     public async Task ModelCallsToolThenFinal_ExecutesToolAndFeedsResultBack()
     {
         var echo = new EchoTool();

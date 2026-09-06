@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
+using Serilog;
 using AMCCA.App.Common;
 using AMCCA.App.Services;
 using AMCCA.App.ViewModels;
@@ -30,6 +32,8 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        ConfigureGlobalExceptionHandling();
 
         var services = new ServiceCollection();
         try
@@ -87,9 +91,72 @@ public partial class App : Application
 
         // Preflight passed (or degraded): the database now exists. Hand control to the window --
         // navigate to the Dashboard, take the first status reading, surface any degraded warnings.
-        await mainViewModel.CompleteStartupAsync(
-            degraded: report.Status == PreflightStatus.Degraded,
-            warnings: report.Warnings);
+        try
+        {
+            await mainViewModel.CompleteStartupAsync(
+                degraded: report.Status == PreflightStatus.Degraded,
+                warnings: report.Warnings);
+        }
+        catch (Exception ex)
+        {
+            // Startup itself already passed; a failure completing it is not fatal -- keep the window
+            // up so the operator can retry, but do not let the async-void frame crash the process.
+            Serilog.Log.Error(ex, "CompleteStartupAsync failed");
+            MessageBox.Show(
+                $"AMCCA started but the dashboard failed to load: {ex.Message}{Environment.NewLine}Use Refresh to retry.",
+                "Startup warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    /// <summary>
+    /// Last-resort net for exceptions that escape an async-void frame (ICommand handlers, event
+    /// handlers) or an unawaited Task. Without this a single unexpected throw on the UI thread ends
+    /// the process with no log -- unacceptable for an app meant to run unattended for days.
+    /// </summary>
+    private void ConfigureGlobalExceptionHandling()
+    {
+        try
+        {
+            var (dbDir, _) = Composition.ResolvePaths();
+            var logDir = Path.Combine(dbDir, "logs");
+            Directory.CreateDirectory(logDir);
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.File(
+                    Path.Combine(logDir, "app-.log"),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 14)
+                .CreateLogger();
+        }
+        catch (Exception ex)
+        {
+            // A logging sink we cannot open must not stop the app from starting.
+            System.Diagnostics.Debug.WriteLine($"App logger init failed: {ex}");
+        }
+
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Serilog.Log.Error(args.Exception, "Unhandled dispatcher exception");
+            MessageBox.Show(
+                $"AMCCA could not complete the last action ({args.Exception.GetType().Name}: {args.Exception.Message}).{Environment.NewLine}"
+                + $"The action was cancelled and AMCCA is still running. Details are in the app log under logs/.",
+                "Action failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            args.Handled = true;
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Serilog.Log.Error(args.Exception, "Unobserved task exception");
+            args.SetObserved();
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+            {
+                Serilog.Log.Fatal(ex, "Unhandled AppDomain exception (terminating={Terminating})", args.IsTerminating);
+            }
+        };
     }
 
     private void ShowAbortAndShutdown(PreflightStatus status, IReadOnlyList<string> failureDetails)

@@ -194,6 +194,54 @@
             },
             "capabilities_verified": {
               "type": "boolean"
+            },
+            "model_pricing": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "model_id",
+                  "input_per_1m_tokens",
+                  "output_per_1m_tokens",
+                  "currency",
+                  "retrieved_at",
+                  "source_ref"
+                ],
+                "properties": {
+                  "model_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "input_per_1m_tokens": {
+                    "type": "string",
+                    "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+                    "description": "Decimal string, six fractional digits, NEVER negative. Used for budgets, estimates, reservations and settlements, none of which are conceptually signed quantities (V31-04). Money is NEVER a float (D-023)."
+                  },
+                  "output_per_1m_tokens": {
+                    "type": "string",
+                    "pattern": "^[0-9]{1,13}\\.[0-9]{6}$",
+                    "description": "Decimal string, six fractional digits, NEVER negative. Used for budgets, estimates, reservations and settlements, none of which are conceptually signed quantities (V31-04). Money is NEVER a float (D-023)."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "effective_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "retrieved_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "source_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
             }
           }
         }

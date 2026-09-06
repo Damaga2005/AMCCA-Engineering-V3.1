@@ -31,19 +31,25 @@ public sealed class AgentResearchAgent : IResearchAgent
     private readonly IAuditStore _auditStore;
     private readonly IProviderGateway _gateway;
     private readonly ResearchAgentOptions _options;
+    private readonly IModelPricing? _modelPricing;
+    private readonly IModelCostStore? _modelCostStore;
 
     public AgentResearchAgent(
         ProductionService productions,
         ResearchService research,
         IAuditStore auditStore,
         IProviderGateway gateway,
-        ResearchAgentOptions? options = null)
+        ResearchAgentOptions? options = null,
+        IModelPricing? modelPricing = null,
+        IModelCostStore? modelCostStore = null)
     {
         _productions = productions;
         _research = research;
         _auditStore = auditStore;
         _gateway = gateway;
         _options = options ?? ResearchAgentOptions.Default;
+        _modelPricing = modelPricing;
+        _modelCostStore = modelCostStore;
     }
 
     public async Task PerformResearchAsync(string productionId, string correlationId, CancellationToken ct = default)
@@ -64,7 +70,7 @@ public sealed class AgentResearchAgent : IResearchAgent
             MaxCost: _options.MaxCost,
             TimeoutSeconds: _options.TimeoutSeconds);
 
-        var runtime = new AgentRuntime(tools, _auditStore);
+        var runtime = new AgentRuntime(tools, _auditStore, _modelPricing, _modelCostStore);
         var session = new AgentRunSession(contract);
         var toolContext = new ToolExecutionContext(correlationId, IntentId: null, ProductionId: productionId);
 

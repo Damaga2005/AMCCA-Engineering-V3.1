@@ -90,13 +90,23 @@ public static class Program
             var prods = sp.GetRequiredService<AMCCA.Core.Domain.ProductionService>();
             var audit = sp.GetRequiredService<AMCCA.Core.Events.IAuditStore>();
 
+            // H1: model spend is priced from config.providers.gateway.model_pricing (materialised into
+            // pricing_snapshots) and settled into cost_events. With no prices configured the runs still
+            // work; their cost events are ESTIMATED_UNRECONCILED.
+            AMCCA.Core.Providers.IModelPricing? pricing = gw is null ? null
+                : new AMCCA.Core.Providers.PricingSnapshotModelPricing(cf, gw.ProviderId, config.Providers.Gateway.ModelPricing);
+            AMCCA.Core.Agents.IModelCostStore? costStore = gw is null ? null
+                : new AMCCA.Core.Monetization.ModelCostStore(cf);
+
             AMCCA.Core.Orchestration.Handlers.IResearchAgent? researchAgent = gw is null ? null
                 : new AMCCA.Core.Orchestration.Handlers.AgentResearchAgent(
-                    prods, sp.GetRequiredService<AMCCA.Core.Research.ResearchService>(), audit, gw);
+                    prods, sp.GetRequiredService<AMCCA.Core.Research.ResearchService>(), audit, gw,
+                    options: null, modelPricing: pricing, modelCostStore: costStore);
 
             AMCCA.Core.Orchestration.Handlers.IScriptAgent? scriptAgent = gw is null ? null
                 : new AMCCA.Core.Orchestration.Handlers.AgentScriptAgent(
-                    prods, cf, audit, gw, sp.GetRequiredService<AMCCA.Core.Artifacts.ArtifactStore>());
+                    prods, cf, audit, gw, sp.GetRequiredService<AMCCA.Core.Artifacts.ArtifactStore>(),
+                    options: null, modelPricing: pricing, modelCostStore: costStore);
 
             var registry = new StageHandlerRegistry();
             registry.Register("INIT", new InitStageHandler());
@@ -107,7 +117,10 @@ public static class Program
             // Pure bookkeeping states between producing stages.
             var advance = new NoWorkAdvanceHandler();
             registry.Register("RESEARCH_VERIFIED", advance);
-            registry.Register("CONCEPT_SELECTED", advance);
+            // CONCEPT_SELECTED is a real decision gate (D-035): select the concept, reserve the
+            // scripting budget, persist the decision — or BLOCK. Never a silent advance.
+            registry.Register("CONCEPT_SELECTED", new AMCCA.Core.Orchestration.Handlers.ConceptSelectionStageHandler(
+                cf, sp.GetRequiredService<AMCCA.Core.Policy.BudgetManager>(), audit));
             registry.Register("SCRIPT_VERIFIED", advance);
             registry.Register("STORYBOARD_VERIFIED", advance);
             registry.Register("ASSETS_READY", advance);
