@@ -55,6 +55,50 @@ public class MediaRenderer
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
+    /// <summary>
+    /// The full ffmpeg argument list for a candidate render (SPEC/33): scale+pad to the profile
+    /// resolution, EBU R128 loudness normalisation to the profile target, an optional synthetic-
+    /// disclosure caption burnt into the bottom of frame, the profile's codecs/bitrate/fps, and an
+    /// optional hard duration cap. stdin is closed (<c>-nostdin</c>).
+    /// </summary>
+    public static IReadOnlyList<string> BuildFfmpegArguments(
+        string inputPath,
+        string outputPath,
+        MediaProfile profile,
+        SyntheticDisclosure? disclosure = null,
+        long? maxDurationMs = null)
+    {
+        var vf = $"scale={profile.Width}:{profile.Height}:force_original_aspect_ratio=decrease," +
+                 $"pad={profile.Width}:{profile.Height}:(ow-iw)/2:(oh-ih)/2";
+
+        if (disclosure is { } d && (d.HasSyntheticVisuals || d.HasSyntheticAudio) && !string.IsNullOrWhiteSpace(d.DisclosureText))
+        {
+            var text = d.DisclosureText.Replace("\\", "\\\\").Replace(":", "\\:").Replace("'", "\\'");
+            vf += $",drawtext=text='{text}':x=(w-tw)/2:y=h-(2*lh):fontcolor=white:fontsize=24:box=1:boxcolor=black@0.5:boxborderw=8";
+        }
+
+        var args = new List<string>
+        {
+            "-nostdin", "-y",
+            "-i", inputPath,
+            "-vf", vf,
+            "-af", $"loudnorm=I={profile.LoudnessTargetLufs.ToString(System.Globalization.CultureInfo.InvariantCulture)}:TP=-1.5:LRA=11",
+            "-c:v", profile.VideoCodec,
+            "-b:v", $"{profile.BitrateKbps}k",
+            "-r", profile.Fps.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            "-c:a", profile.AudioCodec,
+        };
+
+        if (maxDurationMs is > 0)
+        {
+            args.Add("-t");
+            args.Add((maxDurationMs.Value / 1000.0).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        args.Add(outputPath);
+        return args;
+    }
+
     public ProcessStartInfo BuildFfmpegProcessStartInfo(
         string inputPath,
         string outputPath,

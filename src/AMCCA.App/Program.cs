@@ -116,9 +116,16 @@ public static class Program
         builder.Services.AddSingleton<OrchestratorEngine>();
         builder.Services.AddHostedService<OrchestratorHostedService>();
 
-        // Job worker pool (SPEC/14, SPEC/16, SPEC/17). No handlers registered yet — an enqueued job
-        // requeues and, after max_attempts, dead-letters for an operator (P0.3 adds the handlers).
-        builder.Services.AddSingleton(new JobHandlerRegistry());
+        // Job worker pool (SPEC/14, SPEC/16, SPEC/17).
+        builder.Services.AddSingleton(sp =>
+        {
+            var reg = new JobHandlerRegistry();
+            reg.Register("RENDER", new AMCCA.Core.Media.RenderMediaJobHandler(
+                sp.GetRequiredService<AMCCA.Core.Artifacts.ArtifactStore>(),
+                new AMCCA.Core.Media.ProcessFfmpegRunner(),
+                config.DataRoot));
+            return reg;
+        });
         builder.Services.AddSingleton(JobWorkerOptions.Default);
         builder.Services.AddSingleton<JobWorkerEngine>();
         builder.Services.AddHostedService<JobWorkerHostedService>();
