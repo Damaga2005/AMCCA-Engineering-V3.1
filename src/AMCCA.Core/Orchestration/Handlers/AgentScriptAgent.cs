@@ -107,7 +107,7 @@ public sealed class AgentScriptAgent : IScriptAgent
                 $"Script agent did not produce a script ({result.ReasonCode}: {result.Detail}).");
         }
 
-        var script = Parse(productionId, result.FinalOutput);
+        var script = ScriptDocumentSerializer.Deserialize(productionId, result.FinalOutput);
         await _artifacts.PutTextVersionAsync(productionId, "SCRIPT", result.FinalOutput, generatorModelId: _options.ModelId, ct: ct);
         return script;
     }
@@ -139,24 +139,5 @@ public sealed class AgentScriptAgent : IScriptAgent
         sb.AppendLine("- Do not assert any fact that is not in the list.");
         sb.AppendLine("- Finish with {\"final\": { ...the script object matching the schema... }}.");
         return sb.ToString();
-    }
-
-    private static ScriptDocument Parse(string productionId, string finalJson)
-    {
-        using var doc = JsonDocument.Parse(finalJson);
-        var root = doc.RootElement;
-        var lines = new List<ScriptLine>();
-        foreach (var l in root.GetProperty("lines").EnumerateArray())
-        {
-            lines.Add(new ScriptLine(
-                LineNumber: l.GetProperty("line_number").GetInt32(),
-                Text: l.GetProperty("text").GetString() ?? "",
-                ClaimId: l.TryGetProperty("claim_id", out var cid) && cid.ValueKind == JsonValueKind.String ? cid.GetString() : null,
-                IsMaterialFact: l.GetProperty("is_material_fact").GetBoolean(),
-                UncertaintyWordingPresent: l.TryGetProperty("uncertainty_wording_present", out var u) && u.ValueKind == JsonValueKind.True));
-        }
-        var duration = root.TryGetProperty("estimated_spoken_duration_sec", out var d) && d.ValueKind == JsonValueKind.Number
-            ? d.GetInt32() : 60;
-        return new ScriptDocument(productionId, lines, duration);
     }
 }

@@ -109,8 +109,24 @@ public static class Program
             registry.Register("RESEARCH_VERIFIED", advance);
             registry.Register("CONCEPT_SELECTED", advance);
             registry.Register("SCRIPT_VERIFIED", advance);
-            // STORYBOARDING onward are added as their stages are built; the engine blocks a production
-            // at the first unhandled state (AMCCA-ORC-001).
+            registry.Register("CANDIDATE_RENDERED", advance);
+
+            // QA stages (SPEC/35). The media QA stages check a CURRENT RENDER artifact — they block
+            // until the media stages (A5) produce one; CONTENT_QA / SCORING run on the SCRIPT.
+            var artifacts = sp.GetRequiredService<AMCCA.Core.Artifacts.ArtifactStore>();
+            var thresholds = AMCCA.Core.QA.QaThresholdProfileRegistry.FromConfig(config.Policy?.Qa);
+            AMCCA.Core.Orchestration.Handlers.QaStageHandler Qa(string stage, AMCCA.Core.QA.IQaStageCheck check)
+                => new(cf, stage, check, thresholds);
+            registry.Register("TECHNICAL_QA", Qa("TECHNICAL_QA", new AMCCA.Core.QA.RenderPresenceQaCheck(cf)));
+            registry.Register("VISUAL_QA", Qa("VISUAL_QA", new AMCCA.Core.QA.RenderPresenceQaCheck(cf)));
+            registry.Register("AUDIO_QA", Qa("AUDIO_QA", new AMCCA.Core.QA.RenderPresenceQaCheck(cf)));
+            registry.Register("CONTENT_QA", Qa("CONTENT_QA", new AMCCA.Core.QA.ContentQaCheck(cf, artifacts)));
+            registry.Register("RETENTION_QA", Qa("RETENTION_QA", new AMCCA.Core.QA.RenderPresenceQaCheck(cf)));
+            registry.Register("COMPLIANCE_QA", Qa("COMPLIANCE_QA", new AMCCA.Core.QA.ComplianceQaCheck(cf)));
+            registry.Register("SCORING", Qa("SCORING", new AMCCA.Core.QA.ScoringCheck(cf)));
+
+            // STORYBOARDING onward (media stages) are added in A5; the engine blocks a production at the
+            // first unhandled state (AMCCA-ORC-001).
             return registry;
         });
         builder.Services.AddSingleton<OrchestratorEngine>();
