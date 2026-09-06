@@ -198,6 +198,44 @@ public class PlatformOAuthContractTests : IDisposable
         {
             var state = await verifyConn.ExecuteScalarAsync<string>("SELECT state FROM platform_accounts WHERE id = @Id", new { Id = accountId });
             state.Should().Be("DISCONNECTED");
+
+            var auditOutcome = await verifyConn.ExecuteScalarAsync<string>(
+                "SELECT outcome FROM audit_log WHERE action = 'OAUTH_REVOKED' AND subject_id = @Id", new { Id = accountId });
+            auditOutcome.Should().Be("ALLOWED", "a clean revocation is audited as ALLOWED");
+        }
+    }
+
+    [Fact]
+    public async Task OAuthManager_RevokeAccess_RemoteRevocationFails_StillDisconnectsAndAuditsError()
+    {
+        var accountId = "acc-revoke-degraded-1";
+        using (var conn = await _factory.CreateOpenConnectionAsync())
+        {
+            await conn.ExecuteAsync(@"
+                INSERT INTO platform_accounts (id, platform, account_handle, credential_secret_ref, state, created_at, updated_at)
+                VALUES (@Id, 'tiktok', '@creator', 'secret://platform/tiktok_acc-revoke-degraded-1', 'CONNECTED', datetime('now'), datetime('now'));
+            ", new { Id = accountId });
+        }
+
+        await _oauthManager.StoreTokensAsync("tiktok", accountId, new OAuthTokenBundle("tok_to_revoke", "ref_to_revoke", DateTimeOffset.UtcNow.AddHours(1)));
+
+        // Provider rejects the revocation. The local disconnect must still complete so the user
+        // can drop a broken account, and the failure must be recorded rather than swallowed.
+        var mockHttp = new MockHttpHandler(req => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var oauth = new OAuthManager(_factory, _secretStore, new FakeSafeHttpClientFactory(mockHttp));
+
+        await oauth.RevokeTokenAsync("tiktok", accountId, "https://open.tiktokapis.com/v2/oauth/revoke/", "client-id");
+
+        (await oauth.GetStoredTokensAsync("tiktok", accountId)).Should().BeNull();
+
+        using (var verifyConn = await _factory.CreateOpenConnectionAsync())
+        {
+            var state = await verifyConn.ExecuteScalarAsync<string>("SELECT state FROM platform_accounts WHERE id = @Id", new { Id = accountId });
+            state.Should().Be("DISCONNECTED");
+
+            var auditOutcome = await verifyConn.ExecuteScalarAsync<string>(
+                "SELECT outcome FROM audit_log WHERE action = 'OAUTH_REVOKED' AND subject_id = @Id", new { Id = accountId });
+            auditOutcome.Should().Be("ERROR", "a failed remote revocation is audited as ERROR, not hidden");
         }
     }
 
