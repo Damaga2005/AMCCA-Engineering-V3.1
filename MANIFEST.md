@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 424
-**Total bytes:** 2605702
+**Total bytes:** 2606241
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -344,7 +344,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Security/ISafeHttpClientFactory.cs` | `c2fb3714f1feffa2a85be52c96781b99a3fdf2eed7120fe56dd4f75c1dc203f2` | 268 |
 | `src/AMCCA.Core/Security/ISecretStore.cs` | `12c989524d837f6e7f6aef85318307792346d57e51c69c5550941fd758eca28b` | 377 |
 | `src/AMCCA.Core/Security/InMemorySecretStore.cs` | `686d4a6d01a41551071091e4a3b306d6c8c07be030d4df1c509dc7a6f77e99c2` | 1357 |
-| `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `ffaa63fc71cb65ad51250b1bfcaa27a6c905c2f025329f6489a1f7d4d5cc900b` | 3968 |
+| `src/AMCCA.Core/Security/OAuthLoopbackReceiver.cs` | `caad2f0b7e367c5592fbe0cd2cfc617da0347e0915d92c6abce7f8b24b2464d1` | 4071 |
 | `src/AMCCA.Core/Security/OAuthManager.cs` | `b3bb8145a3f5e3b1ee2ed4fd37ac7dae189b69d651eff124bee48e62ecdbf804` | 11835 |
 | `src/AMCCA.Core/Security/OAuthModels.cs` | `f6bf3984f62d28ca1788aa0c7b30fb1031f87f256ef76260f7db7e64427bc0d1` | 539 |
 | `src/AMCCA.Core/Security/PathConfinement.cs` | `9d3dc4442a3315268f999c4b260850e5b252270d91af45b5d154e53d8211f764` | 3563 |
@@ -405,7 +405,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `tests/AMCCA.Core.Tests/PackagingVerificationRegressionTests.cs` | `929f5355858ce242cd4306d8d49b35160e21b5ed84942820cb363b8384e33f73` | 1964 |
 | `tests/AMCCA.Core.Tests/PathConfinementAndSafeArchiveRegressionTests.cs` | `14397a80221e364fd787ecbc4d4665c025bd2aa810ff2cac278ed46997c24f19` | 5999 |
 | `tests/AMCCA.Core.Tests/PlatformAdapterSsrfRegressionTests.cs` | `19bc82bdd85316f132be96be49a2161caed87f0e6cf9293b671d6b1a3337b92d` | 7440 |
-| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `a57bffc3f0627e54550c19f6312f9a7ef5ca6d7f214e16b01d00a57fda19e4fb` | 13801 |
+| `tests/AMCCA.Core.Tests/PlatformOAuthContractTests.cs` | `10835bb0c2f8e2df3d1ad720ae8a4d3eda774450075f1282b2a4a136cddc73eb` | 14237 |
 | `tests/AMCCA.Core.Tests/PolicyBudgetAndApprovalContractTests.cs` | `c2f3444fa79c502b43497b015de1bd3050a155e1204bf3fae981795cb6d8a028` | 5020 |
 | `tests/AMCCA.Core.Tests/PolicyConfigTypingTests.cs` | `372252647e49782f0c27c0328e4b4e1ca8bcf02eec887a50b9b218bcf0b0964c` | 1558 |
 | `tests/AMCCA.Core.Tests/PolicyEngineFailClosedRegressionTests.cs` | `e46a810e6abd6fa3b7299603917aa44467499991484c2a8a7b1f72e736a14e74` | 4236 |
