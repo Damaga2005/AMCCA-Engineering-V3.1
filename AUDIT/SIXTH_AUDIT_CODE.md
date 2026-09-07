@@ -176,14 +176,18 @@ con separador de run.
 
 ## 4. Estado
 
-Los seis cerrados en PR #10 (`fix/sixth-audit-findings`). Ninguno invalidaba `bf8fb50` por sí mismo,
-pero el PR toca código → regla #4 de integridad → re-certificar `AUDIT/FINAL_RELEASE_CERTIFICATION.md`
-sobre el commit de merge de PR #10.
+Los seis cerrados en PR #10 (`fix/sixth-audit-findings`), *merged* a `main` como `1e513ce`. Ninguno
+invalidaba `bf8fb50` por sí mismo, pero el PR toca código → regla #4 de integridad → re-certificado.
+
+**Certificación vigente — `main` @ `1e513ce375d2416d7e118d630745315cfae2c0f5`:** CI run `34150914513`,
+ambos jobs `success`, `HEAD valid: PASS (1e513ce375)`, `CERTIFICATION COMPLETE: RELEASE PASS` (15/15).
+Release `.trx` `776 total | 776 passed | 0 failed | 0 skipped`, build `0 errors | 0 warnings`.
+Instalador `AMCCA-Setup.exe` 62,399,723 B · `.msi` 61,584,344 B · `.zip` 72,878,028 B.
+`AUDIT/FINAL_RELEASE_CERTIFICATION.md` reescrito para este SHA (supersede `bf8fb50`).
 
 **Tests:** `AiProviderRealIntegrationTests` +2 (`OmniRouters_OmitsTemperature_ForAReasoningModel`,
 `ErrorBody_IsRedactedAndCapped_BeforeItReachesTheExceptionMessage`), `ConfigurationContractTests` +1
-(`ReasoningModelWithoutDefaultModelId_AbortsWithCfg004`). Suite Core: `776 passed | 0 failed`.
-Build Release: `0 warnings | 0 errors`. `validate_package.py`: 68/68. MANIFEST regenerado.
+(`ReasoningModelWithoutDefaultModelId_AbortsWithCfg004`). `validate_package.py`: 68/68. MANIFEST regenerado.
 
 **Nota de contrato:** sin cambio de schema — `reasoning_model` ya estaba en `config.schema.json`
 desde PR #8; S4 añade sólo una regla de validación de campo cruzado en código (Regla 6 de
