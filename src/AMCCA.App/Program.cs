@@ -41,6 +41,17 @@ public static class Program
 
         if (args.Length > 0 && (args[0] == "--set-secret" || args[0] == "--probe" || args[0] == "--seed-demo"))
         {
+            // Bootstrap verbs mutate config.yaml and write demo rows into the real database. They are a
+            // local-dev convenience (RUN_LOCAL.md), not an operator interface — gate them so the
+            // shipped installer cannot be pointed at a production install by accident.
+#if !DEBUG
+            if (Environment.GetEnvironmentVariable("AMCCA_ALLOW_BOOTSTRAP") != "1")
+            {
+                Console.Error.WriteLine(
+                    $"'{args[0]}' is a local-dev bootstrap verb. Re-run with AMCCA_ALLOW_BOOTSTRAP=1 if you meant it.");
+                return 2;
+            }
+#endif
             return LocalRunCli.RunAsync(args).GetAwaiter().GetResult();
         }
 

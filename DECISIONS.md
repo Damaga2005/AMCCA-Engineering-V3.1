@@ -328,7 +328,10 @@ adapter that `default_model_id` is a reasoning model (OpenAI o-series / GPT-5, G
 true the adapter omits `temperature` from the request — those models reject any non-default value with
 HTTP 400. Every model, reasoning or not, now gets `max_completion_tokens` rather than the deprecated
 `max_tokens`, which reasoning models also reject. The agent loop is unchanged; this is entirely a
-request-shaping concern at the adapter boundary.
+request-shaping concern at the adapter boundary. Both adapters (`omnirouters` and the direct one) take
+the flag. Config validation rejects `reasoning_model: true` without a `default_model_id` (Cfg004),
+since the flag only shapes the request for that one id — otherwise it is a silent no-op (sixth audit
+S4).
 
 > *Found while running:* a real end-to-end research run against Groq `openai/gpt-oss-120b` and then
 > OpenAI `gpt-5.6-luna` returned HTTP 400 because `AgentRuntime` always sent `temperature: 0.2` and

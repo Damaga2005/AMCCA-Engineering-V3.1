@@ -20,17 +20,20 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
     private readonly SecretReference _apiKeyRef;
     private readonly HttpClient _httpClient;
     private readonly bool _ownsHttpClient;
+    private readonly bool _reasoningModel;
 
     /// <summary>
     /// SEC-01: the credential is supplied as a <c>secret://vault/name</c> reference and resolved
     /// through <see cref="ISecretStore"/> at call time. A literal API key is rejected by
     /// <see cref="SecretReference.Parse"/> (AMCCA-SEC-002) and never accepted as a Bearer token.
     /// </summary>
+    /// <param name="reasoningModel">D-037: omit <c>temperature</c>, which reasoning models reject.</param>
     public OmniRoutersGatewayAdapter(
         string baseUrl,
         ISecretStore secretStore,
-        string apiKeySecretRef)
-        : this(baseUrl, secretStore, apiKeySecretRef, httpClient: null)
+        string apiKeySecretRef,
+        bool reasoningModel = false)
+        : this(baseUrl, secretStore, apiKeySecretRef, httpClient: null, reasoningModel)
     {
     }
 
@@ -39,11 +42,13 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
         string baseUrl,
         ISecretStore secretStore,
         string apiKeySecretRef,
-        HttpClient? httpClient)
+        HttpClient? httpClient,
+        bool reasoningModel = false)
     {
         _baseUrl = baseUrl?.TrimEnd('/') ?? string.Empty;
         _secretStore = secretStore ?? throw new ArgumentNullException(nameof(secretStore));
         _apiKeyRef = SecretReference.Parse(apiKeySecretRef);
+        _reasoningModel = reasoningModel;
         if (httpClient != null)
         {
             _httpClient = httpClient;
@@ -167,16 +172,20 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         httpRequest.Headers.Add("X-Correlation-Id", request.CorrelationId);
 
-        var payload = new
-        {
-            model = request.ModelId,
-            messages = new[]
+        object payload = _reasoningModel
+            ? new
             {
-                new { role = "user", content = request.Prompt }
-            },
-            temperature = request.Temperature,
-            max_completion_tokens = request.MaxTokens
-        };
+                model = request.ModelId,
+                messages = new[] { new { role = "user", content = request.Prompt } },
+                max_completion_tokens = request.MaxTokens,
+            }
+            : new
+            {
+                model = request.ModelId,
+                messages = new[] { new { role = "user", content = request.Prompt } },
+                temperature = request.Temperature,
+                max_completion_tokens = request.MaxTokens,
+            };
 
         httpRequest.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 

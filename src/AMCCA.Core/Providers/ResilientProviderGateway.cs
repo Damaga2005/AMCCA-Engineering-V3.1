@@ -84,7 +84,8 @@ public sealed class ResilientProviderGateway : IProviderGateway
             BreakDuration = o.CircuitBreakDuration,
             OnOpened = args =>
             {
-                _lastFault = args.Outcome.Exception?.Message;
+                // Adapter messages are already sanitized; a raw non-AmccaException still passes here.
+                _lastFault = ProviderErrorText.Sanitize(args.Outcome.Exception?.Message);
                 return default;
             },
         });

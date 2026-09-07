@@ -209,5 +209,16 @@ public class ConfigService
                 ErrorCategory.Configuration,
                 "Autonomous publishing cannot be enabled in DEVELOPMENT environment (D-020).");
         }
+
+        // Rule 6: reasoning_model = true is meaningless without a default_model_id — the agents would
+        // fall back to their non-reasoning built-in constant and the flag would be a silent no-op (D-037).
+        if (config.Providers.Gateway.ReasoningModel &&
+            string.IsNullOrWhiteSpace(config.Providers.Gateway.DefaultModelId))
+        {
+            throw new AmccaException(
+                AmccaErrors.Cfg004,
+                ErrorCategory.Configuration,
+                "providers.gateway.reasoning_model is true but default_model_id is unset (D-037): the flag would have no effect.");
+        }
     }
 }

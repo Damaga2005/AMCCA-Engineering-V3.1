@@ -137,6 +137,50 @@ public class AiProviderRealIntegrationTests
     }
 
     [Fact]
+    public async Task OmniRouters_OmitsTemperature_ForAReasoningModel()
+    {
+        var h = new ControlledHttpMessageHandler
+        {
+            Handler = (r, c) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    "{\"id\":\"x\",\"choices\":[{\"message\":{\"content\":\"ok\"}}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}",
+                    Encoding.UTF8, "application/json"),
+            }),
+        };
+        var store = TestSecretStores.With("secret://test/omni", "sk-k");
+
+        var reasoning = new OmniRoutersGatewayAdapter("https://omni.example/v1", store, "secret://test/omni", new HttpClient(h), reasoningModel: true);
+        await reasoning.GenerateTextAsync(new GatewayTextRequest("gpt-oss-120b", "hi", 0.2, 2048, "c"));
+        using var d = JsonDocument.Parse(h.LastRequestBody!);
+        d.RootElement.TryGetProperty("temperature", out _).Should().BeFalse("reasoning models reject a non-default temperature");
+        d.RootElement.GetProperty("max_completion_tokens").GetInt32().Should().Be(2048);
+    }
+
+    [Fact]
+    public async Task ErrorBody_IsRedactedAndCapped_BeforeItReachesTheExceptionMessage()
+    {
+        var key = "sk-live-THISISThE_REAL_KEY_012345";
+        var body = "{\"error\":\"bad request; echoed Authorization: Bearer " + key + " and api_key=" + key + " \"}" + new string('x', 600);
+        var h = new ControlledHttpMessageHandler
+        {
+            Handler = (r, c) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            }),
+        };
+        var adapter = new DirectOpenAiCompatibleGatewayAdapter(
+            "https://api.openai.com/v1", TestSecretStores.With("secret://test/openai", key), "secret://test/openai", new HttpClient(h));
+
+        var act = async () => await adapter.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "hi", 0.2, 50, "c"));
+        var ex = await act.Should().ThrowAsync<AmccaException>();
+
+        ex.Which.Message.Should().NotContain(key);
+        ex.Which.Message.Should().Contain("[REDACTED]");
+        ex.Which.Message.Length.Should().BeLessThan(400, "the provider body is capped before it can flood the log");
+    }
+
+    [Fact]
     public async Task DEF006_06_Http401_ThrowsAuthException()
     {
         var mockHandler = new ControlledHttpMessageHandler

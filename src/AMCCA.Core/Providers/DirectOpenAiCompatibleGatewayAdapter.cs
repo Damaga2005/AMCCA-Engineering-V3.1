@@ -255,10 +255,11 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
 
             if (!httpResponse.IsSuccessStatusCode)
             {
-                // Include the provider's own error body (truncated) — a 400 without it is undiagnosable.
-                // The body is the provider's JSON error, not our request, so it carries no secret.
-                var body = await httpResponse.Content.ReadAsStringAsync(ct);
-                if (body.Length > 400) body = body.Substring(0, 400) + "…";
+                // Include the provider's own error body — a 400 without it is undiagnosable — but the
+                // body is attacker-influenced and some providers echo request material, so redact the
+                // resolved key and anything token-shaped and cap the length before it reaches the log.
+                var body = (await httpResponse.Content.ReadAsStringAsync(ct)).Replace(apiKey, "[REDACTED]");
+                body = ProviderErrorText.Sanitize(body);
                 throw new AmccaException(
                     AmccaErrors.Ai001,
                     ErrorCategory.Provider,

@@ -54,7 +54,7 @@ public class ConfigurationContractTests
         config.Providers.Gateway.BaseUrl.Should().Be("https://generativelanguage.googleapis.com/v1beta/openai");
         config.Providers.Gateway.DefaultModelId.Should().Be("gemini-2.5-flash", "D-036: agents ask the gateway for this model");
         config.Providers.Gateway.CapabilitiesVerified.Should().BeFalse("--probe flips it after a live probe");
-        config.AutonomyMode.Should().Be("ASSISTED", "ships ASSISTED so it loads; --probe promotes to AUTONOMOUS");
+        config.AutonomyMode.Should().Be("ASSISTED", "ships ASSISTED so it loads; the operator sets AUTONOMOUS by hand");
     }
 
     [Fact]
@@ -157,6 +157,22 @@ currency: EUR
         var act = () => configService.LoadFromYaml(modifiedYaml);
 
         act.Should().Throw<AmccaException>();
+    }
+
+    [Fact]
+    public void ReasoningModelWithoutDefaultModelId_AbortsWithCfg004()
+    {
+        // D-037: reasoning_model only shapes the request for the id in default_model_id; with none set
+        // the agents use their non-reasoning constant and the flag is a silent no-op, so reject it.
+        var configService = new ConfigService(_schemaJson);
+        var invalidYaml = _exampleYaml.Replace(
+            "    capabilities_verified: false",
+            "    capabilities_verified: false\n    reasoning_model: true");
+
+        var act = () => configService.LoadFromYaml(invalidYaml);
+
+        act.Should().Throw<AmccaException>()
+            .Where(e => e.ErrorCode == AmccaErrors.Cfg004);
     }
 
     [Fact]

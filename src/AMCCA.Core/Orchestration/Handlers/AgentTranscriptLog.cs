@@ -21,7 +21,9 @@ internal static class AgentTranscriptLog
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "AMCCA", "logs");
             Directory.CreateDirectory(dir);
-            var path = Path.Combine(dir, $"agent-{stage}-{productionId}.log");
+            // Timestamp in the name: a stage that fails routes to rework and runs again, and a fixed
+            // name would let the retry overwrite the failed run's transcript — the one worth reading.
+            var path = Path.Combine(dir, $"agent-{stage}-{productionId}-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.log");
 
             var sb = new StringBuilder();
             sb.AppendLine($"# {stage} agent — production {productionId}");
