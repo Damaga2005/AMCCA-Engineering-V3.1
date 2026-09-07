@@ -12,10 +12,13 @@ namespace AMCCA.Core.Memory;
 public class MemoryRetrievalService
 {
     private readonly DatabaseConnectionFactory _factory;
+    private readonly TimeProvider _time;
 
-    public MemoryRetrievalService(DatabaseConnectionFactory factory)
+    // M1: the clock is injectable so the SPEC/22 recency-decay math is testable deterministically.
+    public MemoryRetrievalService(DatabaseConnectionFactory factory, TimeProvider? timeProvider = null)
     {
         _factory = factory;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     public async Task StoreMemoryAsync(MemoryRecord record)
@@ -94,7 +97,7 @@ public class MemoryRetrievalService
         }
 
         var scored = new List<MemorySearchResult>();
-        var now = DateTime.UtcNow;
+        var now = _time.GetUtcNow().UtcDateTime;
 
         foreach (var rec in records)
         {

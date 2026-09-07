@@ -48,6 +48,10 @@ internal static class Composition
     {
         services.AddSingleton(connectionFactory);
         services.AddSingleton(config);
+        // M1: one shared clock. Components with time-comparison logic (ApprovalManager expiry,
+        // JobManager leases, ...) take an optional TimeProvider; production uses the system clock,
+        // tests pass FakeTimeProvider.
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<MigrationService>();
         services.AddSingleton<ISecretStore, WindowsDpapiSecretStore>();
 
