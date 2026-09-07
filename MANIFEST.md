@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 437
-**Total bytes:** 2732217
+**Total bytes:** 2732497
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -251,7 +251,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Agents/AgentLoopModels.cs` | `971beb2a7b94047d0271ed6c585608a630d776dfea7400b00113b838c4b10e1f` | 2083 |
 | `src/AMCCA.Core/Agents/AgentProtocol.cs` | `e8cc7d1d9aea940d9f383415ab4dcb28e94f39b3b3b3ff3a4b5a3480e3ff934e` | 5129 |
 | `src/AMCCA.Core/Agents/AgentRunSession.cs` | `0abc4b5a7c5ce4e1073b81a23ad71a7dff9bc06ff3bbb1b431c4e8fe4976366e` | 3070 |
-| `src/AMCCA.Core/Agents/AgentRuntime.cs` | `0b549bfb49201e38464379f0eb6867318ad96d595fd37f66b76543ec039455a0` | 20481 |
+| `src/AMCCA.Core/Agents/AgentRuntime.cs` | `c835d598adb19ca59f714618b3e1438c31b74ead20fffa5598e6e96df102cf13` | 20761 |
 | `src/AMCCA.Core/Agents/IModelCostStore.cs` | `7521acf6ac674b7a8a8a0f56672503ed5d191ffbbeab9b3bdba8323bd8943133` | 1572 |
 | `src/AMCCA.Core/Artifacts/ArtifactStore.cs` | `20c3c9be6afd5da07fb32254da7a135cabfd20afae23065686dc834f7ca454a8` | 7507 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `fd372b224d253491600ba623409f515c5379585ad0dc8db3f3d6977c1f1019eb` | 6893 |

@@ -159,7 +159,10 @@ public class AgentRuntime
         IReadOnlyDictionary<string, decimal>? toolCosts = null,
         int maxIterations = 12,
         double temperature = 0.2,
-        int maxTokensPerTurn = 2048,
+        // Generous per-turn ceiling: reasoning models (OpenAI o-series / GPT-5, gpt-oss) spend part of
+        // max_completion_tokens on hidden reasoning, so 2048 left no room for the actual tool-call /
+        // final-answer envelope and the loop stalled with empty content.
+        int maxTokensPerTurn = 8192,
         CancellationToken ct = default)
     {
         using var linkedCts = contract.TimeoutSeconds > 0
