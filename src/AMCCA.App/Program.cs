@@ -39,6 +39,11 @@ public static class Program
             return RunOrchestrator(args);
         }
 
+        if (args.Length > 0 && (args[0] == "--set-secret" || args[0] == "--probe" || args[0] == "--seed-demo"))
+        {
+            return LocalRunCli.RunAsync(args).GetAwaiter().GetResult();
+        }
+
         var app = new App();
         return app.Run();
     }
@@ -52,6 +57,12 @@ public static class Program
         var (dbDir, dbPath) = Composition.ResolvePaths();
         var connectionFactory = new DatabaseConnectionFactory(dbPath);
         var config = Composition.LoadConfig(dbDir);
+
+        // Let config.yaml use %LOCALAPPDATA% etc. in data_root; empty -> the DB dir.
+        config.DataRoot = string.IsNullOrWhiteSpace(config.DataRoot)
+            ? dbDir
+            : Environment.ExpandEnvironmentVariables(config.DataRoot);
+        Directory.CreateDirectory(config.DataRoot);
 
         var logDir = Path.Combine(dbDir, "logs");
         Directory.CreateDirectory(logDir);
@@ -98,15 +109,23 @@ public static class Program
             AMCCA.Core.Agents.IModelCostStore? costStore = gw is null ? null
                 : new AMCCA.Core.Monetization.ModelCostStore(cf);
 
+            // D-036: the model id the agents ask the gateway for comes from config; absent → their
+            // built-in constant.
+            var modelId = config.Providers.Gateway.DefaultModelId;
+            var researchOpts = string.IsNullOrWhiteSpace(modelId) ? null
+                : AMCCA.Core.Orchestration.Handlers.ResearchAgentOptions.Default with { ModelId = modelId };
+            var scriptOpts = string.IsNullOrWhiteSpace(modelId) ? null
+                : AMCCA.Core.Orchestration.Handlers.ScriptAgentOptions.Default with { ModelId = modelId };
+
             AMCCA.Core.Orchestration.Handlers.IResearchAgent? researchAgent = gw is null ? null
                 : new AMCCA.Core.Orchestration.Handlers.AgentResearchAgent(
                     prods, sp.GetRequiredService<AMCCA.Core.Research.ResearchService>(), audit, gw,
-                    options: null, modelPricing: pricing, modelCostStore: costStore);
+                    options: researchOpts, modelPricing: pricing, modelCostStore: costStore);
 
             AMCCA.Core.Orchestration.Handlers.IScriptAgent? scriptAgent = gw is null ? null
                 : new AMCCA.Core.Orchestration.Handlers.AgentScriptAgent(
                     prods, cf, audit, gw, sp.GetRequiredService<AMCCA.Core.Artifacts.ArtifactStore>(),
-                    options: null, modelPricing: pricing, modelCostStore: costStore);
+                    options: scriptOpts, modelPricing: pricing, modelCostStore: costStore);
 
             var registry = new StageHandlerRegistry();
             registry.Register("INIT", new InitStageHandler());

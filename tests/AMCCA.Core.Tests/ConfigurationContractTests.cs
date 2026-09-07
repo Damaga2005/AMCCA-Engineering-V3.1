@@ -44,6 +44,27 @@ public class ConfigurationContractTests
     }
 
     [Fact]
+    public void GeminiRunTemplate_ValidatesAndCarriesTheModelId()
+    {
+        var yaml = File.ReadAllText(Path.Combine(_repoRoot, "CONFIG", "config.gemini.example.yaml"));
+        var config = ConfigService.CreateWithBundledSchema().LoadFromYaml(yaml);
+
+        config.Providers.Gateway.Id.Should().Be("gemini");
+        config.Providers.Gateway.Enabled.Should().BeTrue();
+        config.Providers.Gateway.BaseUrl.Should().Be("https://generativelanguage.googleapis.com/v1beta/openai");
+        config.Providers.Gateway.DefaultModelId.Should().Be("gemini-2.0-flash", "D-036: agents ask the gateway for this model");
+        config.Providers.Gateway.CapabilitiesVerified.Should().BeFalse("--probe flips it after a live probe");
+        config.AutonomyMode.Should().Be("ASSISTED", "ships ASSISTED so it loads; --probe promotes to AUTONOMOUS");
+    }
+
+    [Fact]
+    public void DefaultModelId_IsOptional_AndNullWhenAbsent()
+    {
+        var config = new ConfigService(_schemaJson).LoadFromYaml(_exampleYaml);
+        config.Providers.Gateway.DefaultModelId.Should().BeNull("the canonical example does not set one");
+    }
+
+    [Fact]
     public void CreateWithBundledSchema_ValidatesCanonicalExampleConfig()
     {
         // The App startup path (SPEC/49 gates 1-2) has no repo checkout to read SCHEMAS/config.schema.json

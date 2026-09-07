@@ -24,10 +24,11 @@ que construyó el pipeline). Volvió a auditar `main` con ojos nuevos tras el me
 | **M5** | Med | **Sin test end-to-end del agente real** (`AgentResearchAgent → AgentScriptAgent → QaStageHandler` por `OrchestratorEngine` contra un `IProviderGateway` falso). | **CERRADO** `e02a03c`. `AgentPipelineEndToEndTests`: una producción conducida por `OrchestratorEngine.RunTickAsync` a través de la cadena real RESEARCHING → RESEARCH_VERIFIED → CONCEPT_SELECTED → SCRIPTING → SCRIPT_VERIFIED con los agentes reales `AgentResearchAgent`/`AgentScriptAgent` y el handler real `ConceptSelectionStageHandler`, contra un gateway *scripted*. Asevera transiciones reales, artefacto SCRIPT persistido, concepto `SELECTED` + presupuesto reservado (camino feliz de M4 por el motor) y fila `cost_events` `SETTLEMENT`/`RECONCILED` (H1 por el motor). La mitad generativa de RESEARCHING (bucle de *tools*) sigue cubierta por `AgentResearchAgentContractTests` + `AgentLoopContractTests`. |
 | **L1** | Low | **`OAuthManager.RevokeTokenAsync` se tragaba el fallo de revocación** en `catch {}` y luego borraba el secreto local + marcaba DISCONNECTED sin dejar rastro. | **CERRADO** | `23ab13c`. `catch` acotado a `HttpRequestException`/`TaskCanceledException`; cada revocación escribe fila `OAUTH_REVOKED` en `audit_log` (`ALLOWED`/`ERROR`). El *disconnect* local sigue siendo incondicional (hay que poder soltar una cuenta rota). 2 tests. |
 | **L2** | Low | **`--orchestrator` hace `new WindowsDpapiSecretStore()`** → `PlatformNotSupportedException` fuera de Windows. | **Sin cambio.** El TFM es `net8.0-windows`; la app no arranca fuera de Windows de todas formas. No-issue funcional. |
-| **L3** | Low | **`ModelId "gpt-4o-mini"` *hardcoded*** en `ResearchAgentOptions.Default` y `ScriptAgentOptions.Default`. | **Sin cambio.** Ya está marcado `ponytail:` con su ruta de mejora. El arreglo correcto (resolver desde `model_registry` o de config) es un cambio de comportamiento aparte; D-034 introduce el mecanismo de precios pero no el de selección de modelo. |
+| **L3** | Low | **`ModelId "gpt-4o-mini"` *hardcoded*** en `ResearchAgentOptions.Default` y `ScriptAgentOptions.Default`; `Program.cs` construía los agentes con `options: null`. | **CERRADO** (rama `feat/local-run-gemini`). `config.providers.gateway.default_model_id` (ADR **D-036**); `Program.cs` lo lee y lo pasa a ambos agentes. Completa el mecanismo que anticipaba D-034. |
 
 **Cerrados con código: H1, M3, M4, L1, M5** (+ base de H1 en `1a497a3`) **y M1** (parcial deliberado: lógica temporal cubierta, timestamps de solo escritura dejados en reloj del sistema).
-**Cerrados por análisis (ya cubierto / diseño / TFM): H2, M2, L2, L3.**
+**Cerrados por análisis (ya cubierto / diseño / TFM): H2, M2, L2.**
+**Cerrado con código en trabajo posterior: L3** (D-036, al conectar Gemini).
 **Los diez hallazgos están cerrados.**
 
 ---
@@ -44,7 +45,8 @@ que construyó el pipeline). Volvió a auditar `main` con ojos nuevos tras el me
 | **M3** | **P1** | Una excepción async inesperada en el hilo UI mata el proceso sin log. | Red global de excepciones + logger a fichero. |
 | **M5** | **P2** | Menor confianza en la ruta agente-real E2E. | `AgentPipelineEndToEndTests`: cadena RESEARCHING→…→SCRIPT_VERIFIED por el motor con agentes y handlers reales. |
 | **L1** | **P1** | Un fallo de revocación de token OAuth se perdía sin rastro. | Auditado (`OAUTH_REVOKED`, `ERROR`). |
-| **L2 / L3** | **P2** | Marginal / ya mitigado. | Sin acción. |
+| **L2** | **P2** | Marginal (TFM Windows). | Sin acción. |
+| **L3** | **P2** | El modelo era constante de código. | `default_model_id` en config (D-036). |
 
 ---
 

@@ -1,0 +1,76 @@
+# AMCCA configuration — local end-to-end run against Google Gemini (see RUN_LOCAL.md)
+# Validated at startup against SCHEMAS/config.schema.json.
+#
+# Gemini is reached through Google's OpenAI-compatibility endpoint, so the built-in
+# DirectOpenAiCompatibleGatewayAdapter works with no new adapter. The endpoint is a public HTTPS host,
+# so it passes the SSRF guard (a localhost router like OmniRoute would not).
+
+schema_version: "3.1.0"
+
+environment: DEVELOPMENT
+autonomy_mode: ASSISTED           # `AMCCA.exe --probe` promotes this to AUTONOMOUS after a live probe
+                                  # succeeds (AUTONOMOUS is refused while capabilities_verified is
+                                  # false, D-028 — and this file would not even load).
+publishing_enabled: false         # safe default — the run stops before any publish stage anyway
+dry_run: true
+data_root: "%LOCALAPPDATA%/AMCCA/data"
+currency: EUR
+
+logging:
+  level: Information
+  retention_days: 30
+
+budgets:
+  per_production: "5.000000"
+  per_rework:     "2.000000"
+  per_recovery:   "1.000000"
+  daily:          "25.000000"
+  monthly:        "300.000000"
+  warn_percent:   70
+  pause_percent:  85
+  block_percent:  100
+
+storage:
+  minimum_free_gb: 20
+  temp_retention_hours: 24
+  cache_retention_days: 7
+
+providers:
+  gateway:
+    id: "gemini"                  # anything != "omnirouters" -> DirectOpenAiCompatibleGatewayAdapter
+    enabled: true
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai"  # adapter appends /chat/completions
+    api_key_secret_ref: "secret://amcca/gemini_api_key"                  # set via: AMCCA.exe --set-secret secret://amcca/gemini_api_key
+    timeout_seconds: 120
+    capabilities_verified: false  # `AMCCA.exe --probe` flips this to true after a live probe succeeds
+    default_model_id: "gemini-2.0-flash"   # or gemini-1.5-pro / whatever is current in your Google AI Studio
+    # Add Gemini's current per-1,000,000-token prices here to get RECONCILED cost_events. Leave [] and
+    # every model call is recorded ESTIMATED_UNRECONCILED (honest, not a fake zero — D-034 / SPEC/21).
+    model_pricing: []
+    # Example once you have the numbers from https://ai.google.dev/gemini-api/docs/pricing :
+    #   - model_id: "gemini-2.0-flash"
+    #     input_per_1m_tokens: "0.100000"
+    #     output_per_1m_tokens: "0.400000"
+    #     currency: "EUR"
+    #     retrieved_at: "2026-09-07T00:00:00Z"
+    #     source_ref: "https://ai.google.dev/gemini-api/docs/pricing"
+
+platforms:
+  youtube:
+    enabled: false
+    synthetic_label_required: true
+    capabilities: []
+
+policy:
+  research:
+    min_sources: 2
+    max_attempts: 3
+  qa:
+    overall_min: 8.5
+    critical_min: 8.0
+  rework:
+    max_attempts: 3
+    min_severity: MEDIUM
+  reconcile:
+    max_attempts: 5
+    interval_seconds: 300
