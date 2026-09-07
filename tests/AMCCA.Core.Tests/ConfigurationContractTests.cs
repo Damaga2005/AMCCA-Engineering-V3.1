@@ -52,7 +52,7 @@ public class ConfigurationContractTests
         config.Providers.Gateway.Id.Should().Be("gemini");
         config.Providers.Gateway.Enabled.Should().BeTrue();
         config.Providers.Gateway.BaseUrl.Should().Be("https://generativelanguage.googleapis.com/v1beta/openai");
-        config.Providers.Gateway.DefaultModelId.Should().Be("gemini-2.0-flash", "D-036: agents ask the gateway for this model");
+        config.Providers.Gateway.DefaultModelId.Should().Be("gemini-2.5-flash", "D-036: agents ask the gateway for this model");
         config.Providers.Gateway.CapabilitiesVerified.Should().BeFalse("--probe flips it after a live probe");
         config.AutonomyMode.Should().Be("ASSISTED", "ships ASSISTED so it loads; --probe promotes to AUTONOMOUS");
     }

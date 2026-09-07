@@ -240,10 +240,14 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
 
             if (!httpResponse.IsSuccessStatusCode)
             {
+                // Include the provider's own error body (truncated) — a 400 without it is undiagnosable.
+                // The body is the provider's JSON error, not our request, so it carries no secret.
+                var body = await httpResponse.Content.ReadAsStringAsync(ct);
+                if (body.Length > 400) body = body.Substring(0, 400) + "…";
                 throw new AmccaException(
                     AmccaErrors.Ai001,
                     ErrorCategory.Provider,
-                    $"Model provider returned unsuccessful status code: {(int)httpResponse.StatusCode}.");
+                    $"Model provider returned HTTP {(int)httpResponse.StatusCode}: {body}");
             }
 
             var responseJson = await httpResponse.Content.ReadAsStringAsync(ct);
