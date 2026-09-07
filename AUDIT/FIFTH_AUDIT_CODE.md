@@ -93,14 +93,20 @@ oportunidad) → gate + suite.
 
 ## 5. Estado de certificación (paso 9 — no declarar CERTIFIED sobre un SHA histórico)
 
-`AUDIT/FINAL_RELEASE_CERTIFICATION.md` certifica el *source SHA* `9ba76f4`. Bajo su **propia regla de
-integridad #4** ("cualquier modificación posterior de código o contratos invalida esta certificación
-hasta ejecutar de nuevo el proceso completo"), los commits `23ab13c → 02cdc8f` de esta rama
-**invalidan** esa certificación.
+La certificación previa (`AUDIT/FINAL_RELEASE_CERTIFICATION.md`, source SHA `9ba76f4`) quedó
+**invalidada** por los commits `23ab13c → bef7cba` de esta remediación, bajo su propia regla de
+integridad #4.
 
-**No se declara CERTIFIED ningún SHA en esta auditoría.** La re-certificación requiere, por la regla
-#5 del propio documento: (a) merge a `main`, (b) una ejecución completa del *release certification
-pipeline* de CI (el job pesado de Windows que solo corre en `push` a `main`) verde sobre el commit de
-merge exacto, con `CI commit SHA == source SHA`, y (c) un documento posterior que identifique ese
-nuevo SHA y su run de CI. Hasta entonces el estado es: **remediación entregada y verificada en rama;
-certificación de release pendiente de merge.**
+**Re-certificación completada.** Tras el merge a `main` (PR #4 → commit `08cc158`), el
+*release certification pipeline* de CI se ejecutó sobre ese commit exacto:
+
+- **CI run `34040715143`**, ambos jobs `success`, con `CI commit SHA == source SHA`.
+- Paso "Run Deterministic Release Certification Pipeline" (`release_certification.ps1`):
+  **`CERTIFICATION COMPLETE: RELEASE PASS`**, 15/15 invariantes de release estrictos.
+- Release `.trx`: `768 total | 768 passed | 0 failed | 0 skipped`. Build: `0 errors | 0 warnings`.
+- Instalador: `AMCCA-Setup.exe` 62,376,023 B · `AMCCA-Setup.msi` 61,555,672 B ·
+  `AMCCA-Desktop-win-x64.zip` 72,865,105 B; PE32+ válido; `SHA256SUMS.txt` consistente.
+
+`AUDIT/FINAL_RELEASE_CERTIFICATION.md` reescrito para certificar el **source SHA
+`08cc158c902c1bfc4ccc17dc610a353cde4a8511`**, sustituyendo al `9ba76f4`. El commit documental que
+añade ese documento no es el SHA certificado (regla #2).

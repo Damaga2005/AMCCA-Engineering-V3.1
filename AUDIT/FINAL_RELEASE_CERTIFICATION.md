@@ -1,48 +1,52 @@
 # AMCCA Engineering V3.1 — Final Release Certification
 
-> **CERTIFICACIÓN DE EMISIÓN DE RELEASE:** SEC-01 → SEC-11 SECURITY HARDENING + POST-FIX AUDIT
-> **FECHA DE EMISIÓN:** 2026-09-04
+> **CERTIFICACIÓN DE EMISIÓN DE RELEASE:** FIFTH-AUDIT CODE REMEDIATION (H1 cost accounting,
+> M4 concept gate, M3 UI exception net, L1 OAuth revocation audit)
+> **FECHA DE EMISIÓN:** 2026-09-06
 > **ESTADO OFICIAL:** **RELEASE PASS**
 
-This certification supersedes the previous one (source SHA `782dd9b7f98c637cc92cffd9dcbad9059acf6f39`,
-CI run `33860326908`), which was invalidated under its own integrity rule #4 by the SEC-01 → SEC-11
-security-hardening commit series.
+This certification supersedes the previous one (source SHA `9ba76f4593034632d59070b5bb73e9e4f99ff04d`,
+CI run `33875306007`), which was invalidated under its own integrity rule #4 by the fifth-audit
+remediation commit series (`23ab13c → bef7cba`, merged as `08cc158`). See `AUDIT/FIFTH_AUDIT_CODE.md`
+for the findings and their closure evidence.
 
 ---
 
 ## 1. Identificación y Metadatos de la Versión
 
 - **Repository:** `Damaga2005/AMCCA-Engineering-V3.1`
-- **Branch:** `add_amcca_engineering_repo`
-- **Source SHA certified:** `9ba76f4593034632d59070b5bb73e9e4f99ff04d`
+- **Branch:** `main`
+- **Source SHA certified:** `08cc158c902c1bfc4ccc17dc610a353cde4a8511`
+  (merge commit of PR #4 `fix/audit-remediation` → `main`)
 - **Documentary commit:** this commit (the one adding this document); NOT the certified source SHA.
-- **CI run:** GitHub Actions Run `33875306007` — <https://github.com/Damaga2005/AMCCA-Engineering-V3.1/actions/runs/33875306007>
-- **CI commit SHA:** `9ba76f4593034632d59070b5bb73e9e4f99ff04d`
+- **CI run:** GitHub Actions Run `34040715143` — <https://github.com/Damaga2005/AMCCA-Engineering-V3.1/actions/runs/34040715143>
+- **CI commit SHA:** `08cc158c902c1bfc4ccc17dc610a353cde4a8511`
 - **Source SHA == CI Commit SHA:** PASS
 - **CI conclusion:** `success` — both jobs green, every step green.
 - **Certification model:** the release SHA is the immutable source/artifact commit tested by CI.
   This document is evidence committed afterwards; it is not the source/artifact identity and must
   not be described as CI-certified itself.
 - **Build:** `net8.0-windows` / `Release` (Self-Contained `win-x64`)
-- **Tests (local reproduction on the certified SHA):** `612 passed, 0 failed, 0 skipped`
-  (`dotnet test AMCCA.sln -c Release`)
-- **Build diagnostics (local reproduction):** `0 errors, 0 warnings` (clean `dotnet build -c Release`)
-- **Installer artifact hashes (MSI / EXE / ZIP SHA-256):** recorded in the run's
-  `SHA256SUMS.txt` produced by the "Build WiX Installer" step of CI run `33875306007`.
-  Not transcribed here — the run's logs and artifacts require GitHub authentication to read,
-  and this document does not copy hashes from a different build.
+- **Tests (release `.trx`, verified by the certification pipeline):** `768 total | 768 passed | 0 failed | 0 skipped`
+- **Build diagnostics (`build_diagnostics.json`, verified by the pipeline):** `0 errors | 0 warnings`
+- **Installer artifacts (verified present, non-zero, PE32+ valid, SHA256SUMS.txt consistent):**
+  `AMCCA-Setup.exe` 62,376,023 B · `AMCCA-Setup.msi` 61,555,672 B · `AMCCA-Desktop-win-x64.zip` 72,865,105 B.
+- **Installer artifact hashes (MSI / EXE / ZIP SHA-256):** recorded in the run's `SHA256SUMS.txt`
+  produced by the "Run Deterministic Release Certification Pipeline" step of CI run `34040715143`.
+  Not transcribed here — the run's logs and artifacts require GitHub authentication to read, and this
+  document does not copy hashes from a partial log view.
 
-## 2. CI Evidence — GitHub Actions Run `33875306007` (commit `9ba76f4`)
+## 2. CI Evidence — GitHub Actions Run `34040715143` (commit `08cc158`)
 
 ### Job: `validate-spec` (Ubuntu) — conclusion `success`
 
 | Step | Result |
 |---|---|
 | Install pinned dependencies | success |
-| Structural, contract and drift checks (`validate_package.py`) | success |
-| Conformance tests (schema conditionals, positive/negative cases) | success |
+| Structural, contract and drift checks (`validate_package.py`, 68/68) | success |
+| Conformance tests (schema conditionals, positive/negative cases, 65/65) | success |
 | Repository hygiene check (`test_repository_hygiene.py`) | success |
-| Specification mutation tests (15/15) | success |
+| Specification mutation tests (19/19) | success |
 | Adversarial certification mutation tests (15/15) | success |
 | Generated-artifact drift check (`--check` only, never `--regen`) | success |
 | Release gate (`release_gate.py`) | success |
@@ -53,17 +57,37 @@ security-hardening commit series.
 |---|---|
 | Validate package, conformance, hygiene and mutations on Windows | success |
 | Restore .NET dependencies | success |
-| Build .NET solution (Release) | success |
+| Build .NET solution (Release) — 0 warnings | success |
 | Verify `AMCCA.exe` binary generated and functional | success |
 | Install WiX Toolset | success |
 | Build WiX Installer (`AMCCA-Setup.msi` and `AMCCA-Setup.exe`) | success |
 | Run .NET test suites (Core, Concurrency, Chaos, OAuth, WPF MVVM) | success |
-| **Run Deterministic Release Certification Pipeline** (`release_certification.ps1`) | success |
+| **Run Deterministic Release Certification Pipeline** (`release_certification.ps1`) — `CERTIFICATION COMPLETE: RELEASE PASS`, all 15 release invariants strict | success |
 
-## 3. Security Hardening Closure — SEC-01 → SEC-11
+## 3. Fifth-Audit Code Remediation — closure
 
-Independent post-fix security audit performed on this exact SHA; full matrix in
-`AMCCA ENGINEERING V3.1 — POST-FIX SECURITY AUDIT` (see conversation record / repo history).
+Full findings matrix, P0/P1/P2 classification and `CLAUDE.md` "Never do" review in
+`AUDIT/FIFTH_AUDIT_CODE.md`. Summary of what changed in this release:
+
+| Finding | Change | Contract basis |
+|---|---|---|
+| **H1** (P0) — no AI-spend cost accounting | `config.providers.gateway.model_pricing` (D-034) → `pricing_snapshots` → `decimal` per-turn cost (`ModelCostCalculator`) → folded into `AgentRunSession.AccumulatedCost` so `contract.MaxCost` enforces model spend → one `SETTLEMENT` `cost_events` row per run (`RECONCILED` with a snapshot, `ESTIMATED_UNRECONCILED` without — never a silent zero or an invented price). Ports `IModelPricing`/`IModelCostStore`. | SPEC/20, SPEC/21, `cost-event.schema.json`, D-023/D-031 |
+| **M4** (P1) — `CONCEPT_SELECTED` was a no-op | `ConceptSelectionStageHandler` (D-035): select the operator's opportunity or the highest **pre-computed** score in AUTONOMOUS, reserve the scripting budget, persist the decision + EV snapshot — or `BLOCKED` with a SPEC/05 reason code. Never `NoWorkAdvanceHandler`. | SPEC/12, SPEC/13 T-003/T-004, SPEC/29, DEF-008 |
+| **M3** (P1) — WPF async errors vanished | Global `DispatcherUnhandledException` / `UnobservedTaskException` / `AppDomain` handlers + file-backed Serilog logger; the one unguarded `await` in `OnStartup` wrapped. | SPEC/60 obligation 6 |
+| **L1** (P1) — OAuth revocation failure swallowed | `RevokeTokenAsync` narrows its catch to `HttpRequestException`/`TaskCanceledException` and writes an `OAUTH_REVOKED` `audit_log` row (`ALLOWED` / `ERROR`); local disconnect still unconditional. | SPEC/43 |
+
+Findings closed by analysis (no code change): **H2** (already guarded by `validate_package.py`'s live
+schema build), **M2** (deliberate poison-job protection), **L2** (`net8.0-windows` TFM), **L3**
+(already `ponytail:`-flagged). **M1** and **M5** recommended as their own PRs.
+
+## 4. Security Hardening — SEC-01 → SEC-11 (carried forward, re-verified)
+
+The SEC-01 → SEC-11 controls certified against `9ba76f4` are unchanged in this release. The one
+security-adjacent file touched by the fifth-audit remediation is `OAuthManager.RevokeTokenAsync` (L1):
+`ValidateOAuthEndpoint(revocationEndpoint, "revocation")` still runs `SsrfValidator` before any
+connection (**SEC-03** intact), `SafeOAuthError` is untouched (**SEC-10** intact), and no production
+`HttpClient` parameter was introduced (**SEC-11** intact). The change only narrows a bare `catch` and
+adds an audit row.
 
 | Control | Verdict | Correction (production code) |
 |---|---|---|
@@ -71,53 +95,39 @@ Independent post-fix security audit performed on this exact SHA; full matrix in
 | **SEC-02** OAuth HTTP client / SSRF bypass | PASS | `OAuthManager` takes `ISafeHttpClientFactory` only; no arbitrary `HttpClient`; client created per call from `SafeHttpClientFactory.Default`. |
 | **SEC-03** OAuth token endpoint validation | PASS | `ValidateOAuthEndpoint()` runs `SsrfValidator.ValidateDestinationUri` on authorization / token / refresh / revocation endpoints before any connection. |
 | **SEC-04** OAuth redirect hardening | PASS | `SafeRedirectHandler`: `AllowAutoRedirect=false`, per-hop SSRF re-validation, `Authorization`/`Host` stripped across hops, 5-hop cap → `AMCCA-SEC-003`. |
-| **SEC-05** InMemorySecretStore production misuse | PASS | `InMemorySecretStore : IEphemeralSecretStore`; `SecretStoreGuard.EnsureProductionGrade` rejects ephemeral/absent store with `AMCCA-SEC-002`; invoked in `App.OnStartup` before migrations; production registers `WindowsDpapiSecretStore`. |
+| **SEC-05** InMemorySecretStore production misuse | PASS | `SecretStoreGuard.EnsureProductionGrade` rejects ephemeral/absent store with `AMCCA-SEC-002`; invoked in `App.OnStartup` before migrations; production registers `WindowsDpapiSecretStore`. |
 | **SEC-06** Agent cost reservation ordering | PASS | `AgentRuntime.ExecuteToolCallAsync` reserves cost only after authorization, tool existence, side-effect gate and intent checks; `AgentRunSession.ReleaseCost` rolls back on throw/cancellation. |
-| **SEC-07** Agent output resource exhaustion | PASS | `EnforceOutputResourceLimits` bounds size (512 KB), depth (64, via `JsonDocumentOptions`), property count (10 000), array length (10 000), string length (100 000) before schema evaluation; controlled `AMCCA-AI-003`, no OOM/stack overflow. |
-| **SEC-08** Archive extraction transactional cleanup | PASS | Extraction into `__amcca_staging_<guid>/`; validate every entry; commit only on full success; any failure deletes staging → a rejected archive never touches the target. Residual: per-file `File.Move` commit is not filesystem-atomic across files (documented, acceptable). |
-| **SEC-09** Windows symlink/junction/reparse-point confinement | PASS | `PathConfinement.EnsureConfinedNoReparsePoint` rejects any reparse point between root (exclusive) and candidate (inclusive); wired into `MediaRenderer`, `SafeArchiveExtractor` entry validation, and the staging→target commit. |
+| **SEC-07** Agent output resource exhaustion | PASS | `EnforceOutputResourceLimits` bounds size (512 KB), depth (64), property count (10 000), array length (10 000), string length (100 000) before schema evaluation; controlled `AMCCA-AI-003`. |
+| **SEC-08** Archive extraction transactional cleanup | PASS | Extraction into `__amcca_staging_<guid>/`; validate every entry; commit only on full success; any failure deletes staging. |
+| **SEC-09** Windows symlink/junction/reparse-point confinement | PASS | `PathConfinement.EnsureConfinedNoReparsePoint` rejects any reparse point between root and candidate; wired into `MediaRenderer`, `SafeArchiveExtractor`, staging→target commit. |
 | **SEC-10** OAuth remote error disclosure | PASS | `SafeOAuthError` echoes only a whitelisted short alphanumeric OAuth2 `error` code with HTTP status and provider; never the raw body, tokens, headers, cookies or stack traces. |
-| **SEC-11** HttpClient injection bypass | PASS | `OAuthManager` and the provider gateways: no production `HttpClient` param (test-only `internal` ctor via `InternalsVisibleTo`). `BasePlatformAdapter` and the YouTube/TikTok/Instagram/Twitter adapters obtain their transport from `ISafeHttpClientFactory` (default `SafeHttpClientFactory.Default`); all outbound calls and redirects run through `SsrfValidator` + `SafeRedirectHandler` + coupled-DNS `ConnectCallback`. |
+| **SEC-11** HttpClient injection bypass | PASS | `OAuthManager` and the provider gateways: no production `HttpClient` param (test-only `internal` ctor via `InternalsVisibleTo`); all outbound calls run through `SsrfValidator` + `SafeRedirectHandler` + coupled-DNS `ConnectCallback`. |
 
-Regression review SEC-12 → SEC-20 (OAuth callback binding, DB security, agent tool authorization,
+SEC-12 → SEC-20 regression review (OAuth callback binding, DB security, agent tool authorization,
 EXTERNAL_UNSAFE gate, SSRF DNS rebinding, PKCE/state, ZIP-bomb controls, `SecretReference` format,
-cancellation/timeouts): all intact; SEC-14/15/16/17/19 strengthened (more consumers forced through
-the SSRF-safe pipeline and the secret-reference contract).
+cancellation/timeouts): all intact.
 
-Global bypass search over `src/`: every `new HttpClient(` / `HttpClient?` / `Dns.GetHostAddresses` /
-`InternalsVisibleTo` / `InMemory` occurrence explained — protected, test-only, or benign.
-No unexplained security-sensitive occurrence.
-
-## 4. Security Regression Tests (added by the SEC series)
+## 5. Security Regression Tests
 
 `SecretRefResolutionRegressionTests`, `OAuthSsrfAndDisclosureRegressionTests`,
 `ProductionSecretStoreRegressionTests`, `AgentCostReservationOrderRegressionTests`,
 `AgentOutputResourceLimitRegressionTests`, `ArchiveExtractionStagingRegressionTests`,
-`ReparsePointConfinementRegressionTests`, `PlatformAdapterSsrfRegressionTests` —
-positive and negative cases per SEC, reaching real production code paths (real `SecretReference.Parse`,
-real `SafeHttpClientFactory`, real `SafeRedirectHandler`, real `PathConfinement`, real `AgentRuntime`).
-No existing test was removed or weakened.
-
-## 5. Manifest / Line-Ending Remediation
-
-Commits `7fb7d31` and `61e1d8a` regenerated `MANIFEST.md` / `MANIFEST.sha256` on a Windows checkout
-with `core.autocrlf=true`, so content hashes were computed over CRLF-materialised text. `.gitattributes`
-is `* -text`, so CI (Ubuntu) hashes the verbatim LF blobs — 276 entries mismatched and both CI jobs
-failed fast (run `33873448498`, commit `61e1d8a`). Commit `9ba76f4` sets `core.autocrlf=false`,
-re-materialises the tree verbatim, and regenerates the manifest via `TOOLS/validate_package.py --regen`.
-All 357 entries now equal their git-blob SHA-256. No source or test file changed in that commit.
+`ReparsePointConfinementRegressionTests`, `PlatformAdapterSsrfRegressionTests`,
+`PlatformOAuthContractTests` — positive and negative cases reaching real production code paths.
+Fifth-audit additions: `AgentCostAccountingTests` (7), `ConceptSelectionGateTests` (6), and two new
+`PlatformOAuthContractTests` cases for the revocation-audit path. No existing test removed or weakened.
 
 ## 6. Reglas de Integridad de la Certificación
 
-1. `9ba76f4593034632d59070b5bb73e9e4f99ff04d` es el **release source SHA** certificado.
-2. El commit que añade este documento contiene evidencia documental de la certificación del source SHA anterior.
-3. No se debe afirmar que el documentary commit fue ejecutado por el CI citado en esta certificación
-   (run `33875306007` corresponde a `9ba76f4`).
+1. `08cc158c902c1bfc4ccc17dc610a353cde4a8511` es el **release source SHA** certificado.
+2. El commit que añade este documento contiene evidencia documental; NO es el source SHA certificado.
+3. No se debe afirmar que el documentary commit fue ejecutado por el CI citado aquí
+   (run `34040715143` corresponde a `08cc158`).
 4. Toda futura modificación de código, workflow, tooling, manifiestos o artefactos invalida esta
    certificación hasta ejecutar de nuevo el proceso completo.
 5. Una certificación posterior debe identificar explícitamente el nuevo source SHA y su run de CI exacto.
 6. Los hashes SHA-256 de MSI/EXE/ZIP para este release se leen del `SHA256SUMS.txt` producido por
-   CI run `33875306007`; este documento no los transcribe para no arrastrar hashes de otro build.
+   CI run `34040715143`; este documento no los transcribe para no arrastrar hashes de una vista parcial.
 
 ## 7. Dictamen Final
 
@@ -125,13 +135,15 @@ Bajo la regla:
 
 `IMPLEMENTACIÓN REAL + TEST ADVERSARIAL + INTEGRACIÓN REAL + EVIDENCIA REPRODUCIBLE`
 
-el **source commit** `9ba76f4593034632d59070b5bb73e9e4f99ff04d` queda certificado como **RELEASE PASS**:
+el **source commit** `08cc158c902c1bfc4ccc17dc610a353cde4a8511` queda certificado como **RELEASE PASS**:
 
-- CI run `33875306007` verde en ambos jobs (Ubuntu spec + Windows desktop/WPF/WiX/certification pipeline),
-  con `CI commit SHA == source SHA`.
-- SEC-01 → SEC-11 corregidos, no evitables, auditados de forma independiente sobre este SHA.
-- SEC-12 → SEC-20 intactos.
-- 612/612 tests, build 0/0, `validate_package` 57/57, `conformance` 65/65, mutations 15/15,
-  certification mutations 15/15, `release_gate` PASS (reproducido localmente y en CI).
+- CI run `34040715143` verde en ambos jobs (Ubuntu spec + Windows desktop/WPF/WiX/certification
+  pipeline), con `CI commit SHA == source SHA`.
+- Fifth-audit findings H1/M4/M3/L1 cerrados con código; H2/M2/L2/L3 cerrados por análisis; M1/M5
+  documentados como trabajo propio. `CLAUDE.md` "Never do" revisado punto por punto (`FIFTH_AUDIT_CODE.md` §3).
+- SEC-01 → SEC-11 sin cambios y re-verificados; SEC-12 → SEC-20 intactos.
+- 768/768 tests (release `.trx`), build 0 errores / 0 avisos, `validate_package` 68/68,
+  `conformance` 65/65, spec mutations 19/19, certification mutations 15/15, `release_gate` PASS,
+  `release_certification.ps1` → `CERTIFICATION COMPLETE: RELEASE PASS` (15/15 invariantes estrictos).
 
 **VERDICT: RELEASE PASS**
