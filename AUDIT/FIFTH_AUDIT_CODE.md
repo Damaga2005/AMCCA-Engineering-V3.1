@@ -103,21 +103,22 @@ La certificación previa (`AUDIT/FINAL_RELEASE_CERTIFICATION.md`, source SHA `9b
 **invalidada** por los commits `23ab13c → bef7cba` de esta remediación, bajo su propia regla de
 integridad #4.
 
-**Re-certificación completada (tres veces).** `08cc158` (PR #4, H1/M4/M3/L1) → `34c3cb8` (PR #5,
-M5/M1) → `3369019` (PR #7, resiliencia del orquestador: 5xx reintentable, detalle de `ORC-002`
-logueado, fix del *secret store* del CLI local, D-036) — cada cierre de código invalida la
-certificación previa por la regla #4, y cada uno se re-certificó sobre su commit de merge exacto.
+**Re-certificación completada (cuatro veces).** `08cc158` (PR #4) → `34c3cb8` (PR #5) → `3369019`
+(PR #7, D-036) → **`bf8fb50`** (PR #8 D-037 + PR #9: *fixes* del *run* real contra `gpt-4o` — 16384
+tokens/turno, *nudge* de tools, log de transcript, esquemas de tools explícitos, `fetch_source`
+idempotente). Cada cierre de código invalida la certificación previa (regla #4) y se re-certifica
+sobre su commit de merge exacto.
 
-Certificación vigente — `main` @ **`3369019d8649e3704259202c30f16ae63d61a8da`**:
+Certificación vigente — `main` @ **`bf8fb50b5a6245760663927ec9b4140ad7d25347`**:
 
-- **CI run `34127042399`**, ambos jobs `success`, con `CI commit SHA == source SHA`
-  (`HEAD valid: PASS (3369019d86)` en el pipeline).
-- "Run Deterministic Release Certification Pipeline" (`release_certification.ps1`):
-  **`CERTIFICATION COMPLETE: RELEASE PASS`**, 15/15 invariantes de release estrictos.
-- Release `.trx`: `772 total | 772 passed | 0 failed | 0 skipped`. Build: `0 errors | 0 warnings`.
-- Instalador: `AMCCA-Setup.exe` 62,379,903 B · `AMCCA-Setup.msi` 61,563,864 B ·
-  `AMCCA-Desktop-win-x64.zip` 72,870,970 B; PE32+ válido; `SHA256SUMS.txt` consistente.
+- **CI run `34146788799`**, ambos jobs `success`, `CI commit SHA == source SHA`
+  (`HEAD valid: PASS (bf8fb50b5a)` en el pipeline).
+- "Run Deterministic Release Certification Pipeline": **`CERTIFICATION COMPLETE: RELEASE PASS`**,
+  15/15 invariantes estrictos.
+- Release `.trx`: `773 total | 773 passed | 0 failed | 0 skipped`. Build: `0 errors | 0 warnings`.
+- Instalador: `AMCCA-Setup.exe` 62,418,775 B · `AMCCA-Setup.msi` 61,608,920 B ·
+  `AMCCA-Desktop-win-x64.zip` 72,877,499 B; PE32+ válido; `SHA256SUMS.txt` consistente.
 
 `AUDIT/FINAL_RELEASE_CERTIFICATION.md` certifica el **source SHA
-`3369019d8649e3704259202c30f16ae63d61a8da`**. El commit documental que añade ese documento no es el
+`bf8fb50b5a6245760663927ec9b4140ad7d25347`**. El commit documental que añade ese documento no es el
 SHA certificado (regla #2).
