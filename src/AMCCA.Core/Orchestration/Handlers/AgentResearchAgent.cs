@@ -77,9 +77,11 @@ public sealed class AgentResearchAgent : IResearchAgent
         // The result is intentionally not acted on here: ResearchStageHandler re-checks the DB state
         // (SPEC/26) and decides advance / rework / block. A run that fails on budget or protocol still
         // leaves whatever verified claims it managed to record.
-        await runtime.RunAgentAsync(
+        var result = await runtime.RunAgentAsync(
             contract, BuildSystemPrompt(prod), toolContext, _gateway, _options.ModelId, session,
             toolCosts: null, maxIterations: _options.MaxIterations, ct: ct);
+
+        AgentTranscriptLog.Write("research", productionId, result);
     }
 
     private static string BuildSystemPrompt(Production prod) => $@"

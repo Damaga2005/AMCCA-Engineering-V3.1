@@ -6,8 +6,8 @@
 its own hash; V2 shipped a manifest that listed itself, so that entry could never verify.
 
 **Package version:** 3.1.0
-**Files:** 437
-**Total bytes:** 2734061
+**Files:** 438
+**Total bytes:** 2736258
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -292,8 +292,9 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `a77cb915a368d78a1df7015f2fc6ed240309e7db9dbb9a7a227330b56fa12f8b` | 5747 |
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `9452e6db14aa0632449f67b575297ef8ab89400a5575b4c03465cc8561f85b18` | 9398 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `d35899e1e11d5ab4b5abf453f3916af3a3d1c8087f81e006568499ef3718a815` | 224 |
-| `src/AMCCA.Core/Orchestration/Handlers/AgentResearchAgent.cs` | `1d99bca735f4911eb91b8293502a5bff4b1a3c6ca9a031671b6980909d83dc9c` | 5122 |
-| `src/AMCCA.Core/Orchestration/Handlers/AgentScriptAgent.cs` | `6119b497f9debfe0e0516060830969772f5d880f08892a5ad2335acd95eb87de` | 6889 |
+| `src/AMCCA.Core/Orchestration/Handlers/AgentResearchAgent.cs` | `dadbabc31d0f9a5a701845c7c2bcfe00478df8f77dc09f22cae6c7ea8e3d7042` | 5204 |
+| `src/AMCCA.Core/Orchestration/Handlers/AgentScriptAgent.cs` | `915880f60f6910b9e35006789de5af1875a69359190e9535311ea1d89344a89b` | 6956 |
+| `src/AMCCA.Core/Orchestration/Handlers/AgentTranscriptLog.cs` | `3a908f7fd281f0bac40e104f9245efcaefb6d9d2fc77941131621686f5146dad` | 2048 |
 | `src/AMCCA.Core/Orchestration/Handlers/ConceptSelectionStageHandler.cs` | `10bbf170fe0303bdeea99ccbf5b4569eddee0e06c6eaad618722730dc281a2c5` | 7957 |
 | `src/AMCCA.Core/Orchestration/Handlers/MediaStageHandlers.cs` | `144afd29790a3699e04e951e0bf94e78ae3884160472b9bacfac98ff77827501` | 6564 |
 | `src/AMCCA.Core/Orchestration/Handlers/NoWorkAdvanceHandler.cs` | `89ceda455988fae58fe1cea66487967547c5f2a7d248a56b3c144079fb0968e6` | 877 |

@@ -107,6 +107,8 @@ public sealed class AgentScriptAgent : IScriptAgent
             contract, BuildSystemPrompt(prod, claims), toolContext, _gateway, _options.ModelId, session,
             toolCosts: null, maxIterations: _options.MaxIterations, ct: ct);
 
+        AgentTranscriptLog.Write("script", productionId, result);
+
         if (result.Status != AgentRunStatus.Completed || string.IsNullOrWhiteSpace(result.FinalOutput))
         {
             throw new AmccaException(AmccaErrors.Res001, ErrorCategory.Validation,
