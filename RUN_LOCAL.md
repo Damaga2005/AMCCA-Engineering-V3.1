@@ -34,10 +34,10 @@ current per-1M-token prices (otherwise cost rows are `ESTIMATED_UNRECONCILED` �
 AMCCA.exe --set-secret secret://amcca/gemini_api_key
 ```
 
-**3. Probe** — a real `POST /chat/completions` with `max_tokens=1`. On success it sets
-`capabilities_verified: true` **and** promotes `autonomy_mode: ASSISTED → AUTONOMOUS` in your
-`config.yaml` (the template ships ASSISTED because AUTONOMOUS + unverified caps would refuse to load,
-D-028):
+**3. Probe** — a real `POST /chat/completions`. On success it sets `capabilities_verified: true` in
+your `config.yaml` (the template ships it `false` because AUTONOMOUS + unverified caps refuse to load,
+D-028). It does **not** change `autonomy_mode` — set that to `AUTONOMOUS` yourself once you want the
+orchestrator to drive productions unattended:
 
 ```bash
 AMCCA.exe --probe
@@ -49,6 +49,10 @@ AMCCA.exe --probe
 ```bash
 AMCCA.exe --seed-demo "Your video topic here"
 ```
+
+> `--set-secret` / `--probe` / `--seed-demo` are local-dev bootstrap verbs. In a `Release` build they
+> refuse to run unless `AMCCA_ALLOW_BOOTSTRAP=1` is set — they mutate `config.yaml` and write demo
+> rows into the real database, so the shipped installer does not expose them by accident.
 
 **5. Run the orchestrator.** It loops until Ctrl+C:
 

@@ -136,19 +136,21 @@ internal static class LocalRunCli
 
         Console.WriteLine($"Probe OK ({result.LatencyMs} ms).");
 
+        // A green probe is exactly the evidence D-028 asks for, so flip capabilities_verified. Do NOT
+        // touch autonomy_mode — choosing AUTONOMOUS (let the machine spend and publish unattended) is
+        // the operator's call, not a side effect of a capability check. Edit config.yaml by hand for that.
         var text = File.ReadAllText(configPath);
-        var flipped = Regex.Replace(text, @"(capabilities_verified\s*:\s*)false", "${1}true");
-        // A green probe is exactly the evidence D-028 asks for; promote ASSISTED -> AUTONOMOUS so the
-        // orchestrator drives the production instead of parking at every gate.
-        flipped = Regex.Replace(flipped, @"(^autonomy_mode\s*:\s*)ASSISTED", "${1}AUTONOMOUS", RegexOptions.Multiline);
+        var flipped = Regex.Replace(text, @"(^\s*capabilities_verified\s*:\s*)false", "${1}true", RegexOptions.Multiline);
         if (flipped != text)
         {
             File.WriteAllText(configPath, flipped);
-            Console.WriteLine("config.yaml updated: capabilities_verified: true, autonomy_mode: AUTONOMOUS.");
+            Console.WriteLine("config.yaml updated: capabilities_verified: true.");
+            if (Regex.IsMatch(flipped, @"^\s*autonomy_mode\s*:\s*ASSISTED", RegexOptions.Multiline))
+                Console.WriteLine("autonomy_mode is still ASSISTED — set it to AUTONOMOUS yourself to have the orchestrator drive productions.");
         }
         else
         {
-            Console.WriteLine("config.yaml already has capabilities_verified: true / autonomy_mode set — no change.");
+            Console.WriteLine("config.yaml already has capabilities_verified: true — no change.");
         }
         return 0;
     }
