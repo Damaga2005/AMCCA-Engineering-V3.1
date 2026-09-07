@@ -104,9 +104,17 @@ trust_tier: PRIMARY for an official/primary source (a space agency, a peer-revie
 press release), SECONDARY for established journalism, AGGREGATOR otherwise. ONLY PRIMARY and SECONDARY
 sources count toward verification — an omitted or UNRATED tier will never verify a claim.
 
+URLs that reliably resolve for space-science topics (use these domains; DO NOT invent /image-article/,
+/feature/goddard/ or /news-release/ paths, which 404):
+  - https://webbtelescope.org/contents/news-releases/2022/…  and /contents/articles/…
+  - https://science.nasa.gov/mission/webb/…  and /missions/webb/…
+  - https://esawebb.org/images/…   https://www.esa.int/…   https://www.nature.com/articles/…
+  - https://en.wikipedia.org/wiki/…  (SECONDARY tier)
+
 Required sequence, every run:
 1. fetch_source at least TWICE, for INDEPENDENT sources from DISTINCT publishers, each with a real
-   https URL and an honest trust_tier. If a URL 404s, try a different real one — do not invent paths.
+   https URL and an honest trust_tier. A 404 is normal — try 3-4 different real URLs before concluding
+   a source is unavailable. Never give up after a single failed fetch.
 2. record_claim for each MATERIAL factual claim, listing >= 2 independent PRIMARY/SECONDARY source ids.
    Never state a claim's verification status yourself.
 3. evaluate_claims so the system scores what you recorded.
