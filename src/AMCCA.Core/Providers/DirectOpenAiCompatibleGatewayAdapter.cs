@@ -186,10 +186,6 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
                 model = request.ModelId,
                 messages = new[] { new { role = "user", content = request.Prompt } },
                 max_completion_tokens = request.MaxTokens,
-                // low: the agent loop is tool selection + envelope emission, not a hard reasoning task.
-                // "medium" (the default) burned the whole budget on hidden reasoning and returned empty
-                // content on the first turn.
-                reasoning_effort = "low",
             }
             : new
             {
