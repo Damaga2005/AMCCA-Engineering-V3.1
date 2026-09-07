@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 438
-**Total bytes:** 2738160
+**Total bytes:** 2740267
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -346,7 +346,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Research/ClaimValidator.cs` | `b16d3aff481491822ecdcb2d8da60e7998a3ef5fdd15260e1a00795b3e59eada` | 2040 |
 | `src/AMCCA.Core/Research/ResearchModels.cs` | `681ef7c07810e4f89c8cc97ef46fee8112037f1e299991f96c50bc3828c2e20b` | 1450 |
 | `src/AMCCA.Core/Research/ResearchScraper.cs` | `deb3756e131bee488bb3410b6dc5d2a09a6722a6a46242bfaaa2fc99ef060771` | 471 |
-| `src/AMCCA.Core/Research/ResearchService.cs` | `3a17a4c3003f9cba08e1027989dbb6ea0881c5f50f2aba83bb126f77b63a5dbc` | 10783 |
+| `src/AMCCA.Core/Research/ResearchService.cs` | `62757ef49ba05c11ad1331ae21e400ab277ef2888a0288640a932bd5f388c4d4` | 12890 |
 | `src/AMCCA.Core/Scripts/ScriptDocumentSerializer.cs` | `8cac63f1706143e20c63d424dfe22e93cadca83da59e0d4cd3695ead1c409453` | 1309 |
 | `src/AMCCA.Core/Scripts/ScriptModels.cs` | `c4fdda5d199969f15796bae4171e2a5662f591e4d3278d6d6ea76fbc70d91807` | 347 |
 | `src/AMCCA.Core/Scripts/ScriptValidator.cs` | `70b43aa51c9f333677887009307cd27147a45a0023e0537e3a701af7be000552` | 2062 |

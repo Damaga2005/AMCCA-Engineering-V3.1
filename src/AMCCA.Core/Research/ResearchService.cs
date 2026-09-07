@@ -52,6 +52,12 @@ public class ResearchService : IDisposable
             var contentBytes = await response.Content.ReadAsByteArrayAsync(ct);
             var contentHash = Convert.ToHexString(SHA256.HashData(contentBytes)).ToLowerInvariant();
 
+            // Idempotent: sources has UNIQUE(url, content_hash). A URL ingested earlier (this run or a
+            // prior one) returns the existing row so the agent can still link it to a claim, instead of
+            // fetch_source surfacing a raw UNIQUE-violation the model reads as a failure.
+            var existing = await GetSourceByUrlAndHashAsync(url, contentHash, ct);
+            if (existing is not null) return existing;
+
             var source = new Source
             {
                 Id = UlidGenerator.NewUlid(),
@@ -65,7 +71,18 @@ public class ResearchService : IDisposable
                 CreatedAt = DateTimeOffset.UtcNow.ToString("O")
             };
 
-            await InsertSourceAsync(source, ct);
+            try
+            {
+                await InsertSourceAsync(source, ct);
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 19)
+            {
+                // Lost a race (or content_hash differs on a matching url): fall back to whatever is stored.
+                var raced = await GetSourceByUrlAndHashAsync(url, contentHash, ct)
+                            ?? await GetSourceByUrlAsync(url, ct);
+                if (raced is not null) return raced;
+                throw;
+            }
             return source;
         }
     }
@@ -107,6 +124,28 @@ public class ResearchService : IDisposable
             RobotsAllowed = source.RobotsAllowed ? 1 : 0,
             source.CreatedAt
         });
+    }
+
+    private const string SourceSelect = @"
+        SELECT id AS Id, url AS Url, publisher AS Publisher, published_at AS PublishedAt,
+               retrieved_at AS RetrievedAt, content_hash AS ContentHash, trust_tier AS TrustTier,
+               robots_allowed AS RobotsAllowed, created_at AS CreatedAt
+        FROM sources";
+
+    private async Task<Source?> GetSourceByUrlAndHashAsync(string url, string contentHash, CancellationToken ct)
+    {
+        using var c = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        return await c.QuerySingleOrDefaultAsync<Source>(new CommandDefinition(
+            SourceSelect + " WHERE url = @Url AND content_hash = @Hash LIMIT 1;",
+            new { Url = url, Hash = contentHash }, cancellationToken: ct));
+    }
+
+    private async Task<Source?> GetSourceByUrlAsync(string url, CancellationToken ct)
+    {
+        using var c = await _connectionFactory.CreateOpenConnectionAsync(ct);
+        return await c.QuerySingleOrDefaultAsync<Source>(new CommandDefinition(
+            SourceSelect + " WHERE url = @Url ORDER BY created_at DESC LIMIT 1;",
+            new { Url = url }, cancellationToken: ct));
     }
 
     public async Task InsertClaimWithSourceAsync(
