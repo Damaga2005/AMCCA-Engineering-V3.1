@@ -77,9 +77,11 @@ public sealed class AgentResearchAgent : IResearchAgent
         // The result is intentionally not acted on here: ResearchStageHandler re-checks the DB state
         // (SPEC/26) and decides advance / rework / block. A run that fails on budget or protocol still
         // leaves whatever verified claims it managed to record.
-        await runtime.RunAgentAsync(
+        var result = await runtime.RunAgentAsync(
             contract, BuildSystemPrompt(prod), toolContext, _gateway, _options.ModelId, session,
             toolCosts: null, maxIterations: _options.MaxIterations, ct: ct);
+
+        AgentTranscriptLog.Write("research", productionId, result);
     }
 
     private static string BuildSystemPrompt(Production prod) => $@"
@@ -89,11 +91,36 @@ Language: {prod.Language}
 Niche: {prod.NicheId ?? "general"}
 
 Goal: establish the factual claims this video will make, each backed by evidence (SPEC/26).
-- For every MATERIAL claim, cite at least two INDEPENDENT authoritative sources (distinct publishers).
-- Use fetch_source to retrieve a source URL; it is stored and content-hashed. Then use record_claim
-  with the claim text and the source ids. Never state a claim's verification status yourself.
-- After recording claims, call evaluate_claims so the system scores them.
-- Iterate: if evaluate_claims reports material claims that are not verified, find more independent
-  sources, record them, and evaluate again.
-- Finish with a final answer once evaluate_claims reports verified == total and total > 0.".Trim();
+
+You do NOT answer the topic yourself. Your only output that counts is what you write to the database
+through the tools. A final answer is worthless unless you have already recorded and verified claims.
+
+Tool envelopes — use these shapes EXACTLY:
+  {{""tool"":""fetch_source"",""input"":{{""url"":""https://…"",""publisher"":""nasa.gov"",""trust_tier"":""PRIMARY""}}}}
+  {{""tool"":""record_claim"",""input"":{{""text"":""<claim>"",""materiality"":""MATERIAL"",""sources"":[{{""source_id"":""<id>"",""relation"":""SUPPORTS""}}]}}}}
+  {{""tool"":""evaluate_claims"",""input"":{{}}}}
+
+trust_tier: PRIMARY for an official/primary source (a space agency, a peer-reviewed paper, an official
+press release), SECONDARY for established journalism, AGGREGATOR otherwise. ONLY PRIMARY and SECONDARY
+sources count toward verification — an omitted or UNRATED tier will never verify a claim.
+
+URLs that reliably resolve for space-science topics (use these domains; DO NOT invent /image-article/,
+/feature/goddard/ or /news-release/ paths, which 404):
+  - https://webbtelescope.org/contents/news-releases/2022/…  and /contents/articles/…
+  - https://science.nasa.gov/mission/webb/…  and /missions/webb/…
+  - https://esawebb.org/images/…   https://www.esa.int/…   https://www.nature.com/articles/…
+  - https://en.wikipedia.org/wiki/…  (SECONDARY tier)
+
+Required sequence, every run:
+1. fetch_source at least TWICE, for INDEPENDENT sources from DISTINCT publishers, each with a real
+   https URL and an honest trust_tier. A 404 is normal — try 3-4 different real URLs before concluding
+   a source is unavailable. Never give up after a single failed fetch.
+2. record_claim for each MATERIAL factual claim, listing >= 2 independent PRIMARY/SECONDARY source ids.
+   Never state a claim's verification status yourself.
+3. evaluate_claims so the system scores what you recorded.
+4. If evaluate_claims reports material claims not verified, fetch more independent PRIMARY/SECONDARY
+   sources, record_claim (or link more sources), evaluate_claims again.
+5. Only then finish: {{""final"": ""<short summary of the verified claims>""}}.
+
+Do not send a final envelope before step 3 has run at least once, or you will be told to use your tools.".Trim();
 }

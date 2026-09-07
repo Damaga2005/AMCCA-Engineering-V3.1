@@ -123,6 +123,7 @@ public class AiProviderRealIntegrationTests
             d.RootElement.TryGetProperty("temperature", out _).Should().BeFalse("reasoning models reject a non-default temperature");
             d.RootElement.GetProperty("max_completion_tokens").GetInt32().Should().Be(2048);
             d.RootElement.TryGetProperty("max_tokens", out _).Should().BeFalse();
+            
         }
 
         // non-reasoning model: temperature kept, still max_completion_tokens

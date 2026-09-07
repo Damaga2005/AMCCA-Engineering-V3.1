@@ -107,6 +107,8 @@ public sealed class AgentScriptAgent : IScriptAgent
             contract, BuildSystemPrompt(prod, claims), toolContext, _gateway, _options.ModelId, session,
             toolCosts: null, maxIterations: _options.MaxIterations, ct: ct);
 
+        AgentTranscriptLog.Write("script", productionId, result);
+
         if (result.Status != AgentRunStatus.Completed || string.IsNullOrWhiteSpace(result.FinalOutput))
         {
             throw new AmccaException(AmccaErrors.Res001, ErrorCategory.Validation,
@@ -139,11 +141,19 @@ public sealed class AgentScriptAgent : IScriptAgent
             sb.AppendLine($"  - {c.Id}: {c.Text}");
         }
         sb.AppendLine();
-        sb.AppendLine("Write a short spoken script. Rules:");
-        sb.AppendLine("- Every line that states a material fact MUST set is_material_fact=true and claim_id to one of the ids above.");
-        sb.AppendLine("- Non-factual lines (hook, transitions, CTA) set is_material_fact=false and claim_id=null.");
+        sb.AppendLine("Write a short spoken script and finish with ONE envelope of exactly this shape:");
+        sb.AppendLine("{\"final\": {");
+        sb.AppendLine("  \"estimated_spoken_duration_sec\": 45,");
+        sb.AppendLine("  \"lines\": [");
+        sb.AppendLine("    {\"line_number\": 1, \"text\": \"<hook>\", \"claim_id\": null, \"is_material_fact\": false, \"uncertainty_wording_present\": false},");
+        sb.AppendLine("    {\"line_number\": 2, \"text\": \"<a material fact>\", \"claim_id\": \"<one id from the list>\", \"is_material_fact\": true, \"uncertainty_wording_present\": false}");
+        sb.AppendLine("  ]");
+        sb.AppendLine("}}");
+        sb.AppendLine("Rules:");
+        sb.AppendLine("- EVERY line object MUST have line_number (1,2,3,…), text, and is_material_fact. Omitting line_number fails validation.");
+        sb.AppendLine("- Every line that states a material fact: is_material_fact=true and claim_id = one of the ids above.");
+        sb.AppendLine("- Non-factual lines (hook, transitions, CTA): is_material_fact=false and claim_id=null.");
         sb.AppendLine("- Do not assert any fact that is not in the list.");
-        sb.AppendLine("- Finish with {\"final\": { ...the script object matching the schema... }}.");
         return sb.ToString();
     }
 }
