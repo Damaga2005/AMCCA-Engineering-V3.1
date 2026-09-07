@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 438
-**Total bytes:** 2737485
+**Total bytes:** 2738160
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -293,7 +293,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `9452e6db14aa0632449f67b575297ef8ab89400a5575b4c03465cc8561f85b18` | 9398 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `d35899e1e11d5ab4b5abf453f3916af3a3d1c8087f81e006568499ef3718a815` | 224 |
 | `src/AMCCA.Core/Orchestration/Handlers/AgentResearchAgent.cs` | `84204595ee22e66c38313fe2c7a4ea2d5e972314920308fe6fa6153245c42080` | 6407 |
-| `src/AMCCA.Core/Orchestration/Handlers/AgentScriptAgent.cs` | `915880f60f6910b9e35006789de5af1875a69359190e9535311ea1d89344a89b` | 6956 |
+| `src/AMCCA.Core/Orchestration/Handlers/AgentScriptAgent.cs` | `ad86958a2f978e7c723855cbd6724be351c8ce2bae3eb9b117863fe6926a56d0` | 7631 |
 | `src/AMCCA.Core/Orchestration/Handlers/AgentTranscriptLog.cs` | `3a908f7fd281f0bac40e104f9245efcaefb6d9d2fc77941131621686f5146dad` | 2048 |
 | `src/AMCCA.Core/Orchestration/Handlers/ConceptSelectionStageHandler.cs` | `10bbf170fe0303bdeea99ccbf5b4569eddee0e06c6eaad618722730dc281a2c5` | 7957 |
 | `src/AMCCA.Core/Orchestration/Handlers/MediaStageHandlers.cs` | `144afd29790a3699e04e951e0bf94e78ae3884160472b9bacfac98ff77827501` | 6564 |
