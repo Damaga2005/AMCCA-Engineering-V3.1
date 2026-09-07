@@ -827,6 +827,10 @@ def build_schemas(prod_states):
                         "api_key_secret_ref": {"type": "string", "pattern": "^secret://"},
                         "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 900},
                         "capabilities_verified": {"type": "boolean"},
+                        # D-036: the model id every stage-handler agent asks the gateway for. Optional;
+                        # when absent the agents fall back to their built-in constant. Set this to run
+                        # against a specific provider model (e.g. "gemini-2.0-flash").
+                        "default_model_id": {"type": "string", "minLength": 1, "maxLength": 128},
                         # D-034: model token prices are operator-supplied here, materialised into
                         # pricing_snapshots, and are the only source AgentRuntime will price a model
                         # call against. Prices are external and volatile (SPEC/21), so each entry

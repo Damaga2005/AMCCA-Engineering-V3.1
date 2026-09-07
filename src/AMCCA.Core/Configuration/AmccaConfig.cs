@@ -120,6 +120,13 @@ public class GatewayConfig
     public bool CapabilitiesVerified { get; set; }
 
     /// <summary>
+    /// D-036: the model id every stage-handler agent asks the gateway for. Null/empty → the agents use
+    /// their built-in constant. Set to run against a specific provider model (e.g. "gemini-2.0-flash").
+    /// </summary>
+    [JsonPropertyName("default_model_id")]
+    public string? DefaultModelId { get; set; }
+
+    /// <summary>
     /// D-034: operator-supplied model token prices. The only source AgentRuntime prices a model call
     /// against; empty by default, in which case an agent run still completes but records an
     /// ESTIMATED_UNRECONCILED cost event. Materialised into pricing_snapshots (SPEC/21).

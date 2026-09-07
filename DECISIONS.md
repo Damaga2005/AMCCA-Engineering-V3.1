@@ -309,3 +309,15 @@ orchestrator still commits the state transition (DEF-008).
 > reservation committed — were simply not implemented; the state was transited as a no-op, a silent
 > bypass of a decision gate. This resolves the contradiction between SPEC/13 and the former handler's
 > own doc comment in favour of SPEC/13.
+
+### D-036 The agent model id is configuration, not a code constant
+`config.providers.gateway.default_model_id` is the model every stage-handler agent asks the gateway
+for. It is optional; when absent, `ResearchAgentOptions.Default` / `ScriptAgentOptions.Default` keep
+their built-in constant (a development convenience, not a routing decision). `Program.cs` reads it once
+and threads it into both agents. This closes the fifth-audit finding L3 — the model id was hard-coded
+in two `Default` records with no way for an operator to run against a different provider's model — and
+completes the mechanism D-034 anticipated ("ModelId is a constant until config carries one").
+
+> *Fifth-audit defect closed (L3):* `"gpt-4o-mini"` was hard-coded in `ResearchAgentOptions.Default`
+> and `ScriptAgentOptions.Default`, and `Program.cs` constructed both agents with `options: null`, so
+> `--orchestrator` could only ever ask for that one model regardless of the configured provider.
