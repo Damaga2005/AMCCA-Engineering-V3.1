@@ -227,9 +227,10 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
 
             if ((int)httpResponse.StatusCode >= 500)
             {
+                // 5xx is transient — retried by ResilientProviderGateway before the run fails.
                 throw new AmccaException(
                     AmccaErrors.Ai001,
-                    ErrorCategory.Provider,
+                    ErrorCategory.Transient,
                     $"OmniRouters returned server error (HTTP {(int)httpResponse.StatusCode}).");
             }
 

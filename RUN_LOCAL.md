@@ -72,6 +72,29 @@ SELECT text, status FROM claims WHERE production_id = '<id>';
 
 The SCRIPT artifact file is under `%LOCALAPPDATA%/AMCCA/data/`.
 
+## Provider compatibility (learned the hard way)
+
+The gateway is a plain OpenAI-compatible HTTP client (Bearer key, `POST {base_url}/chat/completions`)
+behind the SSRF guard. What that rules in and out:
+
+- **Works:** any endpoint that accepts a raw Bearer key from any client over public HTTPS — OpenAI,
+  Groq, DeepSeek, Mistral, Together, Fireworks, OpenRouter (`https://openrouter.ai/api/v1`), Google
+  Gemini's OpenAI-compat endpoint (`https://generativelanguage.googleapis.com/v1beta/openai`).
+- **Does NOT work — localhost routers.** OmniRoute (`localhost:20128`), a local LiteLLM, etc. The SSRF
+  guard blocks loopback/private IPs at the connect callback and there is no dev override. Expose it via
+  a public tunnel (`omniroute tunnel` → Cloudflare) and point `base_url` at the tunnel URL instead.
+- **Does NOT work — client-gated routers.** AgentRouter (`agentrouter.org`) returns
+  `unauthorized_client_error` ("unauthorized client detected") for any request that is not from an
+  approved tool (opencode, Cursor, …). It checks the client, not just the key.
+- **Model ids drift.** `gemini-2.0-flash` / `gemini-1.5-*` are gone for new keys. Always
+  `GET {base_url}/models` (with the Bearer header, or `?key=` for Gemini native) and copy an id from
+  there. A wrong id is a 404 with a helpful body; a 401 is the key/endpoint.
+- **5xx is retried** (`ResilientProviderGateway`, exponential backoff). Sustained 5xx from an
+  overloaded free tier still trips the circuit breaker and BLOCKs the production — restart
+  `--orchestrator` (fresh circuit) or switch model.
+- **The secret store is one location.** `--set-secret`, `--probe` and `--orchestrator` all use
+  `%LOCALAPPDATA%\AMCCA\secrets`.
+
 ## Notes
 
 - Research needs ≥ 2 independent authoritative sources per material claim (SPEC/26). A weak model or a

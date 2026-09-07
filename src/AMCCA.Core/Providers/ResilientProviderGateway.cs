@@ -42,6 +42,7 @@ public sealed class ResilientProviderGateway : IProviderGateway
 {
     private readonly IProviderGateway _inner;
     private readonly ResiliencePipeline _pipeline;
+    private volatile string? _lastFault;
 
     public string ProviderId => _inner.ProviderId;
 
@@ -81,6 +82,11 @@ public sealed class ResilientProviderGateway : IProviderGateway
             MinimumThroughput = o.CircuitMinimumThroughput,
             SamplingDuration = o.CircuitSamplingDuration,
             BreakDuration = o.CircuitBreakDuration,
+            OnOpened = args =>
+            {
+                _lastFault = args.Outcome.Exception?.Message;
+                return default;
+            },
         });
 
         _pipeline = builder.Build();
@@ -95,10 +101,11 @@ public sealed class ResilientProviderGateway : IProviderGateway
         }
         catch (BrokenCircuitException ex)
         {
+            var cause = _lastFault is { Length: > 0 } f ? $" Last failure: {f}" : "";
             throw new AmccaException(
                 AmccaErrors.Ai001,
                 ErrorCategory.Provider,
-                $"Provider '{_inner.ProviderId}' circuit is open after repeated failures; the call was not attempted.",
+                $"Provider '{_inner.ProviderId}' circuit is open after repeated failures; the call was not attempted.{cause}",
                 retryable: true,
                 innerException: ex);
         }

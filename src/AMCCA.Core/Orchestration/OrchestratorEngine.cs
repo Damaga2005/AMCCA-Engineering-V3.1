@@ -157,9 +157,10 @@ public sealed class OrchestratorEngine
             }
             catch (Exception ex)
             {
+                var inner = ex.InnerException is { } ie ? $" -> {ie.GetType().Name}: {ie.Message}" : "";
                 result = StageResult.Blocked(
                     AmccaErrors.Orc002,
-                    $"Stage handler for '{prod.State}' threw: {ex.Message}");
+                    $"Stage handler for '{prod.State}' threw: {ex.GetType().Name}: {ex.Message}{inner}");
             }
 
             if (result.Kind == StageOutcomeKind.Noop)
@@ -184,7 +185,7 @@ public sealed class OrchestratorEngine
                     correlationId: correlationId, causationId: null, ct: ct);
 
                 report.Actions.Add(new OrchestratorAction(
-                    prod.Id, prod.State, targetState, result.Kind, reasonCode));
+                    prod.Id, prod.State, targetState, result.Kind, reasonCode, result.Detail));
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {

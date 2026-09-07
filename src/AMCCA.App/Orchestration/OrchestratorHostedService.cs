@@ -73,6 +73,10 @@ public sealed class OrchestratorHostedService : BackgroundService
             _logger.LogInformation("Production {ProductionId}: {From} -> {To} ({Outcome}{Reason}).",
                 a.ProductionId, a.FromState, a.ToState, a.Outcome,
                 a.ReasonCode is null ? "" : $" {a.ReasonCode}");
+            if (a.Outcome is not (StageOutcomeKind.Advance or StageOutcomeKind.Noop) && !string.IsNullOrWhiteSpace(a.Detail))
+            {
+                _logger.LogWarning("Production {ProductionId} {To} detail: {Detail}", a.ProductionId, a.ToState, a.Detail);
+            }
         }
 
         foreach (var e in r.Errors)
