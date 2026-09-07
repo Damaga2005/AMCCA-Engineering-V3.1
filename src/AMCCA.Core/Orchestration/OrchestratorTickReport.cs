@@ -8,7 +8,8 @@ public sealed record OrchestratorAction(
     string FromState,
     string ToState,
     StageOutcomeKind Outcome,
-    string? ReasonCode);
+    string? ReasonCode,
+    string? Detail = null);
 
 /// <summary>A production the orchestrator tried and failed to advance this tick (transition threw).</summary>
 public sealed record OrchestratorError(string ProductionId, string State, string Message);

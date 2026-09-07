@@ -230,9 +230,11 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
 
             if ((int)httpResponse.StatusCode >= 500)
             {
+                // 5xx ("model overloaded", gateway timeout, ...) is transient: ResilientProviderGateway
+                // retries Transient with exponential backoff before the run is allowed to fail.
                 throw new AmccaException(
                     AmccaErrors.Ai001,
-                    ErrorCategory.Provider,
+                    ErrorCategory.Transient,
                     $"Model provider returned server error (HTTP {(int)httpResponse.StatusCode}).");
             }
 

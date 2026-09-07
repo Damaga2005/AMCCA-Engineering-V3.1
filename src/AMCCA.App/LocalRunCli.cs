@@ -66,9 +66,11 @@ internal static class LocalRunCli
             return 2;
         }
 
-        var store = new WindowsDpapiSecretStore(dbDir);
+        // Default base dir (…\AMCCA\secrets) so this matches --orchestrator and the WPF app, which
+        // both construct WindowsDpapiSecretStore with no argument.
+        var store = new WindowsDpapiSecretStore();
         store.SetSecretAsync(reference, value).GetAwaiter().GetResult();
-        Console.WriteLine($"Stored {args[1]} in the DPAPI secret store under {dbDir}.");
+        Console.WriteLine($"Stored {args[1]} in the DPAPI secret store.");
         return 0;
     }
 
@@ -110,7 +112,7 @@ internal static class LocalRunCli
             return 2;
         }
 
-        var gateway = ProviderGatewayComposer.Compose(config, new WindowsDpapiSecretStore(dbDir));
+        var gateway = ProviderGatewayComposer.Compose(config, new WindowsDpapiSecretStore());
         if (gateway is null)
         {
             Console.Error.WriteLine("No gateway is enabled/complete in config.yaml (need providers.gateway.enabled=true, base_url, api_key_secret_ref).");
@@ -167,8 +169,10 @@ internal static class LocalRunCli
         var oppId = UlidGenerator.NewUlid();
         using (var c = await factory.CreateOpenConnectionAsync())
         {
+            // niches has UNIQUE(name, language); a per-run name keeps repeated --seed-demo calls from colliding.
             await c.ExecuteAsync(@"INSERT INTO niches (id, name, language, state, created_at, updated_at)
-                VALUES (@Id, 'demo-niche', 'en', 'CANDIDATE', datetime('now'), datetime('now'));", new { Id = nicheId });
+                VALUES (@Id, @Name, 'en', 'CANDIDATE', datetime('now'), datetime('now'));",
+                new { Id = nicheId, Name = "demo-" + nicheId });
             await c.ExecuteAsync(@"
                 INSERT INTO opportunities (id, niche_id, state, score, score_breakdown_json, expected_revenue,
                                            expected_cost, risk_penalty, currency, scored_at, created_at, updated_at)

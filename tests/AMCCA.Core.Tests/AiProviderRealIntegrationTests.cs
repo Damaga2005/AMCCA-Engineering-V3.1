@@ -150,7 +150,7 @@ public class AiProviderRealIntegrationTests
     }
 
     [Fact]
-    public async Task DEF006_09_Http500_ThrowsProviderServerErrorException()
+    public async Task DEF006_09_Http500_ThrowsRetryableServerError()
     {
         var mockHandler = new ControlledHttpMessageHandler
         {
@@ -162,7 +162,8 @@ public class AiProviderRealIntegrationTests
 
         var ex = await act.Should().ThrowAsync<AmccaException>();
         ex.Which.ErrorCode.Should().Be(AmccaErrors.Ai001);
-        ex.Which.Category.Should().Be(ErrorCategory.Provider);
+        ex.Which.Category.Should().Be(ErrorCategory.Transient,
+            "5xx (\"model overloaded\", gateway timeout) is transient — ResilientProviderGateway retries it with backoff");
     }
 
     [Fact]
