@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 437
-**Total bytes:** 2732497
+**Total bytes:** 2734061
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -251,7 +251,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Agents/AgentLoopModels.cs` | `971beb2a7b94047d0271ed6c585608a630d776dfea7400b00113b838c4b10e1f` | 2083 |
 | `src/AMCCA.Core/Agents/AgentProtocol.cs` | `e8cc7d1d9aea940d9f383415ab4dcb28e94f39b3b3b3ff3a4b5a3480e3ff934e` | 5129 |
 | `src/AMCCA.Core/Agents/AgentRunSession.cs` | `0abc4b5a7c5ce4e1073b81a23ad71a7dff9bc06ff3bbb1b431c4e8fe4976366e` | 3070 |
-| `src/AMCCA.Core/Agents/AgentRuntime.cs` | `c835d598adb19ca59f714618b3e1438c31b74ead20fffa5598e6e96df102cf13` | 20761 |
+| `src/AMCCA.Core/Agents/AgentRuntime.cs` | `d51438cfa9df9c0802940f659d39431347192351ee3f77654f0d9d21cb4f8d4e` | 21891 |
 | `src/AMCCA.Core/Agents/IModelCostStore.cs` | `7521acf6ac674b7a8a8a0f56672503ed5d191ffbbeab9b3bdba8323bd8943133` | 1572 |
 | `src/AMCCA.Core/Artifacts/ArtifactStore.cs` | `20c3c9be6afd5da07fb32254da7a135cabfd20afae23065686dc834f7ca454a8` | 7507 |
 | `src/AMCCA.Core/Configuration/AmccaConfig.cs` | `fd372b224d253491600ba623409f515c5379585ad0dc8db3f3d6977c1f1019eb` | 6893 |
@@ -292,7 +292,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `src/AMCCA.Core/Monetization/RevenueService.cs` | `a77cb915a368d78a1df7015f2fc6ed240309e7db9dbb9a7a227330b56fa12f8b` | 5747 |
 | `src/AMCCA.Core/Operator/OperatorControlService.cs` | `9452e6db14aa0632449f67b575297ef8ab89400a5575b4c03465cc8561f85b18` | 9398 |
 | `src/AMCCA.Core/Operator/OperatorModels.cs` | `d35899e1e11d5ab4b5abf453f3916af3a3d1c8087f81e006568499ef3718a815` | 224 |
-| `src/AMCCA.Core/Orchestration/Handlers/AgentResearchAgent.cs` | `6b375d66f8affd7e4e10e49c11f973d3ce06275ef163aeb65c1bbadb70ee9df1` | 4688 |
+| `src/AMCCA.Core/Orchestration/Handlers/AgentResearchAgent.cs` | `1d99bca735f4911eb91b8293502a5bff4b1a3c6ca9a031671b6980909d83dc9c` | 5122 |
 | `src/AMCCA.Core/Orchestration/Handlers/AgentScriptAgent.cs` | `6119b497f9debfe0e0516060830969772f5d880f08892a5ad2335acd95eb87de` | 6889 |
 | `src/AMCCA.Core/Orchestration/Handlers/ConceptSelectionStageHandler.cs` | `10bbf170fe0303bdeea99ccbf5b4569eddee0e06c6eaad618722730dc281a2c5` | 7957 |
 | `src/AMCCA.Core/Orchestration/Handlers/MediaStageHandlers.cs` | `144afd29790a3699e04e951e0bf94e78ae3884160472b9bacfac98ff77827501` | 6564 |

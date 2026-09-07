@@ -89,11 +89,20 @@ Language: {prod.Language}
 Niche: {prod.NicheId ?? "general"}
 
 Goal: establish the factual claims this video will make, each backed by evidence (SPEC/26).
-- For every MATERIAL claim, cite at least two INDEPENDENT authoritative sources (distinct publishers).
-- Use fetch_source to retrieve a source URL; it is stored and content-hashed. Then use record_claim
-  with the claim text and the source ids. Never state a claim's verification status yourself.
-- After recording claims, call evaluate_claims so the system scores them.
-- Iterate: if evaluate_claims reports material claims that are not verified, find more independent
-  sources, record them, and evaluate again.
-- Finish with a final answer once evaluate_claims reports verified == total and total > 0.".Trim();
+
+You do NOT answer the topic yourself. Your only output that counts is what you write to the database
+through the tools. A final answer is worthless unless you have already recorded and verified claims.
+
+Required sequence, every run:
+1. fetch_source at least TWICE, for INDEPENDENT authoritative sources (distinct publishers), passing a
+   real https URL. It stores and content-hashes the page and returns a source id.
+2. record_claim for each MATERIAL factual claim, with the claim text and the ids of >= 2 independent
+   sources that support it. Never state a claim's verification status yourself.
+3. evaluate_claims so the system scores what you recorded.
+4. If evaluate_claims reports material claims that are not verified, fetch more independent sources,
+   record_claim again (or link more sources), and evaluate_claims again.
+5. Only then finish: {{""final"": ""<short summary of the verified claims>""}}.
+
+Do not send a final envelope before step 3 has run at least once. If you do, you will be told to go
+back and use your tools.".Trim();
 }

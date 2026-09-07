@@ -180,6 +180,8 @@ public class AgentRuntime
 
         int unparseableStreak = 0;
         int schemaFailStreak = 0;
+        int toolCallsMade = 0;
+        int prematureFinalNudges = 0;
 
         // H1 cost-accounting state, populated per turn from IModelPricing.
         string costCurrency = "EUR";
@@ -250,6 +252,21 @@ public class AgentRuntime
 
             if (msg.Kind == AgentMessageKind.Final)
             {
+                // An agent with tools but no output schema (research-style) that tries to finish before
+                // calling a single tool has almost always answered from memory instead of doing the
+                // work — the downstream verifier then rejects it. Nudge it back to its tools twice,
+                // then let the final through so a genuinely trivial task still terminates.
+                if (toolCallsMade == 0 && contract.AllowedTools.Count >= 2 && !structuredFinal
+                    && ++prematureFinalNudges <= 2)
+                {
+                    var nudge = "Do not finish yet — you have not called any tool. Use one of: "
+                              + string.Join(", ", contract.AllowedTools)
+                              + " to do the work, then finish. A final answer with no recorded work is discarded.";
+                    transcript.Add(new AgentTurn("tool", nudge));
+                    convo.AppendLine("TOOL_RESULT: " + nudge);
+                    continue;
+                }
+
                 var finalOutput = msg.FinalJson ?? string.Empty;
                 if (structuredFinal)
                 {
@@ -302,6 +319,7 @@ public class AgentRuntime
                 toolResult = $"{{\"error\": {JsonSerializer.Serialize(ex.Message)}}}";
             }
 
+            toolCallsMade++;
             transcript.Add(new AgentTurn("tool", toolResult));
             convo.AppendLine("TOOL_RESULT: " + toolResult);
         }
