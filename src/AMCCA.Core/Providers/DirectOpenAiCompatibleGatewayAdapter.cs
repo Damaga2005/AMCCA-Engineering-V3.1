@@ -20,17 +20,24 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
     private readonly SecretReference _apiKeyRef;
     private readonly HttpClient _httpClient;
     private readonly bool _ownsHttpClient;
+    private readonly bool _reasoningModel;
 
     /// <summary>
     /// SEC-01: the credential is supplied as a <c>secret://vault/name</c> reference and resolved
     /// through <see cref="ISecretStore"/> at call time. A literal API key is rejected by
     /// <see cref="SecretReference.Parse"/> (AMCCA-SEC-002) and never accepted as a Bearer token.
     /// </summary>
+    /// <param name="reasoningModel">
+    /// When the configured model is a reasoning model (OpenAI o-series / GPT-5, Groq gpt-oss, …): omit
+    /// <c>temperature</c>, which those models reject at any non-default value. All models get
+    /// <c>max_completion_tokens</c> (the current field; <c>max_tokens</c> is rejected by reasoning models).
+    /// </param>
     public DirectOpenAiCompatibleGatewayAdapter(
         string endpoint,
         ISecretStore secretStore,
-        string apiKeySecretRef)
-        : this(endpoint, secretStore, apiKeySecretRef, httpClient: null)
+        string apiKeySecretRef,
+        bool reasoningModel = false)
+        : this(endpoint, secretStore, apiKeySecretRef, httpClient: null, reasoningModel)
     {
     }
 
@@ -39,11 +46,13 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         string endpoint,
         ISecretStore secretStore,
         string apiKeySecretRef,
-        HttpClient? httpClient)
+        HttpClient? httpClient,
+        bool reasoningModel = false)
     {
         _endpoint = endpoint?.TrimEnd('/') ?? string.Empty;
         _secretStore = secretStore ?? throw new ArgumentNullException(nameof(secretStore));
         _apiKeyRef = SecretReference.Parse(apiKeySecretRef);
+        _reasoningModel = reasoningModel;
         if (httpClient != null)
         {
             _httpClient = httpClient;
@@ -110,11 +119,13 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
             using var req = new HttpRequestMessage(HttpMethod.Post, requestUri);
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
+            // max_completion_tokens (not max_tokens) and a small non-1 budget: reasoning models reject
+            // max_tokens and can 400 on a 1-token cap.
             var probeBody = new
             {
                 model = modelId,
                 messages = new[] { new { role = "user", content = "ping" } },
-                max_tokens = 1
+                max_completion_tokens = 16
             };
             req.Content = new StringContent(JsonSerializer.Serialize(probeBody), Encoding.UTF8, "application/json");
 
@@ -169,16 +180,20 @@ public class DirectOpenAiCompatibleGatewayAdapter : IProviderGateway, IDisposabl
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         httpRequest.Headers.Add("X-Correlation-Id", request.CorrelationId);
 
-        var payload = new
-        {
-            model = request.ModelId,
-            messages = new[]
+        object payload = _reasoningModel
+            ? new
             {
-                new { role = "user", content = request.Prompt }
-            },
-            temperature = request.Temperature,
-            max_tokens = request.MaxTokens
-        };
+                model = request.ModelId,
+                messages = new[] { new { role = "user", content = request.Prompt } },
+                max_completion_tokens = request.MaxTokens,
+            }
+            : new
+            {
+                model = request.ModelId,
+                messages = new[] { new { role = "user", content = request.Prompt } },
+                temperature = request.Temperature,
+                max_completion_tokens = request.MaxTokens,
+            };
 
         httpRequest.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 

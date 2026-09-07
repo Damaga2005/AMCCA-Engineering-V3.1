@@ -321,3 +321,16 @@ completes the mechanism D-034 anticipated ("ModelId is a constant until config c
 > *Fifth-audit defect closed (L3):* `"gpt-4o-mini"` was hard-coded in `ResearchAgentOptions.Default`
 > and `ScriptAgentOptions.Default`, and `Program.cs` constructed both agents with `options: null`, so
 > `--orchestrator` could only ever ask for that one model regardless of the configured provider.
+
+### D-037 Reasoning models are a configured shape, not a special case in the loop
+`config.providers.gateway.reasoning_model` (bool, default false) tells the OpenAI-compatible gateway
+adapter that `default_model_id` is a reasoning model (OpenAI o-series / GPT-5, Groq `gpt-oss`, …). When
+true the adapter omits `temperature` from the request — those models reject any non-default value with
+HTTP 400. Every model, reasoning or not, now gets `max_completion_tokens` rather than the deprecated
+`max_tokens`, which reasoning models also reject. The agent loop is unchanged; this is entirely a
+request-shaping concern at the adapter boundary.
+
+> *Found while running:* a real end-to-end research run against Groq `openai/gpt-oss-120b` and then
+> OpenAI `gpt-5.6-luna` returned HTTP 400 because `AgentRuntime` always sent `temperature: 0.2` and
+> `max_tokens`. `qwen/qwen3.8-27b` (not a reasoning model) accepted the old payload, which is why the
+> gap only surfaced once a reasoning model was configured.

@@ -127,6 +127,13 @@ public class GatewayConfig
     public string? DefaultModelId { get; set; }
 
     /// <summary>
+    /// D-037: true when <see cref="DefaultModelId"/> is a reasoning model (OpenAI o-series / GPT-5,
+    /// Groq gpt-oss, …). The gateway adapter then omits <c>temperature</c>, which those models reject.
+    /// </summary>
+    [JsonPropertyName("reasoning_model")]
+    public bool ReasoningModel { get; set; }
+
+    /// <summary>
     /// D-034: operator-supplied model token prices. The only source AgentRuntime prices a model call
     /// against; empty by default, in which case an agent run still completes but records an
     /// ESTIMATED_UNRECONCILED cost event. Materialised into pricing_snapshots (SPEC/21).
