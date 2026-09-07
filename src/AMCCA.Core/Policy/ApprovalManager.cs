@@ -23,10 +23,14 @@ public record PendingApproval(
 public class ApprovalManager
 {
     private readonly DatabaseConnectionFactory _connectionFactory;
+    private readonly TimeProvider _time;
 
-    public ApprovalManager(DatabaseConnectionFactory connectionFactory)
+    // M1: the clock is injectable so approval expiry (expires_at vs "now") is testable with
+    // FakeTimeProvider instead of a real sleep. Defaults to the system clock for every existing caller.
+    public ApprovalManager(DatabaseConnectionFactory connectionFactory, TimeProvider? timeProvider = null)
     {
         _connectionFactory = connectionFactory;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<IReadOnlyList<PendingApproval>> GetPendingApprovalsAsync(CancellationToken ct = default)
@@ -88,8 +92,8 @@ public class ApprovalManager
         CancellationToken ct = default)
     {
         var id = UlidGenerator.NewUlid();
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        var expiresAt = DateTimeOffset.UtcNow.Add(validFor).ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
+        var expiresAt = _time.GetUtcNow().Add(validFor).ToString("O");
 
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
@@ -111,7 +115,7 @@ public class ApprovalManager
 
     public async Task ApproveRequestAsync(string approvalId, string decidedBy, CancellationToken ct = default)
     {
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             UPDATE approvals
@@ -132,7 +136,7 @@ public class ApprovalManager
 
     public async Task RejectRequestAsync(string approvalId, string decidedBy, CancellationToken ct = default)
     {
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         const string sql = @"
             UPDATE approvals
@@ -165,7 +169,7 @@ public class ApprovalManager
         await WriteLock.WaitAsync(ct);
         try
         {
-            var now = DateTimeOffset.UtcNow.ToString("O");
+            var now = _time.GetUtcNow().ToString("O");
             using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
             using var tx = connection.BeginTransaction();
 
@@ -259,7 +263,7 @@ public class ApprovalManager
     /// </summary>
     public async Task<bool> HasApprovedGateAsync(string productionId, string action, CancellationToken ct = default)
     {
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         var count = await connection.ExecuteScalarAsync<int>(new Dapper.CommandDefinition(
             @"SELECT COUNT(*) FROM approvals
@@ -274,7 +278,7 @@ public class ApprovalManager
         string action,
         CancellationToken ct = default)
     {
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        var now = _time.GetUtcNow().ToString("O");
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(ct);
         using var tx = connection.BeginTransaction();
 

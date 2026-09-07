@@ -19,15 +19,18 @@ public class OAuthManager
     private readonly DatabaseConnectionFactory _factory;
     private readonly ISecretStore _secretStore;
     private readonly ISafeHttpClientFactory _httpClientFactory;
+    private readonly TimeProvider _time;
 
     // SEC-02 / SEC-11: OAuth traffic MUST go through the SSRF-safe HTTP pipeline
     // (SsrfValidator + SafeRedirectHandler). An arbitrary HttpClient can no longer be injected;
     // tests supply a fake ISafeHttpClientFactory instead.
-    public OAuthManager(DatabaseConnectionFactory factory, ISecretStore secretStore, ISafeHttpClientFactory? httpClientFactory = null)
+    public OAuthManager(DatabaseConnectionFactory factory, ISecretStore secretStore,
+        ISafeHttpClientFactory? httpClientFactory = null, TimeProvider? timeProvider = null)
     {
         _factory = factory;
         _secretStore = secretStore;
         _httpClientFactory = httpClientFactory ?? SafeHttpClientFactory.Default;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     // SEC-03: every OAuth endpoint is validated against the SSRF policy before any connection.
@@ -279,7 +282,7 @@ public class OAuthManager
         tx.Commit();
     }
 
-    private static OAuthTokenBundle ParseTokenBundle(string json, string? fallbackRefreshToken = null)
+    private OAuthTokenBundle ParseTokenBundle(string json, string? fallbackRefreshToken = null)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -289,7 +292,7 @@ public class OAuthManager
         var tokenType = root.TryGetProperty("token_type", out var tt) ? tt.GetString() ?? "Bearer" : "Bearer";
 
         int expiresIn = root.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : 3600;
-        var expiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
+        var expiresAt = _time.GetUtcNow().AddSeconds(expiresIn);
 
         var scopes = new List<string>();
         if (root.TryGetProperty("scope", out var sc) && sc.GetString() != null)
