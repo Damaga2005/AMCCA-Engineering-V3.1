@@ -200,6 +200,9 @@
               "minLength": 1,
               "maxLength": 128
             },
+            "reasoning_model": {
+              "type": "boolean"
+            },
             "model_pricing": {
               "type": "array",
               "items": {

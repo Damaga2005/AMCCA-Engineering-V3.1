@@ -831,6 +831,10 @@ def build_schemas(prod_states):
                         # when absent the agents fall back to their built-in constant. Set this to run
                         # against a specific provider model (e.g. "gemini-2.0-flash").
                         "default_model_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                        # D-037: true when default_model_id is a reasoning model (OpenAI o-series / GPT-5,
+                        # Groq gpt-oss, ...). The adapter then omits `temperature` (rejected at any
+                        # non-default value by those models). Default false.
+                        "reasoning_model": {"type": "boolean"},
                         # D-034: model token prices are operator-supplied here, materialised into
                         # pricing_snapshots, and are the only source AgentRuntime will price a model
                         # call against. Prices are external and volatile (SPEC/21), so each entry

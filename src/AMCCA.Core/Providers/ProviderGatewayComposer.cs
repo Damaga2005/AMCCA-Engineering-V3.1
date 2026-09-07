@@ -49,5 +49,5 @@ public static class ProviderGatewayComposer
     private static IProviderGateway BuildAdapter(GatewayConfig gw, ISecretStore secretStore)
         => string.Equals(gw.Id, "omnirouters", StringComparison.OrdinalIgnoreCase)
             ? new OmniRoutersGatewayAdapter(gw.BaseUrl, secretStore, gw.ApiKeySecretRef!)
-            : new DirectOpenAiCompatibleGatewayAdapter(gw.BaseUrl, secretStore, gw.ApiKeySecretRef!);
+            : new DirectOpenAiCompatibleGatewayAdapter(gw.BaseUrl, secretStore, gw.ApiKeySecretRef!, gw.ReasoningModel);
 }

@@ -113,7 +113,7 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
             {
                 model = modelId,
                 messages = new[] { new { role = "user", content = "ping" } },
-                max_tokens = 1
+                max_completion_tokens = 16
             };
             req.Content = new StringContent(JsonSerializer.Serialize(probeBody), Encoding.UTF8, "application/json");
 
@@ -175,7 +175,7 @@ public class OmniRoutersGatewayAdapter : IProviderGateway, IDisposable
                 new { role = "user", content = request.Prompt }
             },
             temperature = request.Temperature,
-            max_tokens = request.MaxTokens
+            max_completion_tokens = request.MaxTokens
         };
 
         httpRequest.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");

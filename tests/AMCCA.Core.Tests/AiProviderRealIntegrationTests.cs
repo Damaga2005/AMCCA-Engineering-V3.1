@@ -102,6 +102,40 @@ public class AiProviderRealIntegrationTests
     }
 
     [Fact]
+    public async Task Payload_UsesMaxCompletionTokens_AndOmitsTemperature_ForAReasoningModel()
+    {
+        var h = new ControlledHttpMessageHandler
+        {
+            Handler = (r, c) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    "{\"id\":\"x\",\"choices\":[{\"message\":{\"content\":\"ok\"}}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}",
+                    Encoding.UTF8, "application/json"),
+            }),
+        };
+        var store = TestSecretStores.With("secret://test/openai", "sk-k");
+
+        // reasoning model: no temperature, max_completion_tokens
+        var reasoning = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", store, "secret://test/openai", new HttpClient(h), reasoningModel: true);
+        await reasoning.GenerateTextAsync(new GatewayTextRequest("gpt-5.6-luna", "hi", 0.2, 2048, "c"));
+        using (var d = JsonDocument.Parse(h.LastRequestBody!))
+        {
+            d.RootElement.TryGetProperty("temperature", out _).Should().BeFalse("reasoning models reject a non-default temperature");
+            d.RootElement.GetProperty("max_completion_tokens").GetInt32().Should().Be(2048);
+            d.RootElement.TryGetProperty("max_tokens", out _).Should().BeFalse();
+        }
+
+        // non-reasoning model: temperature kept, still max_completion_tokens
+        var normal = new DirectOpenAiCompatibleGatewayAdapter("https://api.openai.com/v1", store, "secret://test/openai", new HttpClient(h), reasoningModel: false);
+        await normal.GenerateTextAsync(new GatewayTextRequest("gpt-4o", "hi", 0.2, 2048, "c"));
+        using (var d = JsonDocument.Parse(h.LastRequestBody!))
+        {
+            d.RootElement.GetProperty("temperature").GetDouble().Should().Be(0.2);
+            d.RootElement.GetProperty("max_completion_tokens").GetInt32().Should().Be(2048);
+        }
+    }
+
+    [Fact]
     public async Task DEF006_06_Http401_ThrowsAuthException()
     {
         var mockHandler = new ControlledHttpMessageHandler
