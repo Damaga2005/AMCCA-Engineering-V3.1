@@ -7,7 +7,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 
 **Package version:** 3.1.0
 **Files:** 440
-**Total bytes:** 2763806
+**Total bytes:** 2765405
 
 | File | SHA-256 | Bytes |
 |---|---|--:|
@@ -72,7 +72,7 @@ its own hash; V2 shipped a manifest that listed itself, so that entry could neve
 | `POLICIES/PRIVACY_POLICY.md` | `217890eec9cbbc7578bac71888b56f08d89554530f1afdc9115384cda76946f9` | 1779 |
 | `POLICIES/SAFETY_POLICY.md` | `d5a7fee5ab8af3b40beb7ce4c26aeaafb7873cfdbb3cfc4555d4f2eef1a23b53` | 1825 |
 | `POLICIES/SYNTHETIC_CONTENT_POLICY.md` | `797f851422d785c9b05f8d6f9e72a7a2217f58f8aa0364b0590df98483c70de2` | 2720 |
-| `README.md` | `18c9598d97408995124ab8d4212910705306d2df4e2aeb164b29c7df16a1d6a7` | 8568 |
+| `README.md` | `7d4f0b302ba961a6ca7833ef96b8d9cf8ced6e14baae3aee0ac74b671b807088` | 10167 |
 | `ROADMAP.md` | `146f049f25abe0d17cd38dddb66555d058942f3cfd74a25e1a3d6c811dbb7a67` | 1877 |
 | `RUN_LOCAL.md` | `acf113912c22bdab32640d9de43ae142936ab312cf0aebb352372af8d35b9269` | 5583 |
 | `SCHEMAS/agent-run.schema.json` | `e5c688c694272655137b7469ff383513900ff1befae201cf24c65686b71458bc` | 4434 |

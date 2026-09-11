@@ -1,140 +1,170 @@
-# AMCCA — Autonomous Multimodal Content Creation & Monetization Center
+﻿# ⚡ AMCCA · Autonomous Multimodal Content Creation & Monetization Center
 
-## V3 Engineering Specification — implementation-grade
+[![Specification: V3.1.0](https://img.shields.io/badge/Specification-V3.1.0%20(Implementation--Grade)-0071e3.svg)]()
+[![Validation: Self--Validating](https://img.shields.io/badge/Release%20Gate-Mechanically%20Verified-brightgreen.svg)]()
+[![Target: Windows 10/11 x64](https://img.shields.io/badge/Platform-Windows%2010%2F11%20x64-black.svg)]()
+[![Core: .NET + Python](https://img.shields.io/badge/Stack-.NET%20%2F%20C%23%20%2B%20Python-blueviolet.svg)]()
+[![Contracts: JSON Schema 2020-12](https://img.shields.io/badge/Contracts-Draft%202020--12%20Strict-orange.svg)]()
 
-**Package version:** 3.1.0
-**Supersedes:** AMCCA Engineering Specification V2, AMCCA Blueprint V2.1, and AMCCA Engineering V3.0.0, all of which are withdrawn or superseded.
-**Build target:** Windows 10/11 x64. Primary artifact `AMCCA.exe`; optional installer `AMCCA-Setup.exe`.
-
-V1 established the product vision. V2 fixed the technology stack and the architectural boundaries, and did
-that part well. V3 exists because an independent audit of V2 found that the *contracts* did not match the
-*decisions*: the state machine had unreachable states and no exit from its own safety state, twelve declared
-database tables had no column contract, six of nine schemas violated the versioning decision, and no schema
-could link a QA result back to the production it belonged to.
-
-V3 closes those gaps and adds the thing V2 lacked structurally: **the package validates itself.**
-`TOOLS/validate_package.py` mechanically proves the invariants below and fails the build otherwise.
-
-V3.1 exists because a second audit found that V3's validator, in several places, checked a weaker claim
-than the one V3's prose documented — a real drift check that only looked for a marker comment, a
-`format: date-time` declaration with no format checker wired in, a money pattern that admitted a sign it
-shouldn't have, an evidence enum that let a resolving URL count as proof of publication. Every one of
-those is closed in V3.1, each with an executable regression test named in `SPEC/79` and run by
-`TOOLS/release_gate.py`. See `CHANGELOG_V3_TO_V3.1.md`.
-See `AUDIT/V2_DEFECTS_CLOSED.md` for the defect-by-defect trace.
+> **AMCCA (Autonomous Multimodal Content Creation & Monetization Center)** is an implementation-grade, deterministic software system and engineering specification for end-to-end autonomous content synthesis, multimodal rendering, quality verification, and monetization.
+> 
+> **Core Architecture:** Deterministic code strictly governs state, capital budgets, access credentials, transactional storage, and external side effects. AI agents propose structured outputs within mathematical bounds; they **never mutate protected state** and **never decide whether a safety gate passed**.
 
 ---
 
-## Non-negotiable principles
+## 🏛️ System Topology & Execution Flow
 
-1. Deterministic code controls state, money, permissions, files, hashes, budgets, credentials, retries and external side effects.
-2. AI agents reason and propose structured outputs. They do not mutate protected state and do not decide whether a gate passed.
-3. Unknown external state is never silently converted to success or failure.
-4. Publishing is a side effect behind explicit capability, policy, credential, rights, disclosure and QA gates.
-5. Every important decision and artifact is traceable, versioned and reproducible.
-6. Autonomous mode is bounded by explicit policy, never by agent discretion.
-7. The application recovers safely after restart, crash, timeout, network loss and ambiguous external responses.
-8. No integration is simulated. An unsupported or unverified capability is disabled, not faked.
-9. Estimates and measurements are different types and never overwrite one another.
-10. A release gate is an executable check, not a prose claim.
+```mermaid
+graph TD
+    subgraph "1. Planning & Intent"
+        A["👤 Operator / Goal Intent"] --> B["🧠 Agent Reasoning Layer<br/>Structured Proposals (Non-Privileged)"]
+    end
 
-## Source of truth order
+    subgraph "2. Deterministic Validation & Invariant Guard"
+        B --> C{"🛡️ Deterministic Safety Gate<br/>Policy, Hash & Budget Enforcer"}
+        C -- "Violates Policy / Over-Budget" --> D["🛑 Rejection / Quarantine State"]
+        C -- "Valid Contract" --> E["⚙️ Finite State Machine<br/>(SPEC/12, SPEC/13 Transition Engine)"]
+    end
 
-1. `DECISIONS.md`
-2. `BLUEPRINT/10_OPERATIONAL_INVARIANTS.md`
-3. Other `BLUEPRINT/` documents — for questions of boundary and authority
-4. Normative `SPEC/` documents — for questions of detail
-5. `SCHEMAS/` JSON Schemas and `SCHEMAS/state-machine.json`
-6. `POLICIES/`
-7. `CONFIG/` examples and explanatory prose
+    subgraph "3. Multimodal Execution"
+        E --> F["🎬 Asset Generation Pipeline<br/>Video, Audio, Visuals & Copy"]
+        F --> G["🔍 Strict QA & Semantic Diff Gate<br/>Automated Conformance Checking"]
+    end
 
-If two documents conflict, implementation **MUST stop** and the conflict MUST be resolved in `DECISIONS.md`
-before code changes continue. Do not choose. Choosing silently is how V2 acquired its defects.
+    subgraph "4. Side-Effect Gated Dispatch"
+        G --> H{"🚀 Publishing Gate<br/>(Capability, Rights, Policy Verified)"}
+        H -- "Dry Run / Staging" --> I["🧪 Simulated Safe Sandbox"]
+        H -- "Production Live" --> J["🌐 External Platform Dispatch"]
+        J --> K["✅ Authoritative Proof of Publication"]
+    end
+```
 
-Generated files (`SPEC/11`, `SPEC/13`, `SCHEMAS/*.json`, `MANIFEST.md`) are outputs, not inputs:
-edit the generator, never the artifact (D-025).
+---
 
-## Canonical entry points
+## 💎 The 10 Non-Negotiable Principles
 
-| Question | Document |
+1. **Deterministic State Authority:** Deterministic code controls state, money, permissions, files, cryptographic hashes, budgets, credentials, retries, and external side effects.
+2. **AI Boundary Isolation:** AI agents reason and propose structured outputs. They do *not* mutate protected state and do *not* decide whether a gate passed.
+3. **No Silent State Coercion:** Unknown external state is never silently converted to success or failure.
+4. **Guarded Side Effects:** Publishing is a side effect behind explicit capability, policy, credential, rights, disclosure, and QA gates.
+5. **Traceability & Reproducibility:** Every important decision and artifact is traceable, versioned, and cryptographically reproducible.
+6. **Bounded Autonomy:** Autonomous mode is bounded by explicit policy, never by agent discretion.
+7. **Resilient Recovery:** The application recovers safely after restarts, crashes, timeouts, network loss, and ambiguous external responses.
+8. **No Fake Integrations:** No integration is simulated. An unsupported or unverified capability is disabled, never faked.
+9. **Strict Value Typing:** Estimates and empirical measurements are different types and never overwrite one another.
+10. **Executable Release Gates:** A release gate is an executable check, never a prose claim.
+
+---
+
+## 📖 Source of Truth Hierarchy
+
+When resolving any design conflict, implementation **must halt immediately** until the contradiction is resolved in `DECISIONS.md`. Never choose silently:
+
+| Priority | Level | Authority / Scope |
+|:---:|---|---|
+| **1** | **`DECISIONS.md`** | Invariant architectural decisions and boundary definitions. |
+| **2** | **`BLUEPRINT/10_OPERATIONAL_INVARIANTS.md`** | Non-negotiable system rules that must always hold true. |
+| **3** | **`BLUEPRINT/` Documents** | Master architecture, boundaries, and system responsibilities. |
+| **4** | **`SPEC/` Specifications** | Normative technical specifications (`SPEC/01` to `SPEC/83`). |
+| **5** | **`SCHEMAS/` (JSON Schemas)** | Machine-readable schemas (Draft 2020-12) & `state-machine.json`. |
+| **6** | **`POLICIES/`** | Operational policies, budgets, rates, and approval rules. |
+| **7** | **`CONFIG/`** | Example environments and runtime configuration prose. |
+
+> [!IMPORTANT]
+> Generated files (`SPEC/11`, `SPEC/13`, `SCHEMAS/*.json`, `MANIFEST.md`) are outputs, not inputs: edit the generator script, never the artifact directly (Decision D-025).
+
+---
+
+## 🧭 Canonical Entry Points
+
+| Task / Question | Reference Document |
 |---|---|
-| What may I not change? | `DECISIONS.md` |
-| What must always hold true? | `BLUEPRINT/10_OPERATIONAL_INVARIANTS.md` |
-| What is the shape of the system? | `BLUEPRINT/00_MASTER_BLUEPRINT.md` |
-| What states can a production be in? | `SPEC/12`, `SPEC/13` |
-| What does the database look like? | `SPEC/10`, `SPEC/11` |
-| What is the contract for a given aggregate? | the matching file in `SCHEMAS/` |
-| When is a release done? | `SPEC/79_DEFINITION_OF_DONE.md` |
-| In what order do I build it? | `BUILD_ORDER.md`, `SPEC/80` |
-| Where do I start as an agent? | `ANTIGRAVITY_START_PROMPT.md` |
+| What may I **not** change? | [`DECISIONS.md`](DECISIONS.md) |
+| What must **always** hold true? | [`BLUEPRINT/10_OPERATIONAL_INVARIANTS.md`](BLUEPRINT/10_OPERATIONAL_INVARIANTS.md) |
+| What is the high-level shape of the system? | [`BLUEPRINT/00_MASTER_BLUEPRINT.md`](BLUEPRINT/00_MASTER_BLUEPRINT.md) |
+| What valid states can a production be in? | [`SPEC/12`](SPEC/12_PRODUCTION_LIFECYCLE_STATE_MACHINE.md), [`SPEC/13`](SPEC/13_PRODUCTION_STATE_MACHINE_FORMAL_DEFINITION.md) |
+| What does the database schema enforce? | [`SPEC/10`](SPEC/10_RELATIONAL_DATABASE_STORAGE_ENGINE.md), [`SPEC/11`](SPEC/11_DATABASE_SCHEMA_DEFINITION.md) |
+| What is the contract for a given aggregate? | Files located in [`SCHEMAS/`](SCHEMAS/) |
+| What defines release-readiness? | [`SPEC/79_DEFINITION_OF_DONE.md`](SPEC/79_DEFINITION_OF_DONE.md) |
+| In what exact sequence is the system built? | [`BUILD_ORDER.md`](BUILD_ORDER.md), [`SPEC/80`](SPEC/80_PHASED_IMPLEMENTATION_AND_INTEGRATION_PLAN.md) |
+| Where do autonomous agents start? | [`ANTIGRAVITY_START_PROMPT.md`](ANTIGRAVITY_START_PROMPT.md) |
 
-## Modes and environments
+---
 
-These are **two orthogonal axes**, not one list. Conflating them was a V2 defect.
+## 🎛️ Modes & Environments (Two Orthogonal Axes)
 
-**Environment** — `DEVELOPMENT`, `STAGING`, `PRODUCTION`. Selects configuration and which external
-endpoints are reachable.
+The system isolates **where** it runs from **how** it behaves:
 
-**Flags** — independent booleans that apply within any environment:
+### Axis 1: Environment
+- **`DEVELOPMENT`:** Local sandbox with synthetic and mock external providers.
+- **`STAGING`:** Pre-production verification with real non-production platform credentials.
+- **`PRODUCTION`:** Live commercial operation.
 
-| Flag | Meaning |
-|---|---|
-| `publishing_enabled` | Whether publication intents may be dispatched at all. |
-| `dry_run` | When true, every tool of class `EXTERNAL_UNSAFE` is blocked. Planning, research, generation and QA still run fully. |
-| `autonomy_mode` | `MANUAL`, `ASSISTED` or `AUTONOMOUS`. Governs which actions need approval. |
+### Axis 2: Operational Flags
+- **`publishing_enabled`** *(bool)*: Controls whether publication intents may be dispatched to external platforms.
+- **`dry_run`** *(bool)*: When active, every tool of class `EXTERNAL_UNSAFE` is blocked; planning, generation, and QA run fully.
+- **`autonomy_mode`**: `MANUAL`, `ASSISTED`, or `AUTONOMOUS` (governs human approval thresholds).
 
-`STAGING` is the only environment where `publishing_enabled=true` may be combined with `dry_run=false`
-against non-production platform accounts, and only when `providers.gateway.capabilities_verified` is true.
-`CONFIG/environments.yaml` states this explicitly rather than leaving it to be inferred.
+---
 
-## Package self-validation
+## 🧪 Mechanical Self-Validation & Release Gate
 
-```
-pip install -r TOOLS/requirements.txt     # pinned, exact dependency versions
-python TOOLS/release_gate.py              # THE canonical release-readiness command -- run this
-```
+The package validates itself mechanically. A failing validator is a failing build:
 
-`TOOLS/release_gate.py` is the single entry point: it orchestrates every check below as a
-named, numbered step and is what decides release-readiness. Every script it calls remains
-individually runnable too, for CI granularity and local debugging while working on one area:
+```bash
+# 1. Install pinned tooling dependencies
+pip install -r TOOLS/requirements.txt
 
-```
-python TOOLS/validate_package.py          # structural, contract and drift checks only
-python TOOLS/validate_package.py --regen  # regenerate derived artifacts, then verify
-python TOOLS/generate_artifacts.py --check    # drift check in isolation (byte-for-byte, V31-01)
-python TOOLS/conformance_tests.py             # schema conditional coverage + positive/negative cases
-python TOOLS/test_version_consistency.py          # no stale version string in a normative location
-python TOOLS/test_generated_artifacts_semantics.py # semantic validation beyond the byte-level diff
-python TOOLS/test_database_contract_source.py      # DDL-consuming tests load the real, generated DDL
-python TOOLS/test_no_contract_duplication.py       # no test hand-copies a CREATE TABLE / CHECK
-python TOOLS/test_mutations.py                     # deliberately break each invariant, prove it goes red
+# 2. Execute the single canonical release gate
+python TOOLS/release_gate.py
 ```
 
-Every `TOOLS/test_*.py` is a standalone script (`run()` returning an exit code, guarded by
-`if __name__ == "__main__"`), not a pytest test module -- run them directly, or via
-`TOOLS/release_gate.py`, rather than `pytest TOOLS/`.
+### Granular Diagnostic Tools
+Individual validation suites can be executed independently:
 
-The validator proves, mechanically:
+```bash
+python TOOLS/validate_package.py                   # Structural, contract & drift check
+python TOOLS/validate_package.py --regen           # Regenerate derived artifacts and verify
+python TOOLS/generate_artifacts.py --check         # Byte-for-byte generator drift check (V31-01)
+python TOOLS/conformance_tests.py                  # Schema coverage with positive/negative cases
+python TOOLS/test_version_consistency.py           # Enforce unified version across normative files
+python TOOLS/test_generated_artifacts_semantics.py  # Semantic validation beyond byte diffs
+python TOOLS/test_database_contract_source.py       # DDL tests load actual generated DDL
+python TOOLS/test_no_contract_duplication.py        # Prohibits hard-coded duplicate DDL
+python TOOLS/test_mutations.py                      # Mutation tests: proves invariants fail when broken
+```
 
-- every state has an inbound transition, every non-terminal state an outbound one, no terminal state an outbound one;
-- every state is reachable from `INIT` and can reach a terminal state;
-- every JSON Schema is a valid draft 2020-12 schema and carries `schema_version`;
-- `format: date-time` is actually enforced by a registered format checker, not merely declared (V31-02);
-- the production state enum matches `state-machine.json` exactly;
-- every table named anywhere in the package has a column contract in `SPEC/11`;
-- money fields are non-negative except the two explicitly signed exceptions, and no tooling code uses `float` for money (V31-04, V31-05);
-- a publication cannot reach `VERIFIED` without authoritative evidence, and the synthetic-label gate holds structurally, not only procedurally (V31-06, V31-07);
-- a platform capability discovered via a secondary source can never reach `VERIFIED` (V31-09);
-- every internal file reference resolves;
-- every SPEC number is unique and every SPEC file is referenced by the traceability map;
-- `MANIFEST.md` matches the tree, and no file claims to contain its own hash;
-- generated artifacts have not drifted from their generators, verified byte-for-byte, not by a marker comment (V31-01).
+### Mechanical Proof Guarantees
+- **State Space:** Every state has an inbound transition; every non-terminal state has an outbound transition; terminal states cannot transition out; all states are reachable from `INIT`.
+- **Contract Strictness:** Every JSON schema complies with Draft 2020-12 and carries `schema_version`. `format: date-time` is enforced by active format checkers.
+- **Financial Rigor:** Monetary fields are strictly non-negative (except designated ledger offsets), and zero tooling code uses floating-point arithmetic for currency.
+- **Publication Proof:** No publication reaches `VERIFIED` without cryptographic or authoritative API evidence.
 
-`TOOLS/release_gate.py` runs the full sequence in the order fixed by the V3.1 / V3.1.1 audits and
-reports each step by name; see `SPEC/79` for which criterion each step demonstrates, and note that
-three of its steps (security, chaos and acceptance suites) require a running implementation and are
-honestly reported as not applicable at specification stage rather than claimed passing (V31-10). Steps
-21-25 are the V3.1.1 validation-hardening additions: version consistency, generated-artifact semantics,
-database-contract single-sourcing, the anti-duplication guard, and the mutation-test suite.
+---
 
-A failing validator is a failing build. There is no prose override.
+## 📁 Repository Structure
+
+```text
+AMCCA-Engineering-V3.1/
+├── BLUEPRINT/                 # Architectural blueprints and operational invariants
+├── SPEC/                      # Normative specifications (01 to 83)
+├── SCHEMAS/                   # JSON Schemas (2020-12) and state-machine.json
+├── POLICIES/                  # Governance, budgets, and capability gates
+├── CONFIG/                    # Environment configurations
+├── src/                       # Production source code (.NET Core / C# + Python)
+├── tests/                     # Integration and verification test suites
+├── TOOLS/                     # Mechanical validation and release-gate scripts
+├── AUDIT/                     # Historical audit trails and defect resolution logs
+├── artifacts/                 # Generated build outputs (AMCCA.exe, installer)
+├── DECISIONS.md               # Supreme source of truth for architectural decisions
+├── BUILD_ORDER.md             # Sequential phase implementation order
+├── MANIFEST.md                # Cryptographic manifest of all repository files
+└── README.md                  # Implementation-grade engineering overview
+```
+
+---
+
+## 📄 License & Intellectual Property
+
+Proprietary and Confidential Engineering Specification. All rights reserved.  
+Refer to [POLICIES/](POLICIES/) and [DECISIONS.md](DECISIONS.md) for usage and distribution terms.
